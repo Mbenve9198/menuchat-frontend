@@ -27,7 +27,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-white">
+    <main className="relative min-h-screen overflow-hidden">
       <BubbleBackground />
 
       {/* Landing Page */}
