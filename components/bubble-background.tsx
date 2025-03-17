@@ -92,6 +92,6 @@ export default function BubbleBackground() {
     }
   }, [])
 
-  return <canvas ref={canvasRef} className="fixed inset-0 z-0 bg-gradient-to-b from-mint-100 to-mint-200" />
+  return <canvas ref={canvasRef} className="fixed inset-0 z-0 bg-gradient-to-b from-[#F8FFE5] to-[#EDF0DA]" />
 }
 
