@@ -27,7 +27,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#F8FFE5] to-[#E8EEDA]">
       <BubbleBackground />
 
       {/* Landing Page */}
@@ -67,7 +67,7 @@ export default function Home() {
             </motion.div>
 
             <motion.h1
-              className="text-4xl font-extrabold text-purple-900 mb-4"
+              className="text-4xl font-extrabold text-[#EF476F] mb-4"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
