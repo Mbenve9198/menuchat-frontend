@@ -60,11 +60,11 @@ export function ConfigurationModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg" className="animate-bounce">
+        <Button size="lg" className="animate-bounce bg-primary hover:bg-primary/90 text-white">
           Boost Your Reviews Now! 🚀
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-[#DFD6A7]/30 border-[#AF9B46]">
         {showConfetti && (
           <div className="confetti-container absolute inset-0 pointer-events-none overflow-hidden">
             {[...Array(50)].map((_, i) => (
@@ -94,114 +94,84 @@ export function ConfigurationModal() {
         )}
 
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center justify-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-            Setup Your Review Generation System
-            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-          </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle className="text-2xl text-[#1F1300]">Setup Your Review Generation System 🌟</DialogTitle>
+          <DialogDescription className="text-[#AF9B46]">
             Follow these simple steps to start collecting more Google reviews automatically!
           </DialogDescription>
         </DialogHeader>
 
         <div className="mb-6">
-          {/* Duolingo-style progress path */}
-          <div className="relative flex justify-between mb-4 px-2">
+          <div className="flex justify-between mb-2">
             {[...Array(totalSteps)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium relative
-                    ${
-                      i + 1 === currentStep
-                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                        : i + 1 < currentStep
-                          ? "bg-primary/20 text-primary"
-                          : "bg-secondary text-secondary-foreground"
-                    }`}
-                >
-                  {i + 1 < currentStep ? <Check className="h-5 w-5" /> : <span className="text-lg">{i + 1}</span>}
-                  {i + 1 === 3 && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                    </span>
-                  )}
-                  {i + 1 === 5 && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                    </span>
-                  )}
-                </div>
-                {i < totalSteps - 1 && (
-                  <div
-                    className={`h-1 w-16 absolute top-6 left-[calc(${i + 1}*100%/${totalSteps}-8px)] transform -translate-x-1/2
-                      ${i + 1 < currentStep ? "bg-primary" : "bg-secondary"}`}
-                  />
-                )}
+              <div
+                key={i}
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
+                  ${
+                    i + 1 === currentStep
+                      ? "bg-[#F7B05B] text-white"
+                      : i + 1 < currentStep
+                        ? "bg-[#F7B05B]/20 text-[#F7B05B]"
+                        : "bg-[#F7CE5B]/50 text-[#AF9B46]"
+                  }`}
+              >
+                {i + 1 < currentStep ? <Check className="h-4 w-4" /> : i + 1}
               </div>
             ))}
           </div>
-          <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
+          <Progress value={(currentStep / totalSteps) * 100} className="h-2 bg-[#DFD6A7]" />
         </div>
 
         {/* Step 1: Restaurant Information */}
         {currentStep === 1 && (
           <div className="space-y-6">
-            <div className="text-center mb-6 relative">
-              <div className="text-5xl mb-3 animate-bounce-slow">🏠</div>
-              <h3 className="text-xl font-bold">Restaurant Information</h3>
-              <p className="text-muted-foreground">Let's get to know your restaurant!</p>
-              <div className="absolute top-0 right-0 w-20 h-20 bg-[url('/placeholder.svg?height=100&width=100')] bg-contain bg-no-repeat opacity-20"></div>
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-2">🏠</div>
+              <h3 className="text-xl font-bold text-[#1F1300]">Restaurant Information</h3>
+              <p className="text-[#AF9B46]">Let's get to know your restaurant!</p>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="restaurant-name">Restaurant Name</Label>
-                <Input id="restaurant-name" placeholder="e.g., Mario's Pizzeria" />
+                <Label htmlFor="restaurant-name" className="text-[#1F1300]">Restaurant Name</Label>
+                <Input id="restaurant-name" placeholder="e.g., Mario's Pizzeria" className="border-[#AF9B46]/30 focus:border-[#F7B05B] focus:ring-[#F7B05B]" />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="restaurant-address">Restaurant Address</Label>
-                <Input id="restaurant-address" placeholder="Start typing for Google Places suggestions..." />
-                <div className="text-xs text-accent-foreground flex items-center">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Google Places API integration enabled
-                </div>
+                <Label htmlFor="restaurant-address" className="text-[#1F1300]">Restaurant Address</Label>
+                <Input id="restaurant-address" placeholder="Start typing for Google Places suggestions..." className="border-[#AF9B46]/30 focus:border-[#F7B05B] focus:ring-[#F7B05B]" />
               </div>
 
-              <Card className="bg-secondary border-2 border-secondary">
+              <Card className="bg-[#F7CE5B]/20 border-[#F7CE5B]/50">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
-                    <Star className="h-4 w-4 mr-2 text-primary" />
-                    Current Google Presence
-                  </CardTitle>
+                  <CardTitle className="text-base text-[#1F1300]">Current Google Presence</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center">
-                        <div className="flex mr-2">
-                          {[...Array(3)].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                          ))}
-                          {[...Array(2)].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 text-muted-foreground" />
-                          ))}
-                        </div>
-                        <span className="text-sm font-medium">3.0</span>
+                        <Star className="h-4 w-4 text-[#F7B05B] fill-[#F7B05B] mr-1" />
+                        <Star className="h-4 w-4 text-[#F7B05B] fill-[#F7B05B] mr-1" />
+                        <Star className="h-4 w-4 text-[#F7B05B] fill-[#F7B05B] mr-1" />
+                        <Star className="h-4 w-4 text-[#F7B05B] fill-[#F7B05B] mr-1" />
+                        <Star className="h-4 w-4 text-[#F7B05B]/50 mr-1" />
+                        <span className="text-sm text-[#1F1300] ml-1">4.0</span>
                       </div>
-                      <p className="text-sm text-muted-foreground">Based on 12 reviews</p>
+                      <div className="text-sm text-[#AF9B46]">Based on 24 reviews</div>
                     </div>
-                    <div className="text-right relative">
-                      <p className="text-sm font-medium text-primary flex items-center">
-                        Let's boost this! 📈<span className="ml-1 animate-pulse">✨</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">Potential: 4.8 ⭐ with 100+ reviews</p>
+                    <div>
+                      <Button variant="outline" size="sm" className="border-[#F7B05B] text-[#F7B05B] hover:bg-[#F7B05B] hover:text-white">
+                        View on Google
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button onClick={nextStep} className="bg-[#F7B05B] hover:bg-[#F7B05B]/90 text-white">
+                Next Step <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}
@@ -764,22 +734,21 @@ export function ConfigurationModal() {
           </div>
         )}
 
-        <div className="flex justify-between mt-6">
-          {currentStep > 1 ? (
-            <Button variant="outline" onClick={prevStep}>
+        <div className="flex justify-between pt-4">
+          {currentStep > 1 && (
+            <Button variant="outline" onClick={prevStep} className="border-[#AF9B46] text-[#AF9B46] hover:bg-[#AF9B46]/10">
               Back
             </Button>
-          ) : (
-            <div></div>
           )}
-
-          {currentStep < totalSteps ? (
-            <Button onClick={nextStep} className="group">
-              Continue
-              <ChevronRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          {currentStep < totalSteps && (
+            <Button onClick={nextStep} className="bg-[#F7B05B] hover:bg-[#F7B05B]/90 text-white">
+              Next Step <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
-          ) : (
-            <Button onClick={() => setOpen(false)}>Finish</Button>
+          )}
+          {currentStep === totalSteps && (
+            <Button className="bg-[#F7B05B] hover:bg-[#F7B05B]/90 text-white">
+              Finish Setup <Check className="ml-2 h-4 w-4" />
+            </Button>
           )}
         </div>
       </DialogContent>
