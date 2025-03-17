@@ -230,7 +230,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
   }
 
-  // Funzione per aggiornare un elemento lingua nel nostro array
+  // Function to update a language item in our array
   const handleLanguageChange = (updatedLanguage: MenuLanguage) => {
     setMenuLanguages(prev => 
       prev.map(lang => 
@@ -239,7 +239,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     );
   };
 
-  // Aggiorna hasMenuFile quando viene selezionato un file in qualsiasi lingua
+  // Update hasMenuFile when a file is selected in any language
   useEffect(() => {
     const hasAnyFile = menuLanguages.some(lang => lang.menuFile !== null);
     setHasMenuFile(hasAnyFile);
@@ -344,15 +344,15 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Upload className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Configuriamo il tuo menu in diverse lingue!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">Let's configure your menu in different languages!</span>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-gray-800 font-medium">
-                    Seleziona le lingue per i tuoi menu
+                    Select languages for your menus
                   </Label>
                   <p className="text-sm text-gray-500 mb-3">
-                    I tuoi clienti riceveranno automaticamente il menu nella loro lingua in base al prefisso del loro numero di telefono.
+                    Your customers will automatically receive the menu in their language based on their phone number prefix.
                   </p>
                   
                   <LanguageSelector 
@@ -363,7 +363,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
                 <div className="border-t pt-4 mt-6">
                   <Label className="text-gray-800 font-medium mb-3 block">
-                    Configura i menu per ogni lingua
+                    Configure menus for each language
                   </Label>
                   
                   <div className="space-y-4">

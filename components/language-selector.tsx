@@ -86,10 +86,10 @@ export default function LanguageSelector({
           <CustomButton
             variant="outline"
             size="sm"
-            className="rounded-full gap-1"
+            className="rounded-full gap-1 text-xs px-2 py-1 h-7 font-medium"
             onClick={() => setIsAdding(true)}
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3 h-3" />
             Add Language
           </CustomButton>
         )}
