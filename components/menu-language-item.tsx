@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { FileUpload } from "./ui/file-upload"
-import { Input } from "./ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
-import { Label } from "./ui/label"
+import { FileUpload } from "../components/ui/file-upload"
+import { Input } from "../components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
+import { Label } from "../components/ui/label"
 import { Globe, File, Link } from "lucide-react"
 import { MenuLanguage } from "./language-selector"
 

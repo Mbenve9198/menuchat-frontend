@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { Check, Plus, X, Globe } from "lucide-react"
-import { CustomButton } from "@/components/ui/custom-button"
-import { Input } from "@/components/ui/input"
+import { CustomButton } from "../components/ui/custom-button"
+import { Input } from "../components/ui/input"
 import { cn } from "@/lib/utils"
 
 // Common language codes with their English names and phone prefixes
