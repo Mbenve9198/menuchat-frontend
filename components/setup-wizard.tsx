@@ -54,10 +54,33 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [restaurantName, setRestaurantName] = useState("")
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [menuUrl, setMenuUrl] = useState("")
+  const [hasMenuFile, setHasMenuFile] = useState(false)
   const [reviewLink, setReviewLink] = useState("")
+  const [reviewPlatform, setReviewPlatform] = useState("google")
   const [welcomeMessage, setWelcomeMessage] = useState("")
   const [reviewTimer, setReviewTimer] = useState(60)
+  const [selectedTemplate, setSelectedTemplate] = useState<number>(-1)
   const [triggerWord, setTriggerWord] = useState("")
+
+  // Step validation
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 0: // Restaurant Basics
+        return restaurantName.trim().length > 0;
+      case 1: // Menu Setup
+        return menuUrl.trim().length > 0 || hasMenuFile;
+      case 2: // Review Link
+        return reviewPlatform && (reviewPlatform !== "custom" || reviewLink.trim().length > 0);
+      case 3: // Welcome Message
+        return welcomeMessage.trim().length > 0;
+      case 4: // Review Request
+        return selectedTemplate >= 0;
+      case 5: // Trigger Word
+        return triggerWord.trim().length > 0;
+      default:
+        return true;
+    }
+  };
 
   useEffect(() => {
     // Update progress based on current step
@@ -65,6 +88,15 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   }, [currentStep])
 
   const handleNext = () => {
+    if (!isStepValid()) {
+      toast({
+        title: "Please complete all required fields",
+        description: "All fields are required to proceed to the next step.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep((prev) => prev + 1)
 
@@ -214,11 +246,23 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
                 <div className="mt-4">
                   <Label className="text-gray-800 font-medium mb-2 block">Or upload your menu as a PDF</Label>
-                  <div className="border-2 border-dashed border-yellow-300 rounded-xl p-8 text-center bg-yellow-50">
+                  <div 
+                    className="border-2 border-dashed border-yellow-300 rounded-xl p-8 text-center bg-yellow-50"
+                    onClick={() => setHasMenuFile(true)}
+                  >
                     <Upload className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Drag and drop your menu file here, or click to browse</p>
-                    <CustomButton variant="outline" size="sm" className="mt-4 text-sm py-1 px-3">
-                      Choose File
+                    <p className="text-sm text-gray-600">
+                      {hasMenuFile 
+                        ? "Menu file selected" 
+                        : "Drag and drop your menu file here, or click to browse"}
+                    </p>
+                    <CustomButton 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4 text-sm py-1 px-3"
+                      onClick={() => setHasMenuFile(true)}
+                    >
+                      {hasMenuFile ? "Change File" : "Choose File"}
                     </CustomButton>
                   </div>
                 </div>
@@ -237,7 +281,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   <Label htmlFor="review-link" className="text-gray-800 font-medium">
                     Where do you want customers to leave reviews?
                   </Label>
-                  <RadioGroup defaultValue="google" className="space-y-2">
+                  <RadioGroup 
+                    value={reviewPlatform} 
+                    onValueChange={setReviewPlatform}
+                    className="space-y-2"
+                  >
                     {[
                       { value: "google", label: "Google Reviews" },
                       { value: "yelp", label: "Yelp" },
@@ -256,21 +304,23 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   </RadioGroup>
                 </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="custom-review-link" className="text-gray-800 font-medium">
-                    Your review link
-                  </Label>
-                  <Input
-                    id="custom-review-link"
-                    placeholder="https://g.page/r/..."
-                    value={reviewLink}
-                    onChange={(e) => setReviewLink(e.target.value)}
-                    className="rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 transition-all"
-                  />
-                  <p className="text-xs text-blue-600">
-                    We'll automatically detect your Google review link when customers message you!
-                  </p>
-                </div>
+                {reviewPlatform === "custom" && (
+                  <div className="space-y-3">
+                    <Label htmlFor="custom-review-link" className="text-gray-800 font-medium">
+                      Your review link
+                    </Label>
+                    <Input
+                      id="custom-review-link"
+                      placeholder="https://g.page/r/..."
+                      value={reviewLink}
+                      onChange={(e) => setReviewLink(e.target.value)}
+                      className="rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 transition-all"
+                    />
+                    <p className="text-xs text-blue-600">
+                      We'll automatically detect your Google review link when customers message you!
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -354,7 +404,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     ].map((template, index) => (
                       <div
                         key={index}
-                        className="bg-white rounded-xl p-4 border border-orange-200 cursor-pointer hover:border-orange-400 transition-colors"
+                        className={`bg-white rounded-xl p-4 border cursor-pointer transition-colors ${
+                          selectedTemplate === index 
+                            ? "border-orange-500 bg-orange-50" 
+                            : "border-orange-200 hover:border-orange-400"
+                        }`}
+                        onClick={() => setSelectedTemplate(index)}
                       >
                         <p className="text-sm text-gray-700">{template}</p>
                       </div>
@@ -511,7 +566,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           )}
 
           {currentStep < steps.length - 1 ? (
-            <CustomButton onClick={handleNext} className="py-2 px-4">
+            <CustomButton 
+              onClick={handleNext} 
+              className="py-2 px-4"
+              disabled={!isStepValid()}
+            >
               Continue
             </CustomButton>
           ) : (
