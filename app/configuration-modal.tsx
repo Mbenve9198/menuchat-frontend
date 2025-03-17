@@ -64,7 +64,7 @@ export function ConfigurationModal() {
           Boost Your Reviews Now! 🚀
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-[#DFD6A7]/30 border-[#AF9B46]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-white border-[#AF9B46]">
         {showConfetti && (
           <div className="confetti-container absolute inset-0 pointer-events-none overflow-hidden">
             {[...Array(50)].map((_, i) => (
