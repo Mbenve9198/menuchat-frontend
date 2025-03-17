@@ -14,6 +14,7 @@ import Image from "next/image"
 import ConfettiExplosion from "react-confetti-explosion"
 import StepIndicator from "./step-indicator"
 import { CustomButton } from "@/components/ui/custom-button"
+import { RestaurantSearch } from "./restaurant-search"
 
 const steps = [
   "Restaurant Basics",
@@ -24,6 +25,19 @@ const steps = [
   "Trigger Word",
   "Success!",
 ]
+
+interface Restaurant {
+  id: string
+  name: string
+  address: string
+  location: {
+    lat: number
+    lng: number
+  }
+  rating?: number
+  ratingsTotal?: number
+  photo?: string | null
+}
 
 interface SetupWizardProps {
   onComplete: () => void
@@ -38,6 +52,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
   // Form state
   const [restaurantName, setRestaurantName] = useState("")
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [menuUrl, setMenuUrl] = useState("")
   const [reviewLink, setReviewLink] = useState("")
   const [welcomeMessage, setWelcomeMessage] = useState("")
@@ -166,23 +181,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="restaurant-type" className="text-gray-800 font-medium">
-                    What type of cuisine do you serve?
-                  </Label>
-                  <RadioGroup defaultValue="italian" className="grid grid-cols-2 gap-2">
-                    {["Italian", "Mexican", "Asian", "American", "Indian", "Other"].map((cuisine) => (
-                      <Label
-                        key={cuisine.toLowerCase()}
-                        htmlFor={cuisine.toLowerCase()}
-                        className="flex items-center justify-center p-3 rounded-xl border border-purple-200 bg-white cursor-pointer hover:bg-purple-50 transition-colors"
-                      >
-                        <RadioGroupItem value={cuisine.toLowerCase()} id={cuisine.toLowerCase()} className="sr-only" />
-                        {cuisine}
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
+                <RestaurantSearch 
+                  onSelect={(restaurant) => {
+                    setSelectedRestaurant(restaurant)
+                    setRestaurantName(restaurant.name)
+                  }} 
+                  selectedRestaurant={selectedRestaurant} 
+                />
               </div>
             )}
 
