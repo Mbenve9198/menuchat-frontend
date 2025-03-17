@@ -27,7 +27,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#F8FFE5] to-[#E8EEDA]">
+    <main className="relative min-h-screen overflow-hidden bg-white">
       <BubbleBackground />
 
       {/* Landing Page */}
