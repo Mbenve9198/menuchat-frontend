@@ -64,7 +64,7 @@ export function ConfigurationModal() {
           Boost Your Reviews Now! 🚀
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-white border-[#AF9B46]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-white border-[#DEB986]">
         {showConfetti && (
           <div className="confetti-container absolute inset-0 pointer-events-none overflow-hidden">
             {[...Array(50)].map((_, i) => (
@@ -108,17 +108,17 @@ export function ConfigurationModal() {
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
                   ${
                     i + 1 === currentStep
-                      ? "bg-[#F7B05B] text-white"
+                      ? "bg-[#ED4D6E] text-white"
                       : i + 1 < currentStep
-                        ? "bg-[#F7B05B]/20 text-[#F7B05B]"
-                        : "bg-[#F7CE5B]/50 text-[#AF9B46]"
+                        ? "bg-[#ED4D6E]/20 text-[#ED4D6E]"
+                        : "bg-[#DB6C79]/50 text-[#DEB986]"
                   }`}
               >
                 {i + 1 < currentStep ? <Check className="h-4 w-4" /> : i + 1}
               </div>
             ))}
           </div>
-          <Progress value={(currentStep / totalSteps) * 100} className="h-2 bg-[#DFD6A7]" />
+          <Progress value={(currentStep / totalSteps) * 100} className="h-2 bg-[#C0DF85]" />
         </div>
 
         {/* Step 1: Restaurant Information */}
