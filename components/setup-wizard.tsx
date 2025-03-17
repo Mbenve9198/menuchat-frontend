@@ -15,6 +15,8 @@ import ConfettiExplosion from "react-confetti-explosion"
 import StepIndicator from "./step-indicator"
 import { CustomButton } from "@/components/ui/custom-button"
 import { RestaurantSearch } from "./restaurant-search"
+import LanguageSelector, { MenuLanguage } from "./language-selector"
+import MenuLanguageItem from "./menu-language-item"
 
 const steps = [
   "Restaurant Basics",
@@ -79,6 +81,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [menuUrl, setMenuUrl] = useState("")
   const [hasMenuFile, setHasMenuFile] = useState(false)
+  const [menuLanguages, setMenuLanguages] = useState<MenuLanguage[]>([
+    { code: "en", name: "English", phonePrefix: ["1", "44"], menuUrl: "", menuFile: null }
+  ])
   const [reviewLink, setReviewLink] = useState("")
   const [reviewPlatform, setReviewPlatform] = useState("google")
   const [welcomeMessage, setWelcomeMessage] = useState("")
@@ -93,12 +98,18 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [passwordConfirm, setPasswordConfirm] = useState("")
 
   // Step validation
+  const hasAnyMenuContent = () => {
+    return menuLanguages.some(lang => 
+      (lang.menuUrl && lang.menuUrl.trim() !== "") || lang.menuFile !== null
+    );
+  };
+
   const isStepValid = () => {
     switch (currentStep) {
-      case 0: // Restaurant Basics
-        return restaurantName.trim().length > 0;
-      case 1: // Menu Setup
-        return menuUrl.trim().length > 0 || hasMenuFile;
+      case 0:
+        return restaurantName.trim() !== "";
+      case 1: 
+        return hasAnyMenuContent();
       case 2: // Review Link
         return reviewPlatform && (reviewPlatform !== "custom" || reviewLink.trim().length > 0);
       case 3: // Welcome Message
@@ -219,6 +230,21 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
   }
 
+  // Funzione per aggiornare un elemento lingua nel nostro array
+  const handleLanguageChange = (updatedLanguage: MenuLanguage) => {
+    setMenuLanguages(prev => 
+      prev.map(lang => 
+        lang.code === updatedLanguage.code ? updatedLanguage : lang
+      )
+    );
+  };
+
+  // Aggiorna hasMenuFile quando viene selezionato un file in qualsiasi lingua
+  useEffect(() => {
+    const hasAnyFile = menuLanguages.some(lang => lang.menuFile !== null);
+    setHasMenuFile(hasAnyFile);
+  }, [menuLanguages]);
+
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
       {isExploding && (
@@ -315,45 +341,39 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
             {/* Step 2: Menu Setup */}
             {currentStep === 1 && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Upload className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Let's set up your menu!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">Configuriamo il tuo menu in diverse lingue!</span>
                 </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="menu-url" className="text-gray-800 font-medium">
-                    Do you have a menu URL?
+                <div className="space-y-1">
+                  <Label className="text-gray-800 font-medium">
+                    Seleziona le lingue per i tuoi menu
                   </Label>
-                  <Input
-                    id="menu-url"
-                    placeholder="https://your-restaurant.com/menu"
-                    value={menuUrl}
-                    onChange={(e) => setMenuUrl(e.target.value)}
-                    className="rounded-xl border-yellow-200 focus:border-yellow-400 focus:ring-yellow-400 transition-all"
+                  <p className="text-sm text-gray-500 mb-3">
+                    I tuoi clienti riceveranno automaticamente il menu nella loro lingua in base al prefisso del loro numero di telefono.
+                  </p>
+                  
+                  <LanguageSelector 
+                    selectedLanguages={menuLanguages}
+                    onLanguagesChange={setMenuLanguages}
                   />
                 </div>
 
-                <div className="mt-4">
-                  <Label className="text-gray-800 font-medium mb-2 block">Or upload your menu as a PDF</Label>
-                  <div 
-                    className="border-2 border-dashed border-yellow-300 rounded-xl p-8 text-center bg-yellow-50"
-                    onClick={() => setHasMenuFile(true)}
-                  >
-                    <Upload className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">
-                      {hasMenuFile 
-                        ? "Menu file selected" 
-                        : "Drag and drop your menu file here, or click to browse"}
-                    </p>
-                    <CustomButton 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-4 text-sm py-1 px-3"
-                      onClick={() => setHasMenuFile(true)}
-                    >
-                      {hasMenuFile ? "Change File" : "Choose File"}
-                    </CustomButton>
+                <div className="border-t pt-4 mt-6">
+                  <Label className="text-gray-800 font-medium mb-3 block">
+                    Configura i menu per ogni lingua
+                  </Label>
+                  
+                  <div className="space-y-4">
+                    {menuLanguages.map(language => (
+                      <MenuLanguageItem
+                        key={language.code}
+                        language={language}
+                        onLanguageChange={handleLanguageChange}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
