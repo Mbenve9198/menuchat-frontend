@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Star, Award, Sparkles, Send, Upload, Clock, MessageSquare } from "lucide-react"
+import { Star, Award, Sparkles, Send, Upload, Clock, MessageSquare, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,6 +23,7 @@ const steps = [
   "Welcome Message",
   "Review Request",
   "Trigger Word",
+  "Sign Up",
   "Success!",
 ]
 
@@ -44,10 +45,33 @@ interface SetupWizardProps {
   onCoinEarned: (amount: number) => void
 }
 
+// Define the interface for form data
+interface WizardFormData {
+  restaurantName: string;
+  restaurantId?: string;
+  address?: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
+  menuUrl: string;
+  hasMenuFile: boolean;
+  reviewPlatform: string;
+  reviewLink: string;
+  welcomeMessage: string;
+  reviewTimer: number;
+  reviewTemplate: string;
+  triggerWord: string;
+  userEmail: string;
+  userPassword: string;
+  userFullName: string;
+}
+
 export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isExploding, setIsExploding] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
   // Form state
@@ -61,6 +85,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [reviewTimer, setReviewTimer] = useState(60)
   const [selectedTemplate, setSelectedTemplate] = useState<number>(-1)
   const [triggerWord, setTriggerWord] = useState("")
+  
+  // User signup info
+  const [userEmail, setUserEmail] = useState("")
+  const [userPassword, setUserPassword] = useState("")
+  const [userFullName, setUserFullName] = useState("")
+  const [passwordConfirm, setPasswordConfirm] = useState("")
 
   // Step validation
   const isStepValid = () => {
@@ -77,6 +107,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         return selectedTemplate >= 0;
       case 5: // Trigger Word
         return triggerWord.trim().length > 0;
+      case 6: // Sign Up
+        return (
+          userEmail.trim().length > 0 && 
+          userPassword.trim().length > 0 && 
+          userPassword === passwordConfirm &&
+          userFullName.trim().length > 0
+        );
       default:
         return true;
     }
@@ -112,12 +149,65 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     }
   }
 
-  const handleComplete = () => {
-    setIsExploding(true)
+  const handleComplete = async () => {
+    if (currentStep !== steps.length - 1) {
+      return;
+    }
 
-    setTimeout(() => {
-      onComplete()
-    }, 3000)
+    setIsSubmitting(true);
+    setIsExploding(true);
+
+    try {
+      // Prepare form data
+      const formData: WizardFormData = {
+        restaurantName,
+        restaurantId: selectedRestaurant?.id,
+        address: selectedRestaurant?.address,
+        location: selectedRestaurant?.location,
+        menuUrl,
+        hasMenuFile,
+        reviewPlatform,
+        reviewLink,
+        welcomeMessage,
+        reviewTimer,
+        reviewTemplate: selectedTemplate >= 0 ? [
+          "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
+          "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
+          "Your feedback helps us improve! Could you take a moment to leave us a review?",
+        ][selectedTemplate] : "",
+        triggerWord,
+        userEmail,
+        userPassword,
+        userFullName
+      };
+
+      // Send data to the API
+      const response = await fetch('/api/setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save restaurant data');
+      }
+
+      // Success! Wait 3 seconds and then complete
+      setTimeout(() => {
+        onComplete();
+      }, 3000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was an error saving your data. Please try again.",
+        variant: "destructive",
+      });
+      setIsExploding(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const getMascotImage = () => {
@@ -482,8 +572,86 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 7: Success */}
+            {/* New Step: Sign Up */}
             {currentStep === 6 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-[#EF476F]" />
+                  <span className="text-sm font-medium text-[#EF476F]">Create your account!</span>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="full-name" className="text-gray-800 font-medium">
+                    Full Name
+                  </Label>
+                  <Input
+                    id="full-name"
+                    placeholder="John Doe"
+                    value={userFullName}
+                    onChange={(e) => setUserFullName(e.target.value)}
+                    className="rounded-xl border-purple-200 focus:border-purple-400 focus:ring-purple-400 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="email" className="text-gray-800 font-medium">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    className="rounded-xl border-purple-200 focus:border-purple-400 focus:ring-purple-400 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="password" className="text-gray-800 font-medium">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={userPassword}
+                    onChange={(e) => setUserPassword(e.target.value)}
+                    className="rounded-xl border-purple-200 focus:border-purple-400 focus:ring-purple-400 transition-all"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="password-confirm" className="text-gray-800 font-medium">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="password-confirm"
+                    type="password"
+                    placeholder="••••••••"
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    className={`rounded-xl transition-all ${
+                      passwordConfirm.length > 0 && userPassword !== passwordConfirm
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                        : "border-purple-200 focus:border-purple-400 focus:ring-purple-400"
+                    }`}
+                  />
+                  {passwordConfirm.length > 0 && userPassword !== passwordConfirm && (
+                    <p className="text-xs text-red-500">Passwords do not match</p>
+                  )}
+                </div>
+
+                <div className="mt-4 bg-blue-50 rounded-xl p-3 border border-blue-100">
+                  <p className="text-sm text-blue-700">
+                    By creating an account, you agree to our Terms of Service and Privacy Policy.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 7: Success */}
+            {currentStep === 7 && (
               <div className="space-y-4 text-center">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -574,8 +742,19 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               Continue
             </CustomButton>
           ) : (
-            <CustomButton onClick={handleComplete} className="py-2 px-4">
-              Finish Setup
+            <CustomButton 
+              onClick={handleComplete} 
+              className="py-2 px-4"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Processing...
+                </>
+              ) : (
+                "Finish Setup"
+              )}
             </CustomButton>
           )}
         </div>
