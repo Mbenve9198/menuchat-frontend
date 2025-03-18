@@ -1,3 +1,8 @@
+// QUESTO FILE È STATO DISABILITATO TEMPORANEAMENTE
+// Per consentire alla rotta /api/setup/generate-welcome-message di funzionare correttamente
+// In Next.js, quando hai una rotta /api/setup e /api/setup/generate-welcome-message,
+// La seconda non funziona perché viene intercettata dalla prima
+
 import { NextResponse } from 'next/server';
 
 // URL del backend
