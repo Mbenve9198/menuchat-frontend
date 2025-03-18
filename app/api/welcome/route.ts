@@ -3,9 +3,9 @@ import { NextResponse } from 'next/server';
 // URL del backend
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
-// Configurazione speciale per Vercel - Disabilita il caching dei bordi
+// Configurazione per Vercel Edge Functions
 export const config = {
-  runtime: 'edge',
+  runtime: 'edge'
 };
 
 export async function GET() {

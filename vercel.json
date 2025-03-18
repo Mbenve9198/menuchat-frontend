@@ -10,9 +10,5 @@
       "dest": "/api/$1"
     }
   ],
-  "functions": {
-    "api/welcome/route.ts": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "buildCommand": "next build"
 } 
