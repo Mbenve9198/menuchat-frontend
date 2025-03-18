@@ -248,12 +248,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   // Get Google review link from selected restaurant (if available)
   useEffect(() => {
     if (selectedRestaurant?.id && reviewPlatform === "google") {
-      // In a real scenario, this would be fetched from the API
-      // For now we'll create a sample Google review link
-      const googleReviewLink = `https://g.page/r/${selectedRestaurant.id}/review`;
+      // Format the place ID in the correct format for Google Maps reviews
+      // Using the format that works for both desktop and mobile
+      const googleReviewLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurantName)}&query_place_id=${selectedRestaurant.id}`;
       setReviewLink(googleReviewLink);
     }
-  }, [selectedRestaurant, reviewPlatform]);
+  }, [selectedRestaurant, reviewPlatform, restaurantName]);
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
