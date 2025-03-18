@@ -249,11 +249,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   useEffect(() => {
     if (selectedRestaurant?.id && reviewPlatform === "google") {
       // Format the place ID in the correct format for Google Maps reviews
-      // Using the format that works for both desktop and mobile
-      const googleReviewLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurantName)}&query_place_id=${selectedRestaurant.id}`;
+      // Using the format that opens directly the review form
+      const googleReviewLink = `https://search.google.com/local/writereview?placeid=${selectedRestaurant.id}`;
       setReviewLink(googleReviewLink);
     }
-  }, [selectedRestaurant, reviewPlatform, restaurantName]);
+  }, [selectedRestaurant, reviewPlatform]);
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
