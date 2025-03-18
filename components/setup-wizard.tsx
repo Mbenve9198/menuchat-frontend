@@ -281,11 +281,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       const data = await response.json();
       if (data.success) {
-        const message = data.message === "Welcome endpoint works (POST)" 
-          ? `Hello {customerName}, welcome to ${selectedRestaurant?.name || "our restaurant"} 🍽️\n\nOur menu features delicious specialties prepared with fresh ingredients.\n\n(link menu / pdf)\n\nEnjoy your meal! 😋`
-          : data.message;
-          
-        setWelcomeMessage(message);
+        // Utilizziamo direttamente il messaggio dal backend (generato da Claude)
+        setWelcomeMessage(data.message);
       } else {
         console.error("Error generating welcome message:", data.error);
         toast({
