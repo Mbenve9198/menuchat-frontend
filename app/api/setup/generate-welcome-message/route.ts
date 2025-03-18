@@ -8,8 +8,8 @@ export async function POST(request: Request) {
     // Ottieni i dati del form
     const formData = await request.json();
     
-    // Invia i dati al backend
-    const response = await fetch(`${BACKEND_URL}/api/setup/generate-welcome-message`, {
+    // Invia i dati al backend - modificato per rispettare la struttura del backend
+    const response = await fetch(`${BACKEND_URL}/setup/generate-welcome-message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
