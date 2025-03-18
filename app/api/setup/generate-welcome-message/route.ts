@@ -8,12 +8,14 @@ export async function POST(request: Request) {
     // Ottieni i dati del form
     const formData = await request.json();
     
-    // Invia i dati al backend - utilizzo il percorso corretto con /api
-    const response = await fetch(`${BACKEND_URL}/api/setup/generate-welcome-message`, {
+    console.log('Chiamata API con URL:', `${BACKEND_URL}/setup/generate-welcome-message`);
+    console.log('Dati inviati:', JSON.stringify(formData));
+    
+    // Invia i dati al backend - test diretto senza /api
+    const response = await fetch(`${BACKEND_URL}/setup/generate-welcome-message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Non sembra necessario un token di autenticazione per questa route basandosi sulla definizione in setupRoutes.js
       },
       body: JSON.stringify(formData)
     });
@@ -43,8 +45,8 @@ export async function POST(request: Request) {
       const data = await response.json();
       return NextResponse.json({
         success: false,
-        error: data.error,
-        details: data.details
+        error: data.error || 'Errore dal backend',
+        details: data.details || JSON.stringify(data)
       }, { status: response.status });
     }
     
