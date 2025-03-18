@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server';
 // URL del backend
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
+// Configurazione speciale per Vercel - Disabilita il caching dei bordi
+export const config = {
+  runtime: 'edge',
+};
+
 export async function GET() {
   return NextResponse.json({ 
     success: true, 
@@ -25,58 +30,30 @@ export async function POST(request: Request) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(formData),
+      cache: 'no-store'
     });
     
-    // Verifica lo stato HTTP
     if (!response.ok) {
-      const contentType = response.headers.get('content-type');
-      
-      // Se la risposta non è JSON, gestisci diversamente
-      if (!contentType || !contentType.includes('application/json')) {
-        const errorText = await response.text();
-        console.error('Backend returned non-JSON response:', {
-          status: response.status,
-          statusText: response.statusText,
-          contentType,
-          preview: errorText.substring(0, 200) // Log solo i primi 200 caratteri
-        });
-        
-        return NextResponse.json({
-          success: false,
-          error: `Backend error (HTTP ${response.status})`,
-          details: `Server returned ${response.status}: ${response.statusText}`
-        }, { status: 500 });
-      }
-      
-      // Se è JSON, procedi come prima
-      const data = await response.json();
       return NextResponse.json({
         success: false,
-        error: data.error || 'Errore dal backend',
-        details: data.details || JSON.stringify(data)
-      }, { status: response.status });
-    }
-    
-    // Processa la risposta di successo
-    try {
-      const data = await response.json();
-      return NextResponse.json(data, { status: 200 });
-    } catch (jsonError: any) {
-      console.error('Error parsing successful response as JSON:', jsonError);
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Invalid JSON in backend response',
-        details: jsonError.message
+        error: "Errore dal backend",
+        details: JSON.stringify({
+          status: response.status,
+          statusText: response.statusText
+        })
       }, { status: 500 });
     }
-  } catch (error: any) {
+    
+    const data = await response.json();
+    return NextResponse.json(data, { status: 200 });
+  } catch (error) {
     console.error('Error in API:', error);
     
     return NextResponse.json({ 
       success: false, 
       error: 'Server error',
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 } 

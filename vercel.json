@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/welcome",
+      "dest": "/api/welcome"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "functions": {
+    "api/welcome/route.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
+} 

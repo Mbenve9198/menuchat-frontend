@@ -265,7 +265,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const generateWelcomeMessage = async () => {
     try {
       setIsGeneratingMessage(true);
-      const response = await fetch("/api/welcome", {
+      
+      // Prova prima con l'endpoint nella struttura app/api
+      let response = await fetch("/api/welcome", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -278,6 +280,25 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
+      
+      // Se c'è un errore 404, prova con l'endpoint alternativo in pages/api
+      if (response.status === 404) {
+        console.log("Primo endpoint non trovato, provo endpoint alternativo");
+        response = await fetch("/api/welcome", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            restaurantId: selectedRestaurant?.id,
+            restaurantName: selectedRestaurant?.name,
+            restaurantAddress: selectedRestaurant?.address,
+            restaurantRating: selectedRestaurant?.rating,
+            modelId: "claude-3-7-sonnet-20250219"
+          }),
+          cache: "no-store",
+        });
+      }
 
       const data = await response.json();
       if (data.success) {
