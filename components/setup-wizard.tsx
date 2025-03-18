@@ -111,7 +111,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       case 1: 
         return hasAnyMenuContent();
       case 2: // Review Link
-        return reviewPlatform && (reviewPlatform !== "custom" || reviewLink.trim().length > 0);
+        return reviewPlatform && reviewLink.trim().length > 0;
       case 3: // Welcome Message
         return welcomeMessage.trim().length > 0;
       case 4: // Review Request
@@ -244,6 +244,16 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     const hasAnyFile = menuLanguages.some(lang => lang.menuFile !== null);
     setHasMenuFile(hasAnyFile);
   }, [menuLanguages]);
+
+  // Get Google review link from selected restaurant (if available)
+  useEffect(() => {
+    if (selectedRestaurant?.id && reviewPlatform === "google") {
+      // In a real scenario, this would be fetched from the API
+      // For now we'll create a sample Google review link
+      const googleReviewLink = `https://g.page/r/${selectedRestaurant.id}/review`;
+      setReviewLink(googleReviewLink);
+    }
+  }, [selectedRestaurant, reviewPlatform]);
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
@@ -414,23 +424,26 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   </RadioGroup>
                 </div>
 
-                {reviewPlatform === "custom" && (
-                  <div className="space-y-3">
-                    <Label htmlFor="custom-review-link" className="text-gray-800 font-medium">
-                      Your review link
-                    </Label>
-                    <Input
-                      id="custom-review-link"
-                      placeholder="https://g.page/r/..."
-                      value={reviewLink}
-                      onChange={(e) => setReviewLink(e.target.value)}
-                      className="rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 transition-all"
-                    />
+                <div className="space-y-3">
+                  <Label htmlFor="custom-review-link" className="text-gray-800 font-medium">
+                    Your review link
+                  </Label>
+                  <Input
+                    id="custom-review-link"
+                    placeholder={reviewPlatform === "google" ? "https://g.page/r/..." : 
+                            reviewPlatform === "yelp" ? "https://www.yelp.com/biz/..." :
+                            reviewPlatform === "tripadvisor" ? "https://www.tripadvisor.com/..." :
+                            "https://your-review-link.com"}
+                    value={reviewLink}
+                    onChange={(e) => setReviewLink(e.target.value)}
+                    className="rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 transition-all"
+                  />
+                  {reviewPlatform === "google" && (
                     <p className="text-xs text-blue-600">
-                      We'll automatically detect your Google review link when customers message you!
+                      We'll use this link when customers want to leave a review.
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
