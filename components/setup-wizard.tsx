@@ -265,7 +265,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const generateWelcomeMessage = async () => {
     try {
       setIsGeneratingMessage(true);
-      const response = await fetch("/api/setup/generate-welcome-message", {
+      const response = await fetch("/api/welcome-message", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -284,9 +284,19 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         setWelcomeMessage(data.message);
       } else {
         console.error("Error generating welcome message:", data.error);
+        toast({
+          title: "Errore",
+          description: `Non è stato possibile generare il messaggio: ${data.error || 'Errore sconosciuto'}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error:", error);
+      toast({
+        title: "Errore di connessione",
+        description: "Non è stato possibile contattare il server per generare il messaggio",
+        variant: "destructive",
+      });
     } finally {
       setIsGeneratingMessage(false);
     }
