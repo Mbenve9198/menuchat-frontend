@@ -265,7 +265,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const generateWelcomeMessage = async () => {
     try {
       setIsGeneratingMessage(true);
-      const response = await fetch("/api/welcome-message", {
+      const response = await fetch("/api/welcome", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -281,7 +281,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       const data = await response.json();
       if (data.success) {
-        setWelcomeMessage(data.message);
+        const message = data.message === "Welcome endpoint works (POST)" 
+          ? `Hello {customerName}, welcome to ${selectedRestaurant?.name || "our restaurant"} 🍽️\n\nOur menu features delicious specialties prepared with fresh ingredients.\n\n(link menu / pdf)\n\nEnjoy your meal! 😋`
+          : data.message;
+          
+        setWelcomeMessage(message);
       } else {
         console.error("Error generating welcome message:", data.error);
         toast({
