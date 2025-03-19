@@ -153,7 +153,27 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     setProgress(Math.round((currentStep / (steps.length - 1)) * 100))
   }, [currentStep])
 
-  const handleNext = () => {
+  // Add this new function to check trigger phrase availability
+  const checkTriggerAvailability = async (phrase: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/check-trigger', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ triggerPhrase: phrase })
+      });
+      
+      const data = await response.json();
+      return data.available;
+    } catch (error) {
+      console.error("Error checking trigger availability:", error);
+      return false;
+    }
+  };
+
+  // Modify the handleNext function to check trigger availability
+  const handleNext = async () => {
     if (!isStepValid()) {
       toast({
         title: "Please complete all required fields",
@@ -163,6 +183,20 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       return;
     }
 
+    // If we're on the trigger phrase step, verify it's unique
+    if (currentStep === 5) {
+      const isAvailable = await checkTriggerAvailability(triggerWord);
+      
+      if (!isAvailable) {
+        toast({
+          title: "Trigger phrase already taken",
+          description: "Please choose a different trigger phrase. This one is already in use by another restaurant.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep((prev) => prev + 1)
 
@@ -170,7 +204,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       const coinsEarned = 25
       onCoinEarned(coinsEarned)
     }
-  }
+  };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -774,22 +808,26 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 6: Trigger Word */}
+            {/* Step 6: Trigger Phrase */}
             {currentStep === 5 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Send className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Set your trigger word!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">Set your trigger phrase!</span>
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="trigger-word" className="text-gray-800 font-medium">
-                    What word should trigger your menu?
+                  <Label htmlFor="trigger-phrase" className="text-gray-800 font-medium">
+                    Choose your restaurant's trigger phrase
                   </Label>
+                  <p className="text-sm text-gray-600">
+                    This can be a greeting + your restaurant name (e.g. "Hello Pizzeria Italia") or any unique phrase. 
+                    When customers scan your table QR code, WhatsApp will open with your trigger phrase pre-filled.
+                  </p>
                   <div className="relative">
                     <Input
-                      id="trigger-word"
-                      placeholder="menu"
+                      id="trigger-phrase"
+                      placeholder={`Hello ${selectedRestaurant?.name || "Restaurant"}`}
                       value={triggerWord}
                       onChange={(e) => setTriggerWord(e.target.value)}
                       className="rounded-xl text-center text-xl font-bold border-cyan-200 focus:border-cyan-400 focus:ring-cyan-400 transition-all"
@@ -808,16 +846,21 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
                     />
                   </div>
+                  {triggerWord.length > 30 && (
+                    <p className="text-sm text-amber-600">
+                      Keep your trigger phrase short and memorable (under 30 characters recommended).
+                    </p>
+                  )}
                 </div>
 
                 <div className="mt-6 bg-gray-100 rounded-xl p-4">
                   <div className="flex flex-col gap-3">
                     <div className="self-end bg-green-100 rounded-lg p-3 max-w-[200px]">
-                      <p className="text-sm">{triggerWord || "menu"}</p>
+                      <p className="text-sm">{triggerWord || `Hello ${selectedRestaurant?.name || "Restaurant"}`}</p>
                     </div>
                     <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[220px]">
                       <p className="text-sm">
-                        Here's our menu! Check out our delicious options:
+                        Welcome to {selectedRestaurant?.name || "Restaurant"}! Here's our menu:
                         <br />
                         <br />🍔 Burgers
                         <br />🍕 Pizza
@@ -828,10 +871,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   </div>
                 </div>
 
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-cyan-600">
-                    When customers type "<span className="font-bold">{triggerWord || "menu"}</span>", they'll
-                    automatically see your menu!
+                <div className="mt-4 bg-blue-50 rounded-xl p-4 border border-blue-100">
+                  <p className="text-sm text-blue-700">
+                    <strong>Important:</strong> Your trigger phrase must be unique across our system. We'll verify its 
+                    availability when you submit. This phrase is what connects customers to your specific restaurant when 
+                    they scan your QR code, as our WhatsApp number serves many restaurants worldwide.
                   </p>
                 </div>
               </div>
