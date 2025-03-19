@@ -13,9 +13,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fai la richiesta al backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    const response = await fetch(`${backendUrl}/api/check-trigger`, {
+    // Usa BACKEND_URL come gli altri file
+    const response = await fetch(`${process.env.BACKEND_URL}/api/setup/check-trigger`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
