@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { CustomButton } from "@/components/ui/custom-button"
 import { Loader2, MapPin, Star } from "lucide-react"
 import { useDebounce } from "@/hooks/use-debounce"
+import { toast } from "@/components/ui/use-toast"
 
 interface Restaurant {
   id: string
@@ -64,6 +65,24 @@ export function RestaurantSearch({ onSelect, selectedRestaurant }: RestaurantSea
     fetchRestaurants()
   }, [debouncedSearchQuery])
 
+  const handleSelectRestaurant = async (restaurant: Restaurant) => {
+    try {
+      // Carica i dettagli completi del ristorante
+      const response = await fetch(`/api/restaurants/search?placeId=${restaurant.id}`);
+      if (!response.ok) throw new Error('Failed to fetch restaurant details');
+      
+      const data = await response.json();
+      onSelect(data.restaurant);
+    } catch (error) {
+      console.error('Error fetching restaurant details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load restaurant details",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -98,7 +117,7 @@ export function RestaurantSearch({ onSelect, selectedRestaurant }: RestaurantSea
                   ? "border-purple-400 bg-purple-50"
                   : "border-gray-200 hover:border-purple-200 hover:bg-gray-50"
               }`}
-              onClick={() => onSelect(restaurant)}
+              onClick={() => handleSelectRestaurant(restaurant)}
             >
               <div className="flex items-start gap-3">
                 {restaurant.photo && (

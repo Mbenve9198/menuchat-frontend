@@ -30,16 +30,30 @@ const steps = [
 ]
 
 interface Restaurant {
-  id: string
-  name: string
-  address: string
+  id: string;
+  name: string;
+  address: string;
+  phoneNumber?: string;
+  website?: string;
+  openingHours?: string[];
+  cuisineTypes?: string[];
   location: {
-    lat: number
-    lng: number
-  }
-  rating?: number
-  ratingsTotal?: number
-  photo?: string | null
+    lat: number;
+    lng: number;
+  };
+  rating?: number;
+  ratingsTotal?: number;
+  priceLevel?: number;
+  photos?: string[];
+  googleMapsUrl?: string;
+  reviews?: Array<{
+    author_name: string;
+    rating: number;
+    text: string;
+    time: number;
+  }>;
+  // Manteniamo photo per retrocompatibilità con la ricerca base
+  photo?: string | null;
 }
 
 interface SetupWizardProps {
@@ -266,16 +280,20 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     try {
       setIsGeneratingMessage(true);
       
+      // Verifichiamo di avere i dettagli completi del ristorante
+      if (!selectedRestaurant) {
+        throw new Error("No restaurant selected");
+      }
+
       const response = await fetch("/api/welcome", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          restaurantId: selectedRestaurant?.id,
-          restaurantName: selectedRestaurant?.name,
-          restaurantAddress: selectedRestaurant?.address,
-          restaurantRating: selectedRestaurant?.rating,
+          restaurantId: selectedRestaurant.id,
+          restaurantName: selectedRestaurant.name,
+          restaurantDetails: selectedRestaurant, // Inviamo l'oggetto completo
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
@@ -515,7 +533,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-4 h-4 text-blue-600" />
-                        <p className="text-sm font-medium text-blue-700">Messaggio Generato con AI</p>
+                        <p className="text-sm font-medium text-blue-700">Message generated with AI</p>
                       </div>
                       <p className="whitespace-pre-wrap text-gray-800">{welcomeMessage}</p>
                     </div>
