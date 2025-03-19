@@ -1145,13 +1145,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                 >
                   <div className="mb-4">
                     {triggerWord ? (
-                      <Image 
-                        src={`https://chart.googleapis.com/chart?cht=qr&chs=256x256&chl=${encodeURIComponent(`https://wa.me/393516541218?text=${encodeURIComponent(triggerWord)}`)}`}
-                        alt="QR Code"
-                        width={128}
-                        height={128}
-                        className="rounded-lg"
-                      />
+                      <div className="w-32 h-32 flex items-center justify-center border rounded-lg overflow-hidden">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://wa.me/393516541218?text=${encodeURIComponent(triggerWord)}`)}`}
+                          alt="QR Code"
+                          className="w-full h-full"
+                        />
+                      </div>
                     ) : (
                       <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
                         <span className="text-lg font-mono">QR Code</span>
