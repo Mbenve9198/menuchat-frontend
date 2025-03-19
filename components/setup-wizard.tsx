@@ -101,7 +101,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [reviewLink, setReviewLink] = useState("")
   const [reviewPlatform, setReviewPlatform] = useState("google")
   const [welcomeMessage, setWelcomeMessage] = useState("")
-  const [reviewTimer, setReviewTimer] = useState(60)
+  const [reviewTimer, setReviewTimer] = useState(120)
   const [selectedTemplate, setSelectedTemplate] = useState<number>(-1)
   const [triggerWord, setTriggerWord] = useState("")
   const [reviewTemplates, setReviewTemplates] = useState<string[]>([])
@@ -131,7 +131,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const isStepValid = () => {
     switch (currentStep) {
       case 0:
-        return restaurantName.trim() !== "";
+        // Require both a restaurant name AND a selected restaurant from Google
+        return restaurantName.trim() !== "" && selectedRestaurant !== null;
       case 1: 
         return hasAnyMenuContent();
       case 2: // Review Link
@@ -753,20 +754,40 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   <div className="bg-white rounded-xl p-4 border border-orange-200">
                     <div className="flex justify-between mb-2">
                       <span className="text-sm text-orange-700">After order completion</span>
-                      <span className="text-sm font-medium text-purple-800">{reviewTimer} minutes</span>
+                      <span className="text-sm font-medium text-purple-800">{reviewTimer / 60} hours</span>
                     </div>
                     <Slider
-                      defaultValue={[60]}
-                      max={120}
-                      min={15}
-                      step={5}
+                      defaultValue={[120]}
+                      max={1440}
+                      min={120}
+                      step={60}
                       onValueChange={(value) => setReviewTimer(value[0])}
                       className="py-4"
                     />
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>15 min</span>
-                      <span>60 min</span>
-                      <span>120 min</span>
+                      <span>2h</span>
+                      <span>12h</span>
+                      <span>24h</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div className="flex items-start gap-2">
+                      <div className="mt-1">
+                        <Clock className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-blue-700 font-medium mb-1">
+                          Optimal timing for best results
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          Based on our research, 2 hours after an order is the perfect time to request a review. 
+                          Your customers have finished their meal and are likely to leave positive feedback.
+                        </p>
+                        <p className="text-xs text-blue-600 mt-2">
+                          <strong>Note:</strong> For customer convenience, review requests will never be sent after midnight or before 8 AM, regardless of your timing settings.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
