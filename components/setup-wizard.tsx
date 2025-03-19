@@ -499,25 +499,28 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             </p>
           </div>
 
-          <motion.div
-            animate={{
-              scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
-              rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
-            }}
-            transition={{
-              duration: 0.5,
-              repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
-              repeatType: "reverse",
-            }}
-          >
-            <Image
-              src={getMascotImage() || "/placeholder.svg"}
-              alt="Star Mascot"
-              width={80}
-              height={80}
-              className="drop-shadow-lg"
-            />
-          </motion.div>
+          {/* Rimuovi la mascotte in alto a destra nell'ultimo step */}
+          {currentStep !== steps.length - 1 && (
+            <motion.div
+              animate={{
+                scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
+                rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
+              }}
+              transition={{
+                duration: 0.5,
+                repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
+                repeatType: "reverse",
+              }}
+            >
+              <Image
+                src={getMascotImage() || "/placeholder.svg"}
+                alt="Star Mascot"
+                width={80}
+                height={80}
+                className="drop-shadow-lg"
+              />
+            </motion.div>
+          )}
         </div>
 
         <div className="mb-6">
@@ -1004,6 +1007,20 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   <Sparkles className="w-5 h-5 text-[#EF476F]" />
                   <span className="text-sm font-medium text-[#EF476F]">Create your account!</span>
                 </div>
+                
+                <div className="bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
+                  <div className="flex items-start gap-2">
+                    <Award className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-700">You're almost there!</p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Just one more step to go! Create your account now and in the next step, 
+                        you'll be able to start using your WhatsApp Menu Bot service right away.
+                        All your configuration will be saved with your account.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="space-y-3">
                   <Label htmlFor="full-name" className="text-gray-800 font-medium">
@@ -1080,8 +1097,17 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-4 text-center">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", bounce: 0.5 }}
+                  animate={{ 
+                    scale: [1, 1.1, 1], 
+                    rotate: [0, -5, 5, -5, 0],
+                    opacity: 1 
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatType: "reverse",
+                    bounce: 0.5
+                  }}
                   className="mx-auto mb-4"
                 >
                   <Image
@@ -1089,7 +1115,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     alt="Excited Star Mascot"
                     width={120}
                     height={120}
-                    className="mx-auto"
+                    className="mx-auto drop-shadow-lg"
                   />
                 </motion.div>
 
@@ -1118,16 +1144,41 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   transition={{ delay: 0.4 }}
                 >
                   <div className="mb-4">
-                    <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <span className="text-lg font-mono">QR Code</span>
-                    </div>
+                    {triggerWord ? (
+                      <Image 
+                        src={`https://chart.googleapis.com/chart?cht=qr&chs=256x256&chl=${encodeURIComponent(`https://wa.me/393516541218?text=${encodeURIComponent(triggerWord)}`)}`}
+                        alt="QR Code"
+                        width={128}
+                        height={128}
+                        className="rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <span className="text-lg font-mono">QR Code</span>
+                      </div>
+                    )}
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-2">Scan this QR code with your phone</p>
+                  <p className="text-sm text-gray-600 mb-2">Scansiona questo codice QR con il tuo telefono</p>
 
-                  <CustomButton variant="outline" size="sm" className="text-sm py-1 px-3">
-                    Download QR Code
+                  <CustomButton 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-sm py-1 px-3"
+                    onClick={() => {
+                      const qrLink = `https://wa.me/393516541218?text=${encodeURIComponent(triggerWord)}`;
+                      window.open(qrLink, '_blank');
+                    }}
+                  >
+                    Open on Whatsapp
                   </CustomButton>
+                  
+                  <div className="mt-4 text-left bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <p className="text-xs text-blue-700">
+                      <strong>Note:</strong> This QR code is configured to use our default WhatsApp number (+39 351 654 1218). 
+                      In the app, you can request to activate your own business phone number for a more personalized experience.
+                    </p>
+                  </div>
                 </motion.div>
 
                 <motion.div
