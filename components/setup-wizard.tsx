@@ -266,8 +266,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     try {
       setIsGeneratingMessage(true);
       
-      // Prova prima con l'endpoint nella struttura app/api
-      let response = await fetch("/api/welcome", {
+      const response = await fetch("/api/welcome", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -280,35 +279,14 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
-      
-      // Se c'è un errore 404, prova con l'endpoint alternativo in pages/api
-      if (response.status === 404) {
-        console.log("Primo endpoint non trovato, provo endpoint alternativo");
-        response = await fetch("/api/welcome", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            restaurantId: selectedRestaurant?.id,
-            restaurantName: selectedRestaurant?.name,
-            restaurantAddress: selectedRestaurant?.address,
-            restaurantRating: selectedRestaurant?.rating,
-            modelId: "claude-3-7-sonnet-20250219"
-          }),
-          cache: "no-store",
-        });
-      }
 
       const data = await response.json();
       if (data.success) {
-        // Utilizziamo direttamente il messaggio dal backend (generato da Claude)
         setWelcomeMessage(data.message);
       } else {
-        console.error("Error generating welcome message:", data.error);
         toast({
           title: "Errore",
-          description: `Non è stato possibile generare il messaggio: ${data.error || 'Errore sconosciuto'}`,
+          description: `Non è stato possibile generare il messaggio: ${data.error}`,
           variant: "destructive",
         });
       }
@@ -316,7 +294,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       console.error("Error:", error);
       toast({
         title: "Errore di connessione",
-        description: "Non è stato possibile contattare il server per generare il messaggio",
+        description: "Non è stato possibile contattare il server",
         variant: "destructive",
       });
     } finally {
@@ -530,14 +508,14 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                 {isGeneratingMessage ? (
                   <div className="flex flex-col items-center justify-center p-8">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
-                    <p className="text-sm text-gray-700">Generating personalized welcome message with Claude 3.7 Sonnet...</p>
+                    <p className="text-sm text-gray-700">Generazione del messaggio personalizzato con Claude 3.7 Sonnet...</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-4 h-4 text-blue-600" />
-                        <p className="text-sm font-medium text-blue-700">AI Generated Welcome Message</p>
+                        <p className="text-sm font-medium text-blue-700">Messaggio Generato con AI</p>
                       </div>
                       <p className="whitespace-pre-wrap text-gray-800">{welcomeMessage}</p>
                     </div>
