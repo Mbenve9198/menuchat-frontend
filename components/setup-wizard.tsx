@@ -112,6 +112,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [passwordConfirm, setPasswordConfirm] = useState("")
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
 
+  // New state for review templates
+  const [reviewTemplates, setReviewTemplates] = useState<string[]>([])
+  const [customReviewMessage, setCustomReviewMessage] = useState("")
+  const [isGeneratingReviews, setIsGeneratingReviews] = useState(false)
+
   // Step validation
   const hasAnyMenuContent = () => {
     return menuLanguages.some(lang => 
@@ -196,11 +201,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         reviewLink,
         welcomeMessage,
         reviewTimer,
-        reviewTemplate: selectedTemplate >= 0 ? [
-          "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
-          "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
-          "Your feedback helps us improve! Could you take a moment to leave us a review?",
-        ][selectedTemplate] : "",
+        reviewTemplate: selectedTemplate >= 0 ? customReviewMessage : "",
         triggerWord,
         userEmail,
         userPassword,
@@ -319,6 +320,58 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       setIsGeneratingMessage(false);
     }
   };
+
+  // Function to generate review templates
+  const generateReviewTemplates = async () => {
+    try {
+      setIsGeneratingReviews(true);
+      
+      if (!selectedRestaurant) {
+        throw new Error("No restaurant selected");
+      }
+
+      const response = await fetch("/api/review/review-templates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          restaurantId: selectedRestaurant.id,
+          restaurantName: selectedRestaurant.name,
+          restaurantDetails: selectedRestaurant,
+          reviewLink: reviewLink,
+          modelId: "claude-3-7-sonnet-20250219"
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setReviewTemplates(data.templates);
+      } else {
+        toast({
+          title: "Error",
+          description: `Could not generate templates: ${data.error}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Connection error",
+        description: "Could not contact the server",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingReviews(false);
+    }
+  };
+
+  // Modifica useEffect per caricare i modelli di recensione quando si arriva allo step 4
+  useEffect(() => {
+    if (currentStep === 4 && selectedRestaurant?.id && reviewTemplates.length === 0) {
+      generateReviewTemplates();
+    }
+  }, [currentStep, selectedRestaurant]);
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
@@ -617,25 +670,82 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
                 <div className="space-y-3">
                   <Label className="text-gray-800 font-medium">Choose a review request template</Label>
-                  <div className="grid grid-cols-1 gap-3">
-                    {[
-                      "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
-                      "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
-                      "Your feedback helps us improve! Could you take a moment to leave us a review?",
-                    ].map((template, index) => (
-                      <div
-                        key={index}
-                        className={`bg-white rounded-xl p-4 border cursor-pointer transition-colors ${
-                          selectedTemplate === index 
-                            ? "border-orange-500 bg-orange-50" 
-                            : "border-orange-200 hover:border-orange-400"
-                        }`}
-                        onClick={() => setSelectedTemplate(index)}
-                      >
-                        <p className="text-sm text-gray-700">{template}</p>
+                  
+                  {isGeneratingReviews ? (
+                    <div className="flex flex-col items-center justify-center p-8">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
+                      <p className="text-sm text-gray-700">Generating personalized review messages with Claude 3.7 Sonnet...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 gap-3">
+                        {(reviewTemplates.length > 0 ? reviewTemplates : [
+                          "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
+                          "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
+                          "Your feedback helps us improve! Could you take a moment to leave us a review?",
+                        ]).map((template, index) => (
+                          <div
+                            key={index}
+                            className={`bg-white rounded-xl p-4 border cursor-pointer transition-colors ${
+                              selectedTemplate === index 
+                                ? "border-orange-500 bg-orange-50" 
+                                : "border-orange-200 hover:border-orange-400"
+                            }`}
+                            onClick={() => {
+                              setSelectedTemplate(index);
+                              setCustomReviewMessage(template);
+                            }}
+                          >
+                            <p className="text-sm text-gray-700">{template}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      
+                      {selectedTemplate >= 0 && (
+                        <div className="mt-4">
+                          <label htmlFor="customReviewMessage" className="block text-sm font-medium text-gray-700">
+                            Customize Review Message
+                          </label>
+                          <div className="mt-1">
+                            <textarea
+                              id="customReviewMessage"
+                              rows={4}
+                              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                              value={customReviewMessage}
+                              onChange={(e) => setCustomReviewMessage(e.target.value)}
+                              placeholder="Enter your custom review message..."
+                            />
+                          </div>
+                          <p className="mt-2 text-xs text-gray-500">
+                            <MessageSquare className="w-3 h-3 inline mr-1" />
+                            Your review link will be automatically added at the end of this message.
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="mt-4">
+                        <CustomButton
+                          variant="outline"
+                          size="sm"
+                          className="text-sm"
+                          onClick={generateReviewTemplates}
+                          disabled={isGeneratingReviews}
+                        >
+                          {isGeneratingReviews ? (
+                            <>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" /> 
+                              Regenerating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-3 w-3" /> 
+                              Regenerate with AI
+                            </>
+                          )}
+                        </CustomButton>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
