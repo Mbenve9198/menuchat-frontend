@@ -104,6 +104,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [reviewTimer, setReviewTimer] = useState(60)
   const [selectedTemplate, setSelectedTemplate] = useState<number>(-1)
   const [triggerWord, setTriggerWord] = useState("")
+  const [reviewTemplates, setReviewTemplates] = useState<string[]>([])
+  const [isGeneratingTemplates, setIsGeneratingTemplates] = useState(false)
+  const [customReviewMessage, setCustomReviewMessage] = useState("")
   
   // User signup info
   const [userEmail, setUserEmail] = useState("")
@@ -111,11 +114,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [userFullName, setUserFullName] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
-
-  // New state for review templates
-  const [reviewTemplates, setReviewTemplates] = useState<string[]>([])
-  const [customReviewMessage, setCustomReviewMessage] = useState("")
-  const [isGeneratingReviews, setIsGeneratingReviews] = useState(false)
 
   // Step validation
   const hasAnyMenuContent = () => {
@@ -201,7 +199,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         reviewLink,
         welcomeMessage,
         reviewTimer,
-        reviewTemplate: selectedTemplate >= 0 ? customReviewMessage : "",
+        reviewTemplate: customReviewMessage || (selectedTemplate >= 0 && reviewTemplates.length > 0 
+          ? reviewTemplates[selectedTemplate] 
+          : selectedTemplate >= 0 ? [
+              "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
+              "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
+              "Your feedback helps us improve! Could you take a moment to leave us a review?",
+            ][selectedTemplate] : ""),
         triggerWord,
         userEmail,
         userPassword,
@@ -321,22 +325,22 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     }
   };
 
-  // Function to generate review templates
+  // Aggiungi questa funzione per generare i template di recensione
   const generateReviewTemplates = async () => {
     try {
-      setIsGeneratingReviews(true);
+      setIsGeneratingTemplates(true);
       
+      // Verifichiamo di avere i dettagli completi del ristorante
       if (!selectedRestaurant) {
-        throw new Error("No restaurant selected");
+        throw new Error("Nessun ristorante selezionato");
       }
 
-      const response = await fetch("/api/review/review-templates", {
+      const response = await fetch("/api/review", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          restaurantId: selectedRestaurant.id,
           restaurantName: selectedRestaurant.name,
           restaurantDetails: selectedRestaurant,
           reviewLink: reviewLink,
@@ -349,29 +353,36 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         setReviewTemplates(data.templates);
       } else {
         toast({
-          title: "Error",
-          description: `Could not generate templates: ${data.error}`,
+          title: "Errore",
+          description: `Non è stato possibile generare i template: ${data.error}`,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error:", error);
       toast({
-        title: "Connection error",
-        description: "Could not contact the server",
+        title: "Errore di connessione",
+        description: "Non è stato possibile contattare il server",
         variant: "destructive",
       });
     } finally {
-      setIsGeneratingReviews(false);
+      setIsGeneratingTemplates(false);
     }
   };
 
-  // Modifica useEffect per caricare i modelli di recensione quando si arriva allo step 4
+  // Aggiungi questo useEffect per generare i template quando lo step diventa attivo
   useEffect(() => {
     if (currentStep === 4 && selectedRestaurant?.id && reviewTemplates.length === 0) {
       generateReviewTemplates();
     }
   }, [currentStep, selectedRestaurant]);
+
+  // Aggiungi questo useEffect per impostare il messaggio personalizzato quando viene selezionato un template
+  useEffect(() => {
+    if (selectedTemplate >= 0 && reviewTemplates.length > 0) {
+      setCustomReviewMessage(reviewTemplates[selectedTemplate]);
+    }
+  }, [selectedTemplate, reviewTemplates]);
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
@@ -671,67 +682,80 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                 <div className="space-y-3">
                   <Label className="text-gray-800 font-medium">Choose a review request template</Label>
                   
-                  {isGeneratingReviews ? (
+                  {isGeneratingTemplates ? (
                     <div className="flex flex-col items-center justify-center p-8">
                       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
-                      <p className="text-sm text-gray-700">Generating personalized review messages with Claude 3.7 Sonnet...</p>
+                      <p className="text-sm text-gray-700">Generating personalized review templates with Claude 3.7 Sonnet...</p>
                     </div>
                   ) : (
                     <>
                       <div className="grid grid-cols-1 gap-3">
-                        {(reviewTemplates.length > 0 ? reviewTemplates : [
-                          "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
-                          "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
-                          "Your feedback helps us improve! Could you take a moment to leave us a review?",
-                        ]).map((template, index) => (
-                          <div
-                            key={index}
-                            className={`bg-white rounded-xl p-4 border cursor-pointer transition-colors ${
-                              selectedTemplate === index 
-                                ? "border-orange-500 bg-orange-50" 
-                                : "border-orange-200 hover:border-orange-400"
-                            }`}
-                            onClick={() => {
-                              setSelectedTemplate(index);
-                              setCustomReviewMessage(template);
-                            }}
-                          >
-                            <p className="text-sm text-gray-700">{template}</p>
-                          </div>
-                        ))}
+                        {reviewTemplates.length > 0 ? (
+                          reviewTemplates.map((template, index) => (
+                            <div
+                              key={index}
+                              className={`bg-white rounded-xl p-4 border cursor-pointer transition-colors ${
+                                selectedTemplate === index 
+                                  ? "border-orange-500 bg-orange-50" 
+                                  : "border-orange-200 hover:border-orange-400"
+                              }`}
+                              onClick={() => setSelectedTemplate(index)}
+                            >
+                              <p className="text-sm text-gray-700">{template}</p>
+                            </div>
+                          ))
+                        ) : (
+                          // Fallback ai template predefiniti se non sono stati generati
+                          [
+                            "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
+                            "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
+                            "Your feedback helps us improve! Could you take a moment to leave us a review?",
+                          ].map((template, index) => (
+                            <div
+                              key={index}
+                              className={`bg-white rounded-xl p-4 border cursor-pointer transition-colors ${
+                                selectedTemplate === index 
+                                  ? "border-orange-500 bg-orange-50" 
+                                  : "border-orange-200 hover:border-orange-400"
+                              }`}
+                              onClick={() => setSelectedTemplate(index)}
+                            >
+                              <p className="text-sm text-gray-700">{template}</p>
+                            </div>
+                          ))
+                        )}
                       </div>
-                      
+
                       {selectedTemplate >= 0 && (
-                        <div className="mt-4">
-                          <label htmlFor="customReviewMessage" className="block text-sm font-medium text-gray-700">
-                            Customize Review Message
-                          </label>
-                          <div className="mt-1">
-                            <textarea
-                              id="customReviewMessage"
-                              rows={4}
-                              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                              value={customReviewMessage}
-                              onChange={(e) => setCustomReviewMessage(e.target.value)}
-                              placeholder="Enter your custom review message..."
-                            />
+                        <div className="mt-4 space-y-2">
+                          <Label htmlFor="customReviewMessage" className="text-gray-800 font-medium">
+                            Customize your review request
+                          </Label>
+                          <Textarea
+                            id="customReviewMessage"
+                            value={customReviewMessage}
+                            onChange={(e) => setCustomReviewMessage(e.target.value)}
+                            rows={3}
+                            className="rounded-xl border-orange-200 focus:border-orange-400 focus:ring-orange-400 transition-all"
+                          />
+                          <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                            <Sparkles className="w-4 h-4 text-blue-600" />
+                            <p className="text-xs text-blue-700">
+                              Your review link ({reviewLink}) will be automatically appended to the message.
+                            </p>
                           </div>
-                          <p className="mt-2 text-xs text-gray-500">
-                            <MessageSquare className="w-3 h-3 inline mr-1" />
-                            Your review link will be automatically added at the end of this message.
-                          </p>
                         </div>
                       )}
-                      
+
                       <div className="mt-4">
                         <CustomButton
                           variant="outline"
                           size="sm"
                           className="text-sm"
                           onClick={generateReviewTemplates}
-                          disabled={isGeneratingReviews}
+                          disabled={isGeneratingTemplates || !selectedRestaurant}
                         >
-                          {isGeneratingReviews ? (
+                          {isGeneratingTemplates ? (
                             <>
                               <Loader2 className="mr-2 h-3 w-3 animate-spin" /> 
                               Regenerating...
