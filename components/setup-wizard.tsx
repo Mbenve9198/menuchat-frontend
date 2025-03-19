@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Star, Award, Sparkles, Send, Upload, Clock, MessageSquare, Loader2 } from "lucide-react"
+import { Star, Award, Sparkles, Send, Upload, Clock, MessageSquare, Loader2, Check } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -115,6 +115,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [passwordConfirm, setPasswordConfirm] = useState("")
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
 
+  // New states for trigger validation
+  const [isTriggerValid, setIsTriggerValid] = useState(false)
+  const [isCheckingTrigger, setIsCheckingTrigger] = useState(false)
+  const [triggerErrorMessage, setTriggerErrorMessage] = useState("")
+  const [triggerTimeout, setTriggerTimeout] = useState<NodeJS.Timeout | null>(null)
+
   // Step validation
   const hasAnyMenuContent = () => {
     return menuLanguages.some(lang => 
@@ -135,7 +141,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       case 4: // Review Request
         return selectedTemplate >= 0;
       case 5: // Trigger Word
-        return triggerWord.trim().length > 0;
+        return triggerWord.trim().length > 0 && isTriggerValid;
       case 6: // Sign Up
         return (
           userEmail.trim().length > 0 && 
@@ -417,6 +423,58 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       setCustomReviewMessage(reviewTemplates[selectedTemplate]);
     }
   }, [selectedTemplate, reviewTemplates]);
+
+  // Funzione corretta per controllare il trigger con debounce senza lodash
+  const checkTriggerPhrase = (phrase: string) => {
+    // Cancella qualsiasi timeout esistente
+    if (triggerTimeout) {
+      clearTimeout(triggerTimeout);
+    }
+    
+    if (!phrase || phrase.trim().length < 3) {
+      setIsTriggerValid(false);
+      setTriggerErrorMessage("Trigger phrase must be at least 3 characters long");
+      return;
+    }
+    
+    // Imposta un nuovo timeout
+    const newTimeout = setTimeout(async () => {
+      try {
+        setIsCheckingTrigger(true);
+        
+        // Utilizziamo l'endpoint corretto con metodo POST
+        const response = await fetch('/api/check-trigger', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ triggerPhrase: phrase.trim() })
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to validate trigger phrase");
+        }
+        
+        const data = await response.json();
+        
+        if (data.available) {
+          setIsTriggerValid(true);
+          setTriggerErrorMessage("");
+        } else {
+          setIsTriggerValid(false);
+          setTriggerErrorMessage("This trigger phrase is already in use. Please choose another one.");
+        }
+      } catch (error) {
+        console.error("Error checking trigger availability:", error);
+        setIsTriggerValid(false);
+        setTriggerErrorMessage("Error checking availability. Please try again.");
+      } finally {
+        setIsCheckingTrigger(false);
+      }
+    }, 500); // Esegui la verifica dopo 500ms di inattività
+    
+    setTriggerTimeout(newTimeout);
+  };
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
@@ -829,26 +887,63 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       id="trigger-phrase"
                       placeholder={`Hello ${selectedRestaurant?.name || "Restaurant"}`}
                       value={triggerWord}
-                      onChange={(e) => setTriggerWord(e.target.value)}
-                      className="rounded-xl text-center text-xl font-bold border-cyan-200 focus:border-cyan-400 focus:ring-cyan-400 transition-all"
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setTriggerWord(newValue);
+                        setIsTriggerValid(false); // Reset validation on change
+                        
+                        if (newValue.trim().length >= 3) {
+                          checkTriggerPhrase(newValue);
+                        } else {
+                          setTriggerErrorMessage("Trigger phrase must be at least 3 characters long");
+                        }
+                      }}
+                      className={`rounded-xl text-center text-xl font-bold transition-all ${
+                        triggerErrorMessage
+                          ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                          : isTriggerValid
+                            ? "border-green-300 focus:border-green-500 focus:ring-green-500"
+                            : "border-cyan-200 focus:border-cyan-400 focus:ring-cyan-400"
+                      }`}
                     />
+                    {isCheckingTrigger && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                      </div>
+                    )}
+                    {isTriggerValid && !isCheckingTrigger && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Check className="w-5 h-5 text-green-500" />
+                      </div>
+                    )}
                     <motion.div
                       className="absolute inset-0 pointer-events-none"
                       animate={{
-                        boxShadow: triggerWord
+                        boxShadow: triggerWord && isTriggerValid
                           ? [
-                              "0 0 0px rgba(8, 145, 178, 0)",
-                              "0 0 15px rgba(8, 145, 178, 0.5)",
-                              "0 0 0px rgba(8, 145, 178, 0)",
+                              "0 0 0px rgba(34, 197, 94, 0)",
+                              "0 0 15px rgba(34, 197, 94, 0.5)",
+                              "0 0 0px rgba(34, 197, 94, 0)",
                             ]
                           : "none",
                       }}
                       transition={{ repeat: Number.POSITIVE_INFINITY, duration: 2 }}
                     />
                   </div>
-                  {triggerWord.length > 30 && (
+                  {triggerErrorMessage && (
+                    <p className="text-sm text-red-500">
+                      {triggerErrorMessage}
+                    </p>
+                  )}
+                  {triggerWord.length > 30 && !triggerErrorMessage && (
                     <p className="text-sm text-amber-600">
                       Keep your trigger phrase short and memorable (under 30 characters recommended).
+                    </p>
+                  )}
+                  {isTriggerValid && (
+                    <p className="text-sm text-green-500">
+                      <Check className="w-4 h-4 inline mr-1" />
+                      This trigger phrase is available!
                     </p>
                   )}
                 </div>
@@ -873,8 +968,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
                 <div className="mt-4 bg-blue-50 rounded-xl p-4 border border-blue-100">
                   <p className="text-sm text-blue-700">
-                    <strong>Important:</strong> Your trigger phrase must be unique across our system. We'll verify its 
-                    availability when you submit. This phrase is what connects customers to your specific restaurant when 
+                    <strong>Important:</strong> Your trigger phrase must be unique across our system. 
+                    This phrase is what connects customers to your specific restaurant when 
                     they scan your QR code, as our WhatsApp number serves many restaurants worldwide.
                   </p>
                 </div>
