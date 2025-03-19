@@ -1,23 +1,21 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextResponse } from 'next/server'
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Verifica che il metodo sia POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
+// Rimuovi l'export default e usa invece questo formato
+export async function POST(request: Request) {
   try {
-    const { triggerPhrase } = req.body
+    const body = await request.json()
+    const { triggerPhrase } = body
 
     if (!triggerPhrase || triggerPhrase.trim() === '') {
-      return res.status(400).json({ 
-        available: false, 
-        error: 'Trigger phrase cannot be empty' 
-      })
+      return NextResponse.json(
+        { available: false, error: 'Trigger phrase cannot be empty' },
+        { status: 400 }
+      )
     }
 
     // Fai la richiesta al backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/check-trigger`, {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+    const response = await fetch(`${backendUrl}/api/check-trigger`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -25,14 +23,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: JSON.stringify({ triggerPhrase })
     })
 
+    if (!response.ok) {
+      throw new Error(`Backend responded with status ${response.status}`)
+    }
+
     const data = await response.json()
-    return res.status(200).json(data)
+    return NextResponse.json(data)
 
   } catch (error) {
     console.error('Error checking trigger availability:', error)
-    return res.status(500).json({ 
-      available: false, 
-      error: 'Server error' 
-    })
+    return NextResponse.json(
+      { available: false, error: 'Server error' },
+      { status: 500 }
+    )
   }
+}
+
+// Opzionale: aggiungi questo per gestire esplicitamente altri metodi HTTP
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { status: 405 }
+  )
+}
+
+export async function PUT() {
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { status: 405 }
+  )
+}
+
+export async function DELETE() {
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { status: 405 }
+  )
 }
