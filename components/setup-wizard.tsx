@@ -787,11 +787,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       </div>
                     </div>
                     
-                    <div className="flex justify-center gap-3 mt-4">
+                    {/* Bottoni di azione */}
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
                       <CustomButton
                         variant="outline"
                         size="sm"
-                        className="text-sm"
+                        className="text-sm w-full sm:w-auto"
                         onClick={() => {
                           setIsEditingMessage(!isEditingMessage);
                         }}
@@ -805,7 +806,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       <CustomButton
                         variant="outline"
                         size="sm"
-                        className="text-sm"
+                        className="text-sm w-full sm:w-auto"
                         onClick={generateWelcomeMessage}
                         disabled={isGeneratingMessage}
                       >
