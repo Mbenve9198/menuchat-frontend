@@ -698,6 +698,127 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       <p className="whitespace-pre-wrap text-gray-800">{welcomeMessage}</p>
                     </div>
                     
+                    {/* WhatsApp Mockup */}
+                    <div className="mt-6 mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Anteprima su WhatsApp:</p>
+                      <div className="flex flex-col md:flex-row gap-4 items-center">
+                        <div className="mx-auto max-w-[300px] border-[8px] border-gray-800 rounded-3xl overflow-hidden shadow-xl bg-white relative">
+                          {/* Notch superiore */}
+                          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-5 bg-gray-800 rounded-b-lg z-10"></div>
+                          
+                          {/* Barra superiore */}
+                          <div className="bg-[#075E54] text-white p-2 pt-1.5">
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                                {selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 ? (
+                                  <img 
+                                    src={selectedRestaurant.photos[0]} 
+                                    alt={selectedRestaurant?.name || "Restaurant"} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                      <path fillRule="evenodd" d="M10 0a10 10 0 100 20 10 10 0 000-20zM2 10a8 8 0 1116 0 8 8 0 01-16 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-2">
+                                <div className="text-sm font-semibold truncate max-w-[180px]">{selectedRestaurant?.name || "Restaurant"}</div>
+                                <div className="text-xs opacity-80">online</div>
+                              </div>
+                              <div className="ml-auto flex gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Corpo chat */}
+                          <div className="bg-[#E5DDD5] h-[350px] p-3 overflow-y-auto" style={{ 
+                            backgroundImage: "url('https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png')",
+                            backgroundRepeat: "repeat"
+                          }}>
+                            <div className="flex flex-col gap-3">
+                              {/* Data */}
+                              <div className="flex justify-center mb-1">
+                                <div className="bg-white bg-opacity-80 px-2 py-1 rounded-lg text-[10px] text-gray-500">
+                                  {new Date().toLocaleDateString()}
+                                </div>
+                              </div>
+                              
+                              {/* Messaggio dell'utente */}
+                              <div className="self-end max-w-[85%]">
+                                <div className="bg-[#DCF8C6] p-2 rounded-lg shadow-sm relative">
+                                  <p className="text-sm">{triggerWord || `Ciao ${selectedRestaurant?.name || "Restaurant"}`}</p>
+                                  <div className="text-right mt-1">
+                                    <span className="text-[10px] text-gray-500">{new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</span>
+                                    <span className="text-[10px] text-[#4FC3F7] ml-1">✓✓</span>
+                                  </div>
+                                  {/* Triangolo chat */}
+                                  <div className="absolute top-0 right-0 transform translate-x-[8px] w-0 h-0 border-t-8 border-t-transparent border-l-8 border-l-[#DCF8C6] border-r-0 rotate-90"></div>
+                                </div>
+                              </div>
+                              
+                              {/* Messaggio del ristorante */}
+                              <div className="self-start max-w-[85%]">
+                                <div className="bg-white p-2 rounded-lg shadow-sm relative">
+                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco').replace('(menu_link)', 'https://menu.example.com')}</p>
+                                  <div className="text-right mt-1">
+                                    <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
+                                  </div>
+                                  {/* Triangolo chat */}
+                                  <div className="absolute top-0 left-0 transform -translate-x-[8px] w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-white border-l-0 rotate-90"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Barra inferiore */}
+                          <div className="bg-[#F0F0F0] p-2">
+                            <div className="flex items-center">
+                              <div className="flex-grow bg-white rounded-full px-3 py-2 flex items-center">
+                                <span className="text-gray-400 text-sm">Scrivi un messaggio</span>
+                              </div>
+                              <div className="ml-2 w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex-1">
+                          <div className="flex items-start gap-2">
+                            <div className="mt-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-medium text-blue-800">Come apparirà il messaggio su WhatsApp</h3>
+                              <p className="text-xs text-blue-700 mt-1">
+                                Questa anteprima mostra come il tuo messaggio di benvenuto apparirà ai clienti quando interagiranno con il tuo bot di WhatsApp. Il messaggio include:
+                              </p>
+                              <ul className="text-xs text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                                <li>Il placeholder <strong>{'{customerName}'}</strong> che sarà sostituito con il nome reale del cliente</li>
+                                <li>Il placeholder <strong>(menu_link)</strong> che sarà sostituito con il link al tuo menu nella lingua del cliente</li>
+                                <li>Gli emoji per rendere il messaggio più amichevole</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div>
                       <label htmlFor="welcomeMessage" className="block text-sm font-medium text-gray-700">
                         Customize Message
