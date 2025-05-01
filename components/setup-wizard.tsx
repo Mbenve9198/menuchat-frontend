@@ -88,6 +88,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [progress, setProgress] = useState(0)
   const [isExploding, setIsExploding] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
+  const [isEditingMessage, setIsEditingMessage] = useState(false)
   const { toast } = useToast()
 
   // Form state
@@ -113,7 +115,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [userPassword, setUserPassword] = useState("")
   const [userFullName, setUserFullName] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
-  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
 
   // New states for trigger validation
   const [isTriggerValid, setIsTriggerValid] = useState(false)
@@ -686,13 +687,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                 {isGeneratingMessage ? (
                   <div className="flex flex-col items-center justify-center p-8">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
-                    <p className="text-sm text-gray-700">Generazione del messaggio personalizzato con Claude 3.7 Sonnet...</p>
+                    <p className="text-sm text-gray-700">Generating personalized welcome message with Claude 3.7 Sonnet...</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {/* WhatsApp Mockup */}
                     <div className="mt-3 mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-3">Anteprima su WhatsApp:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-3">WhatsApp Preview:</p>
                       <div className="flex justify-center">
                         <div className="w-[320px] border-[8px] border-gray-800 rounded-3xl overflow-hidden shadow-xl bg-white relative">
                           {/* Notch superiore */}
@@ -748,13 +749,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                               {/* Messaggio dell'utente */}
                               <div className="self-end max-w-[85%]">
                                 <div className="bg-[#DCF8C6] p-2 rounded-lg shadow-sm relative">
-                                  <p className="text-sm">{triggerWord || `Ciao ${selectedRestaurant?.name || "Restaurant"}`}</p>
+                                  <p className="text-sm">{triggerWord || `Hello ${selectedRestaurant?.name || "Restaurant"}`}</p>
                                   <div className="text-right mt-1">
                                     <span className="text-[10px] text-gray-500">{new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</span>
                                     <span className="text-[10px] text-[#4FC3F7] ml-1">✓✓</span>
                                   </div>
-                                  {/* Triangolo chat */}
-                                  <div className="absolute top-0 right-0 transform translate-x-[8px] w-0 h-0 border-t-8 border-t-transparent border-l-8 border-l-[#DCF8C6] border-r-0 rotate-90"></div>
                                 </div>
                               </div>
                               
@@ -765,8 +764,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                                   <div className="text-right mt-1">
                                     <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
                                   </div>
-                                  {/* Triangolo chat */}
-                                  <div className="absolute top-0 left-0 transform -translate-x-[8px] w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-white border-l-0 rotate-90"></div>
                                 </div>
                               </div>
                             </div>
@@ -776,7 +773,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                           <div className="bg-[#F0F0F0] p-2">
                             <div className="flex items-center">
                               <div className="flex-grow bg-white rounded-full px-3 py-2 flex items-center">
-                                <span className="text-gray-400 text-sm">Scrivi un messaggio</span>
+                                <span className="text-gray-400 text-sm">Type a message</span>
                               </div>
                               <div className="ml-2 w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -790,27 +787,21 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       </div>
                     </div>
                     
-                    <div>
-                      <label htmlFor="welcomeMessage" className="block text-sm font-medium text-gray-700">
-                        Customize Message
-                      </label>
-                      <div className="mt-1">
-                        <textarea
-                          id="welcomeMessage"
-                          rows={6}
-                          className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                          value={welcomeMessage}
-                          onChange={(e) => setWelcomeMessage(e.target.value)}
-                          placeholder="Enter your welcome message..."
-                        />
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500">
-                        <MessageSquare className="w-3 h-3 inline mr-1" />
-                        This message will be automatically translated into all customer languages.
-                      </p>
-                    </div>
-                    
-                    <div className="mt-4">
+                    <div className="flex justify-center gap-3 mt-4">
+                      <CustomButton
+                        variant="outline"
+                        size="sm"
+                        className="text-sm"
+                        onClick={() => {
+                          setIsEditingMessage(!isEditingMessage);
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Message
+                      </CustomButton>
+                      
                       <CustomButton
                         variant="outline"
                         size="sm"
@@ -820,17 +811,39 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                       >
                         {isGeneratingMessage ? (
                           <>
-                            <Loader2 className="mr-2 h-3 w-3 animate-spin" /> 
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                             Regenerating...
                           </>
                         ) : (
                           <>
-                            <Sparkles className="mr-2 h-3 w-3" /> 
+                            <Sparkles className="mr-2 h-4 w-4" /> 
                             Regenerate with AI
                           </>
                         )}
                       </CustomButton>
                     </div>
+                    
+                    {isEditingMessage && (
+                      <div className="mt-4 space-y-2">
+                        <label htmlFor="welcomeMessage" className="block text-sm font-medium text-gray-700">
+                          Customize Message
+                        </label>
+                        <div>
+                          <textarea
+                            id="welcomeMessage"
+                            rows={6}
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                            value={welcomeMessage}
+                            onChange={(e) => setWelcomeMessage(e.target.value)}
+                            placeholder="Enter your welcome message..."
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          <MessageSquare className="w-3 h-3 inline mr-1" />
+                          This message will be automatically translated into all customer languages.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
