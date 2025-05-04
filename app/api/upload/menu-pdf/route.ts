@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
       public_id: safeFileName,
       folder: 'menu-pdf',
       resource_type: 'raw',
-      access_mode: 'public',
       type: 'upload',
       format: 'pdf',
+      access_mode: 'public',
       use_filename: true,
       overwrite: true
     });
@@ -75,16 +75,14 @@ export async function POST(request: NextRequest) {
     // Elimina il file temporaneo
     fs.unlinkSync(tempFilePath);
     
-    // Costruisci un URL diretto alternativo (fallback)
-    // URL formato alternativo se secure_url non funziona
-    const fallbackUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${cloudinaryResponse.public_id}.pdf`;
+    // Costruisci l'URL pubblico per il PDF
+    const publicUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/menu-pdf/${safeFileName}.pdf`;
     
-    // Restituisci i dati del file caricato con URL principale e alternativo
+    // Restituisci i dati del file caricato con URL pubblico
     return NextResponse.json({
       success: true,
       file: {
-        url: cloudinaryResponse.secure_url || fallbackUrl,
-        fallbackUrl: fallbackUrl,
+        url: publicUrl,
         originalName: file.name,
         size: file.size,
         languageCode: languageCode,
