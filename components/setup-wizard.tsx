@@ -389,7 +389,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     }
   }, [currentStep, selectedRestaurant]);
 
-  // Update generateWelcomeMessage function to be dynamic based on menu type
   const generateWelcomeMessage = async () => {
     try {
       setIsGeneratingMessage(true);
@@ -398,9 +397,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         throw new Error("No restaurant selected");
       }
 
-      // Determine if we're using PDF or URL type menu
-      const hasMenuFile = menuLanguages.some(lang => lang.menuFile !== null);
-      const menuType = hasMenuFile ? 'pdf' : 'url';
+      // Determine menu type
+      const firstMenuWithFile = menuLanguages.find(lang => lang.menuFile !== null);
+      const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
+      const menuType = firstMenuWithFile ? 'pdf' : 'url';
 
       const response = await fetch("/api/welcome", {
         method: "POST",
@@ -411,7 +411,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           restaurantId: selectedRestaurant.id,
           restaurantName: selectedRestaurant.name,
           restaurantDetails: selectedRestaurant,
-          menuType: menuType,
+          menuType,
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
@@ -840,42 +840,38 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                                 </div>
                               </div>
                               
-                              {/* Messaggio del ristorante - verifica se ha menu PDF o URL */}
-                              {hasAnyMenuContent() && menuLanguages.some(lang => lang.menuFile !== null) ? (
-                                <div className="self-start max-w-[85%]">
-                                  <div className="bg-white p-2 rounded-lg shadow-sm relative">
-                                    {/* PDF attachment view */}
-                                    <div className="bg-gray-100 rounded-md p-2 mb-2 flex items-center">
-                                      <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-sm">
+                              {/* Messaggio del ristorante */}
+                              <div className="self-start max-w-[85%]">
+                                <div className="bg-white p-2 rounded-lg shadow-sm relative">
+                                  {/* Se il menu è un PDF, mostra l'anteprima del file */}
+                                  {menuLanguages.some(lang => lang.menuFile) && (
+                                    <div className="mb-2 flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                      <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
                                         PDF
                                       </div>
-                                      <div className="ml-2 text-xs">
-                                        <div className="font-medium">Menu</div>
-                                        <div className="text-gray-500 text-[10px]">{Math.floor(Math.random() * 500) + 100} KB • PDF</div>
+                                      <div className="flex-1">
+                                        <p className="text-xs font-medium text-gray-900">Menu.pdf</p>
+                                        <p className="text-[10px] text-gray-500">PDF Document</p>
                                       </div>
                                     </div>
-                                    <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco')}</p>
-                                    <div className="text-right mt-1">
-                                      <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="self-start max-w-[85%]">
-                                  <div className="bg-white p-2 rounded-lg shadow-sm relative">
-                                    <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco')}</p>
-                                    {/* URL interactive button */}
+                                  )}
+                                  
+                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco')}</p>
+                                  
+                                  {/* Se il menu è un URL, mostra il pulsante CTA */}
+                                  {!menuLanguages.some(lang => lang.menuFile) && menuLanguages.some(lang => lang.menuUrl) && (
                                     <div className="mt-2 border-t pt-2">
-                                      <button className="bg-[#25D366] text-white text-xs font-medium px-4 py-1.5 rounded-md w-full flex justify-center items-center">
-                                        <span>Guarda il Menu</span>
+                                      <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
+                                        View Menu
                                       </button>
                                     </div>
-                                    <div className="text-right mt-1">
-                                      <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
-                                    </div>
+                                  )}
+                                  
+                                  <div className="text-right mt-1">
+                                    <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
                                   </div>
                                 </div>
-                              )}
+                              </div>
                             </div>
                           </div>
                           
