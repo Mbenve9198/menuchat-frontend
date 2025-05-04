@@ -311,7 +311,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       console.log("Form data being sent:", formData);
 
-      const response = await fetch('/api/setup', {
+      const response = await fetch('/api/restaurants', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -397,7 +397,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         throw new Error("No restaurant selected");
       }
 
-      const response = await fetch("/api/generate-welcome-message", {
+      const response = await fetch("/api/welcome", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -442,12 +442,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     try {
       setIsGeneratingTemplates(true);
       
-      // Verifichiamo di avere i dettagli completi del ristorante
       if (!selectedRestaurant) {
         throw new Error("Nessun ristorante selezionato");
       }
 
-      const response = await fetch("/api/review-templates", {
+      const response = await fetch("/api/review", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
