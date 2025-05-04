@@ -17,8 +17,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    // Inoltra la richiesta al backend - corretto il path per matchare la route del backend
-    const response = await fetch(`${backendUrl}/generate-welcome-message`, {
+    // Inoltra la richiesta al backend con il path corretto /api/setup/generate-welcome-message
+    const response = await fetch(`${backendUrl}/api/setup/generate-welcome-message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
