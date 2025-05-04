@@ -229,9 +229,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     setIsExploding(true);
 
     try {
-      // Prendi l'URL del menu dalla prima lingua che ne ha uno
+      // Ottieni l'URL del menu dalla prima lingua disponibile con un URL
       const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
       const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
+      
+      console.log("Menu languages:", menuLanguages);
+      console.log("Effective menu URL:", effectiveMenuUrl);
 
       // Prepare form data
       const formData: WizardFormData = {
@@ -258,6 +261,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         userFullName
       };
 
+      console.log("Form data being sent:", formData);
+
       // Send data to the API
       const response = await fetch('/api/setup', {
         method: 'POST',
@@ -268,7 +273,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save restaurant data');
+        const errorData = await response.json();
+        console.error("Server response error:", errorData);
+        throw new Error(`Failed to save restaurant data: ${errorData.error || 'Unknown error'}`);
       }
 
       // Success! Wait 3 seconds and then complete
@@ -276,9 +283,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         onComplete();
       }, 3000);
     } catch (error) {
+      console.error("Setup error:", error);
       toast({
         title: "Error",
-        description: "There was an error saving your data. Please try again.",
+        description: error.message || "There was an error saving your data. Please try again.",
         variant: "destructive",
       });
       setIsExploding(false);
