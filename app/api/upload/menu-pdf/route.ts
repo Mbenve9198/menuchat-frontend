@@ -61,15 +61,8 @@ export async function POST(request: NextRequest) {
     const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, {
       public_id: safeFileName,
       folder: 'menu-pdf',
-      resource_type: 'image',
-      type: 'upload',
-      format: 'pdf',
-      access_mode: 'public',
-      use_filename: true,
-      overwrite: true,
-      transformation: [
-        { flags: "attachment" }
-      ]
+      resource_type: 'raw',
+      type: 'upload'
     });
     
     // Log della risposta completa di Cloudinary
@@ -78,13 +71,8 @@ export async function POST(request: NextRequest) {
     // Elimina il file temporaneo
     fs.unlinkSync(tempFilePath);
     
-    // Costruisci l'URL con i parametri di trasformazione necessari
-    const menuUrl = cloudinary.url(cloudinaryResponse.public_id, {
-      resource_type: 'image',
-      format: 'pdf',
-      flags: 'attachment',
-      secure: true
-    });
+    // Costruisci l'URL pubblico diretto
+    const menuUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/menu-pdf/${safeFileName}`;
     
     // Restituisci i dati del file caricato
     return NextResponse.json({
