@@ -13,12 +13,14 @@ interface MenuLanguageItemProps {
   language: MenuLanguage
   onLanguageChange: (updatedLanguage: MenuLanguage) => void
   className?: string
+  restaurantName?: string
 }
 
 export default function MenuLanguageItem({
   language,
   onLanguageChange,
   className,
+  restaurantName = ""
 }: MenuLanguageItemProps) {
   const [activeTab, setActiveTab] = useState<"url" | "file">(
     language.menuUrl ? "url" : "file"
@@ -53,6 +55,11 @@ export default function MenuLanguageItem({
       const formData = new FormData()
       formData.append('file', file)
       formData.append('languageCode', language.code)
+      
+      // Inviamo anche il nome del ristorante per generare un nome file significativo
+      if (restaurantName) {
+        formData.append('restaurantName', restaurantName)
+      }
       
       // Aggiungiamo l'ID del menu se disponibile
       if (language.menuId) {
@@ -118,6 +125,47 @@ export default function MenuLanguageItem({
       menuUrl: url
     })
     if (url) setActiveTab("url")
+  }
+
+  // Funzione per eliminare un file PDF caricato
+  const handleDeletePdf = async () => {
+    if (!language.cloudinaryPublicId) return;
+    
+    try {
+      setIsUploading(true);
+      
+      const response = await fetch(`/api/upload/menu-pdf/${language.cloudinaryPublicId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore durante l\'eliminazione del file');
+      }
+      
+      // Aggiorniamo i dati della lingua rimuovendo i riferimenti al PDF
+      onLanguageChange({
+        ...language,
+        menuPdfUrl: "",
+        menuPdfName: "",
+        cloudinaryPublicId: ""
+      });
+      
+      toast({
+        title: "File eliminato",
+        description: `Il PDF del menu in ${language.name} è stato eliminato.`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error('Error deleting PDF:', error);
+      toast({
+        title: "Errore di eliminazione",
+        description: error.message || "Si è verificato un errore durante l'eliminazione del file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   return (
@@ -193,10 +241,21 @@ export default function MenuLanguageItem({
           )}
           
           {language.menuPdfUrl && !isUploading && !uploadError && (
-            <div className="mt-2 text-xs text-blue-600 underline">
-              <a href={language.menuPdfUrl} target="_blank" rel="noopener noreferrer">
+            <div className="mt-2 text-xs flex items-center gap-2">
+              <a 
+                href={language.menuPdfUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 underline"
+              >
                 Visualizza PDF caricato
               </a>
+              <button 
+                className="text-red-500 hover:text-red-700 text-xs" 
+                onClick={handleDeletePdf}
+              >
+                Elimina
+              </button>
             </div>
           )}
         </TabsContent>

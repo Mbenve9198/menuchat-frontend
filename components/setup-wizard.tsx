@@ -681,6 +681,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         key={language.code}
                         language={language}
                         onLanguageChange={handleLanguageChange}
+                        restaurantName={restaurantName}
                       />
                     ))}
                   </div>
