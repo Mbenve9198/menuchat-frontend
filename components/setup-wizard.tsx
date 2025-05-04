@@ -397,6 +397,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         throw new Error("No restaurant selected");
       }
 
+      // Determine menu type based on first language that has either a PDF or URL
+      const firstMenuLanguage = menuLanguages.find(lang => lang.menuFile || lang.menuUrl);
+      const menuType = firstMenuLanguage?.menuFile ? 'pdf' : 'url';
+
       const response = await fetch("/api/welcome", {
         method: "POST",
         headers: {
@@ -406,6 +410,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           restaurantId: selectedRestaurant.id,
           restaurantName: selectedRestaurant.name,
           restaurantDetails: selectedRestaurant,
+          menuType,
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
@@ -692,65 +697,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 3: Review Link */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Star className="w-5 h-5 text-[#EF476F] fill-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Set up your review link!</span>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="review-link" className="text-gray-800 font-medium">
-                    Where do you want customers to leave reviews?
-                  </Label>
-                  <RadioGroup 
-                    value={reviewPlatform} 
-                    onValueChange={setReviewPlatform}
-                    className="space-y-2"
-                  >
-                    {[
-                      { value: "google", label: "Google Reviews" },
-                      { value: "yelp", label: "Yelp" },
-                      { value: "tripadvisor", label: "TripAdvisor" },
-                      { value: "custom", label: "Custom Link" },
-                    ].map((option) => (
-                      <Label
-                        key={option.value}
-                        htmlFor={option.value}
-                        className="flex items-center p-3 rounded-xl border border-blue-200 bg-white cursor-pointer hover:bg-blue-50 transition-colors"
-                      >
-                        <RadioGroupItem value={option.value} id={option.value} className="mr-3" />
-                        {option.label}
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="custom-review-link" className="text-gray-800 font-medium">
-                    Your review link
-                  </Label>
-                  <Input
-                    id="custom-review-link"
-                    placeholder={reviewPlatform === "google" ? "https://g.page/r/..." : 
-                            reviewPlatform === "yelp" ? "https://www.yelp.com/biz/..." :
-                            reviewPlatform === "tripadvisor" ? "https://www.tripadvisor.com/..." :
-                            "https://your-review-link.com"}
-                    value={reviewLink}
-                    onChange={(e) => setReviewLink(e.target.value)}
-                    className="rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 transition-all"
-                  />
-                  {reviewPlatform === "google" && (
-                    <p className="text-xs text-blue-600">
-                      We'll use this link when customers want to leave a review.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Welcome Message */}
+            {/* Step 3: Welcome Message */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
@@ -837,7 +784,32 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                               {/* Messaggio del ristorante */}
                               <div className="self-start max-w-[85%]">
                                 <div className="bg-white p-2 rounded-lg shadow-sm relative">
-                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco').replace('(menu_link)', 'https://menu.example.com')}</p>
+                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco')}</p>
+                                  
+                                  {/* PDF Preview if menu is PDF type */}
+                                  {menuLanguages.find(lang => lang.menuFile) && (
+                                    <div className="mt-2 flex items-center gap-2 bg-gray-50 p-2 rounded-md border border-gray-200">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 15V9h8v6H8zm1-5v4h6v-4H9z"/>
+                                        <path d="M4 22a2 2 0 01-2-2V4a2 2 0 012-2h16a2 2 0 012 2v16a2 2 0 01-2 2H4zM4 4v16h16V4H4z"/>
+                                        <path d="M11 7h2v2h-2zM11 11h2v2h-2zM11 15h2v2h-2z"/>
+                                      </svg>
+                                      <div>
+                                        <p className="text-sm font-medium">Menu.pdf</p>
+                                        <p className="text-xs text-gray-500">PDF • 2.4 MB</p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Interactive Button if menu is URL type */}
+                                  {menuLanguages.find(lang => lang.menuUrl) && (
+                                    <div className="mt-2">
+                                      <button className="w-full bg-[#128C7E] text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-[#075E54] transition-colors">
+                                        View the Menu
+                                      </button>
+                                    </div>
+                                  )}
+
                                   <div className="text-right mt-1">
                                     <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
                                   </div>
@@ -927,7 +899,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 5: Review Request */}
+            {/* Step 4: Review Request */}
             {currentStep === 4 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -1073,7 +1045,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 6: Trigger Phrase */}
+            {/* Step 5: Trigger Phrase */}
             {currentStep === 5 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
