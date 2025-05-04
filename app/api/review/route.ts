@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+  let requestBody: any = {};
+  
   try {
-    const body = await request.json();
-    const { restaurantName, restaurantDetails, reviewLink, modelId } = body;
+    requestBody = await request.json();
+    const { restaurantName, restaurantDetails, reviewLink, modelId } = requestBody;
     
     // Verifica che i dati necessari siano presenti
     if (!restaurantDetails) {
@@ -16,63 +18,46 @@ export async function POST(request: NextRequest) {
     
     console.log('Generazione template di recensione per:', restaurantName);
     
-    // Implementazione di una versione semplificata che non dipende da Claude
-    // Questa versione genererà template di recensione generici
-    
-    // Cerca di estrarre informazioni utili dai dettagli del ristorante
-    const name = restaurantDetails.name || restaurantName || 'nostro ristorante';
-    const cuisine = restaurantDetails.cuisineTypes?.[0] || '';
-    
-    // Array di template predefiniti
-    const templates = [
-      `Ciao! Ti è piaciuto il tuo pasto da ${name}? Ci farebbe molto piacere ricevere una tua recensione.`,
-      
-      `Grazie per aver scelto ${name}! Apprezzeremmo molto se potessi dedicare un momento a lasciarci una recensione.`,
-      
-      `La tua esperienza da ${name} è importante per noi. Ti dispiacerebbe condividere il tuo feedback con una breve recensione?`
-    ];
-
-    // Varianti italiane se il ristorante serve cucina italiana
-    if (cuisine.toLowerCase().includes('italian') || cuisine.toLowerCase().includes('italiana')) {
-      templates[0] = `Ciao! Ti è piaciuta la tua esperienza da ${name}? Ci farebbe molto piacere leggere una tua recensione. Grazie mille!`;
-      templates[1] = `Grazie per aver scelto ${name}! Il tuo feedback è prezioso per noi. Ti dispiacerebbe dedicare un momento per una recensione?`;
-      templates[2] = `La tua opinione è importante per noi. Come è stata la tua esperienza da ${name}? Lasciaci una recensione!`;
+    // Verifica che sia configurata la variabile d'ambiente BACKEND_URL
+    if (!process.env.BACKEND_URL) {
+      throw new Error('BACKEND_URL non configurato. Impossibile contattare il servizio di generazione.');
     }
     
-    // Tenta di inoltrare la richiesta al backend se esiste
-    try {
-      if (process.env.BACKEND_URL) {
-        // Invia la richiesta in background senza aspettare la risposta
-        axios.post(`${process.env.BACKEND_URL}/api/setup/generate-review-templates`, body)
-          .catch(e => console.error('Errore nella richiesta al backend:', e.message));
-      }
-    } catch (bgError) {
-      console.error('Errore nell\'invio della richiesta al backend:', bgError);
-      // Non interrompiamo il flusso in caso di errore nella chiamata di background
+    // Invia la richiesta al backend e attende la risposta
+    const response = await axios.post(
+      `${process.env.BACKEND_URL}/api/setup/generate-review-templates`, 
+      requestBody
+    );
+    
+    // Controlla se la risposta è valida
+    if (response.data && response.data.success) {
+      console.log('Template generati con successo tramite Claude 3.7');
+      
+      return NextResponse.json({ 
+        success: true, 
+        templates: response.data.templates,
+        isGenerated: true
+      });
+    } else {
+      // Gestisci il caso in cui il backend risponde ma non ha avuto successo
+      throw new Error(response.data?.error || 'Errore nella generazione dei template');
     }
+  } catch (error: any) {
+    console.error('Errore nella generazione dei template di recensione:', error);
     
-    // Rispondi immediatamente con i template generati
-    return NextResponse.json({ 
-      success: true, 
-      templates: templates,
-      isSimplified: true
-    });
-  } catch (error) {
-    console.error('Error in review API route:', error);
-    
-    // Fornisci template di fallback in caso di errore
+    // Template di fallback in caso di errore
     const fallbackTemplates = [
-      "Ti è piaciuta la tua esperienza? Ci farebbe piacere ricevere una tua recensione!",
-      "Grazie per averci scelto! Ti dispiacerebbe dedicare un momento per una recensione?",
-      "Il tuo feedback è importante per noi. Come è stata la tua esperienza oggi?"
+      `Grazie per aver ordinato da ${requestBody?.restaurantDetails?.name || 'noi'}! Ti è piaciuto il tuo cibo? Ci piacerebbe ricevere il tuo feedback.`,
+      `Il tuo parere è importante per noi! Ti andrebbe di condividere la tua esperienza in una breve recensione?`,
+      `Grazie per averci scelto oggi! Ti saremmo grati se potessi dedicare un momento per lasciare una recensione sulla tua esperienza.`
     ];
     
-    // Rispondi con template di fallback ma comunica che c'è stato un errore
     return NextResponse.json({ 
-      success: true, 
+      success: true,  // Restituiamo success:true per non bloccare l'interfaccia
       templates: fallbackTemplates,
-      isSimplified: true,
-      hadError: true
-    }, { status: 200 }); // Restituiamo 200 anche in caso di errore per non bloccare l'interfaccia
+      isGenerated: false,
+      error: error.message,
+      errorDetails: 'Si è verificato un errore durante la comunicazione con il servizio di AI. Sono stati forniti template di fallback.'
+    });
   }
 } 
