@@ -28,6 +28,7 @@ export interface MenuLanguage {
   menuFile?: File | null
   menuUrl?: string
   menuPdfUrl?: string  // URL del file PDF caricato su Cloudinary
+  menuPdfFallbackUrl?: string // URL alternativo del PDF se il principale non funziona
   menuPdfName?: string  // Nome originale del file PDF
   menuId?: string       // ID del menu nel database
   cloudinaryPublicId?: string  // ID pubblico per la gestione del file su Cloudinary

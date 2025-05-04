@@ -85,6 +85,7 @@ export default function MenuLanguageItem({
           ...language,
           menuFile: file,
           menuPdfUrl: data.file.url,
+          menuPdfFallbackUrl: data.file.fallbackUrl,
           menuPdfName: data.file.originalName,
           // Salviamo anche l'ID pubblico di Cloudinary per future operazioni
           cloudinaryPublicId: data.file.publicId
@@ -241,21 +242,61 @@ export default function MenuLanguageItem({
           )}
           
           {language.menuPdfUrl && !isUploading && !uploadError && (
-            <div className="mt-2 text-xs flex items-center gap-2">
-              <a 
-                href={language.menuPdfUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 underline"
-              >
-                Visualizza PDF caricato
-              </a>
-              <button 
-                className="text-red-500 hover:text-red-700 text-xs" 
-                onClick={handleDeletePdf}
-              >
-                Elimina
-              </button>
+            <div className="mt-2 text-xs flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <a 
+                  href={language.menuPdfUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                  onClick={(e) => {
+                    // Verifichiamo se l'URL è accessibile
+                    fetch(language.menuPdfUrl!, { method: 'HEAD' })
+                      .then(response => {
+                        if (!response.ok) {
+                          e.preventDefault();
+                          // Se c'è un errore, mostriamo un toast e proviamo l'URL alternativo
+                          toast({
+                            title: "Errore di accesso",
+                            description: "Utilizzo URL alternativo per visualizzare il PDF",
+                            variant: "default",
+                          });
+                          
+                          if (language.menuPdfFallbackUrl) {
+                            window.open(language.menuPdfFallbackUrl, '_blank');
+                          }
+                        }
+                      })
+                      .catch(() => {
+                        e.preventDefault();
+                        // Fallback per errori CORS: utilizziamo l'URL alternativo
+                        if (language.menuPdfFallbackUrl) {
+                          window.open(language.menuPdfFallbackUrl, '_blank');
+                        } else {
+                          window.open(language.menuPdfUrl, '_blank');
+                        }
+                      });
+                  }}
+                >
+                  Visualizza PDF
+                </a>
+                <a 
+                  href={language.menuPdfFallbackUrl || language.menuPdfUrl}
+                  download={language.menuPdfName}
+                  className="text-green-600 underline"
+                >
+                  Scarica
+                </a>
+                <button 
+                  className="text-red-500 hover:text-red-700 text-xs" 
+                  onClick={handleDeletePdf}
+                >
+                  Elimina
+                </button>
+              </div>
+              <div className="text-gray-500 text-xs italic">
+                {language.menuPdfName}
+              </div>
             </div>
           )}
         </TabsContent>

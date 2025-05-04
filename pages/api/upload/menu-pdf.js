@@ -61,21 +61,34 @@ export default async function handler(req, res) {
     const safeFileName = `${restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
     
     // Carica il file su Cloudinary
+    console.log('Inizio upload su Cloudinary', { filePath, safeFileName });
     const cloudinaryResponse = await cloudinary.uploader.upload(filePath, {
       public_id: safeFileName,
       folder: 'menu-pdf',
       resource_type: 'raw',
-      format: 'pdf'
+      access_mode: 'public',
+      type: 'upload',
+      format: 'pdf',
+      use_filename: true,
+      overwrite: true
     });
-    
+
+    // Log della risposta completa di Cloudinary
+    console.log('Risposta di Cloudinary:', JSON.stringify(cloudinaryResponse, null, 2));
+
     // Elimina il file temporaneo
     fs.unlinkSync(filePath);
-    
-    // Restituisci i dati del file caricato
+
+    // Costruisci un URL diretto alternativo (fallback)
+    // URL formato alternativo se secure_url non funziona
+    const fallbackUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${cloudinaryResponse.public_id}.pdf`;
+
+    // Restituisci i dati del file caricato con URL principale e alternativo
     return res.status(200).json({
       success: true,
       file: {
-        url: cloudinaryResponse.secure_url,
+        url: cloudinaryResponse.secure_url || fallbackUrl,
+        fallbackUrl: fallbackUrl,
         originalName: originalName,
         size: file.size,
         languageCode: languageCode,
