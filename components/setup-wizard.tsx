@@ -297,13 +297,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         reviewLink,
         welcomeMessage,
         reviewTimer,
-        reviewTemplate: customReviewMessage || (selectedTemplate >= 0 && reviewTemplates.length > 0 
-          ? reviewTemplates[selectedTemplate] 
-          : selectedTemplate >= 0 ? [
-              "Hi there! How was your experience with us today? We'd love if you could leave us a quick review!",
-              "Thanks for ordering! We hope you enjoyed your meal. Would you mind sharing your experience in a quick review?",
-              "Your feedback helps us improve! Could you take a moment to leave us a review?",
-            ][selectedTemplate] : ""),
+        reviewTemplate: customReviewMessage,
         triggerWord,
         userEmail,
         userPassword,
@@ -473,11 +467,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       const data = await response.json();
       if (data.success) {
-        setReviewTemplates(data.templates);
+        // Salviamo direttamente il primo template come messaggio personalizzato
+        setCustomReviewMessage(data.templates[0]);
       } else {
         toast({
           title: "Errore",
-          description: `Non è stato possibile generare i template: ${data.error}`,
+          description: `Non è stato possibile generare il template: ${data.error}`,
           variant: "destructive",
         });
       }
@@ -499,13 +494,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       generateReviewTemplates();
     }
   }, [currentStep, selectedRestaurant]);
-
-  // Aggiungi questo useEffect per impostare il messaggio personalizzato quando viene selezionato un template
-  useEffect(() => {
-    if (selectedTemplate >= 0 && reviewTemplates.length > 0) {
-      setCustomReviewMessage(reviewTemplates[selectedTemplate]);
-    }
-  }, [selectedTemplate, reviewTemplates]);
 
   // Funzione corretta per controllare il trigger con debounce senza lodash
   const checkTriggerPhrase = (phrase: string) => {
@@ -1036,7 +1024,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                               {/* Messaggio del ristorante */}
                               <div className="self-start max-w-[85%]">
                                 <div className="bg-white p-2 rounded-lg shadow-sm relative">
-                                  <p className="text-sm whitespace-pre-wrap">{customReviewMessage || reviewTemplates[0] || "Thanks for dining with us today! 🌟 Your opinion means the world to us - we'd love to hear about your experience with our dishes."}</p>
+                                  <p className="text-sm whitespace-pre-wrap">
+                                    {customReviewMessage || "Generating review message..."}
+                                  </p>
                                   <div className="mt-2 border-t pt-2">
                                     <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
                                       Leave a Review
