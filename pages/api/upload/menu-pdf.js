@@ -1,4 +1,4 @@
-import formidable from 'formidable';
+import { formidable } from 'formidable';
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 
@@ -23,19 +23,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parsing del form con formidable
-    const form = new formidable.IncomingForm();
-    
-    // Utilizza una Promise per gestire il parsing del form
-    const formData = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) return reject(err);
-        resolve({ fields, files });
-      });
+    // Parsing del form con formidable - sintassi aggiornata per v3+
+    const form = formidable({
+      maxFileSize: 10 * 1024 * 1024, // 10MB
+      filter: (part) => {
+        return part.mimetype === 'application/pdf';
+      }
     });
     
-    const { fields, files } = formData;
-    const file = files.file;
+    // Utilizza una Promise per gestire il parsing del form
+    const [fields, files] = await form.parse(req);
+    
+    const file = files.file?.[0];
     
     if (!file) {
       return res.status(400).json({ success: false, error: 'Nessun file caricato' });
@@ -55,8 +54,8 @@ export default async function handler(req, res) {
     }
     
     // Estrai il codice della lingua dai campi
-    const languageCode = fields.languageCode || 'it';
-    const restaurantName = fields.restaurantName || 'restaurant';
+    const languageCode = fields.languageCode?.[0] || 'it';
+    const restaurantName = fields.restaurantName?.[0] || 'restaurant';
     
     // Genera un nome file sicuro
     const safeFileName = `${restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
