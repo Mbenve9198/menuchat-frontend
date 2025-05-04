@@ -61,13 +61,12 @@ export async function POST(request: NextRequest) {
     const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, {
       public_id: safeFileName,
       folder: 'menu-pdf',
-      resource_type: 'raw',
+      resource_type: 'auto',
       type: 'upload',
       format: 'pdf',
       access_mode: 'public',
       use_filename: true,
-      overwrite: true,
-      flags: 'attachment'
+      overwrite: true
     });
     
     // Log della risposta completa di Cloudinary
