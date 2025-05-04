@@ -24,9 +24,11 @@ interface Restaurant {
 interface RestaurantSearchProps {
   onSelect: (restaurant: Restaurant) => void
   selectedRestaurant: Restaurant | null
+  restaurantName?: string
+  labelText?: string
 }
 
-export function RestaurantSearch({ onSelect, selectedRestaurant }: RestaurantSearchProps) {
+export function RestaurantSearch({ onSelect, selectedRestaurant, restaurantName, labelText }: RestaurantSearchProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Restaurant[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -46,7 +48,12 @@ export function RestaurantSearch({ onSelect, selectedRestaurant }: RestaurantSea
       setError(null)
 
       try {
-        const response = await fetch(`/api/restaurants/search?query=${encodeURIComponent(debouncedSearchQuery)}`)
+        // Combina il nome del ristorante con la query di ricerca se disponibile
+        const combinedQuery = restaurantName && restaurantName.trim() !== "" 
+          ? `${restaurantName} ${debouncedSearchQuery}`
+          : debouncedSearchQuery;
+          
+        const response = await fetch(`/api/restaurants/search?query=${encodeURIComponent(combinedQuery)}`)
         
         if (!response.ok) {
           throw new Error('Failed to search for restaurants')
@@ -63,7 +70,7 @@ export function RestaurantSearch({ onSelect, selectedRestaurant }: RestaurantSea
     }
 
     fetchRestaurants()
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, restaurantName])
 
   const handleSelectRestaurant = async (restaurant: Restaurant) => {
     try {
@@ -87,11 +94,11 @@ export function RestaurantSearch({ onSelect, selectedRestaurant }: RestaurantSea
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="restaurant-search" className="text-gray-800 font-medium">
-          Search for your restaurant
+          {labelText || "Search for your restaurant"}
         </Label>
         <Input
           id="restaurant-search"
-          placeholder="Enter restaurant name and address..."
+          placeholder="Enter restaurant address..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="rounded-xl border-purple-200 focus:border-purple-400 focus:ring-purple-400 transition-all"

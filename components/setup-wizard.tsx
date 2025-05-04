@@ -236,12 +236,48 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       console.log("Menu languages:", menuLanguages);
       console.log("Effective menu URL:", effectiveMenuUrl);
 
-      // Prepare form data
-      const formData: WizardFormData = {
+      // Otteniamo la foto principale del ristorante, se disponibile
+      const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
+        ? selectedRestaurant.photos[0] 
+        : selectedRestaurant?.photo || null;
+
+      // Prepara i dati completi per il backend
+      const formData = {
         restaurantName,
         restaurantId: selectedRestaurant?.id,
-        address: selectedRestaurant?.address,
-        location: selectedRestaurant?.location,
+        // Inviamo un oggetto address completo compatibile con il modello aggiornato
+        address: {
+          formattedAddress: selectedRestaurant?.address || "",
+          latitude: selectedRestaurant?.location?.lat,
+          longitude: selectedRestaurant?.location?.lng
+        },
+        // Inviamo tutti i dati disponibili dal ristorante
+        googlePlaceId: selectedRestaurant?.id,
+        googleMapsUrl: selectedRestaurant?.googleMapsUrl,
+        mainPhoto,
+        photos: selectedRestaurant?.photos || [],
+        googleRating: {
+          rating: selectedRestaurant?.rating,
+          reviewCount: selectedRestaurant?.ratingsTotal
+        },
+        reviews: selectedRestaurant?.reviews?.map(review => ({
+          authorName: review.author_name,
+          rating: review.rating,
+          text: review.text,
+          time: review.time
+        })),
+        cuisineTypes: selectedRestaurant?.cuisineTypes || [],
+        priceLevel: selectedRestaurant?.priceLevel,
+        // Dati di contatto, se disponibili
+        contact: {
+          phone: selectedRestaurant?.phoneNumber || "",
+          website: selectedRestaurant?.website || ""
+        },
+        // Orari di apertura, se disponibili
+        operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
+          day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
+          rawText: hour
+        })) || [],
         menuUrl: effectiveMenuUrl,
         hasMenuFile,
         reviewPlatform,
@@ -263,7 +299,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       console.log("Form data being sent:", formData);
 
-      // Send data to the API - Corretto l'endpoint API
+      // Send data to the API
       const response = await fetch('/api/restaurants', {
         method: 'POST',
         headers: {
@@ -282,7 +318,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       setTimeout(() => {
         onComplete();
       }, 3000);
-    } catch (error: any) { // Aggiunto tipo any per risolvere l'errore del linter
+    } catch (error: any) {
       console.error("Setup error:", error);
       toast({
         title: "Error",
@@ -590,7 +626,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     setSelectedRestaurant(restaurant)
                     setRestaurantName(restaurant.name)
                   }} 
-                  selectedRestaurant={selectedRestaurant} 
+                  selectedRestaurant={selectedRestaurant}
+                  restaurantName={restaurantName}
+                  labelText="What's your restaurant address?"
                 />
               </div>
             )}
