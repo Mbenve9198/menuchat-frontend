@@ -66,7 +66,8 @@ export async function POST(request: NextRequest) {
       format: 'pdf',
       access_mode: 'public',
       use_filename: true,
-      overwrite: true
+      overwrite: true,
+      flags: 'attachment'
     });
     
     // Log della risposta completa di Cloudinary
@@ -75,14 +76,14 @@ export async function POST(request: NextRequest) {
     // Elimina il file temporaneo
     fs.unlinkSync(tempFilePath);
     
-    // Costruisci l'URL pubblico per il PDF
-    const publicUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/menu-pdf/${safeFileName}.pdf`;
+    // Usa l'URL restituito da Cloudinary
+    const menuUrl = cloudinaryResponse.secure_url;
     
-    // Restituisci i dati del file caricato con URL pubblico
+    // Restituisci i dati del file caricato
     return NextResponse.json({
       success: true,
       file: {
-        url: publicUrl,
+        url: menuUrl,
         originalName: file.name,
         size: file.size,
         languageCode: languageCode,
