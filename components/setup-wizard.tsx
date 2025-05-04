@@ -229,13 +229,17 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     setIsExploding(true);
 
     try {
+      // Prendi l'URL del menu dalla prima lingua che ne ha uno
+      const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
+      const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
+
       // Prepare form data
       const formData: WizardFormData = {
         restaurantName,
         restaurantId: selectedRestaurant?.id,
         address: selectedRestaurant?.address,
         location: selectedRestaurant?.location,
-        menuUrl,
+        menuUrl: effectiveMenuUrl,
         hasMenuFile,
         reviewPlatform,
         reviewLink,
@@ -305,6 +309,14 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   useEffect(() => {
     const hasAnyFile = menuLanguages.some(lang => lang.menuFile !== null);
     setHasMenuFile(hasAnyFile);
+  }, [menuLanguages]);
+
+  // Update menuUrl when menuLanguages change
+  useEffect(() => {
+    const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
+    if (firstMenuWithUrl?.menuUrl) {
+      setMenuUrl(firstMenuWithUrl.menuUrl);
+    }
   }, [menuLanguages]);
 
   // Get Google review link from selected restaurant (if available)
