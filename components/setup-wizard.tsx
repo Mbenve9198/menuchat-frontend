@@ -241,6 +241,20 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         ? selectedRestaurant.photos[0] 
         : selectedRestaurant?.photo || null;
 
+      // Aggiungiamo una funzione per mappare i dati delle lingue del menu
+      const mapMenuLanguagesToBotConfig = () => {
+        return menuLanguages.map(lang => ({
+          language: {
+            code: lang.code,
+            name: lang.name,
+            phonePrefix: lang.phonePrefix || []
+          },
+          menuUrl: lang.menuUrl || '',
+          menuPdfUrl: lang.menuPdfUrl || '',
+          menuPdfName: lang.menuPdfName || ''
+        }));
+      };
+
       // Prepara i dati completi per il backend
       const formData = {
         restaurantName,
@@ -279,6 +293,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           rawText: hour
         })) || [],
         menuUrl: effectiveMenuUrl,
+        menuLanguages: mapMenuLanguagesToBotConfig(),
         hasMenuFile,
         reviewPlatform,
         reviewLink,
