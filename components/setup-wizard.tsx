@@ -263,8 +263,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       console.log("Form data being sent:", formData);
 
-      // Send data to the API
-      const response = await fetch('/api/setup', {
+      // Send data to the API - Corretto l'endpoint API
+      const response = await fetch('/api/restaurants', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -282,7 +282,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       setTimeout(() => {
         onComplete();
       }, 3000);
-    } catch (error) {
+    } catch (error: any) { // Aggiunto tipo any per risolvere l'errore del linter
       console.error("Setup error:", error);
       toast({
         title: "Error",
