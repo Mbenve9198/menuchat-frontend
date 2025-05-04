@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const restaurantName = formData.get('restaurantName')?.toString() || 'restaurant';
     
     // Genera un nome file sicuro
-    const safeFileName = `${restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`;
+    const safeFileName = `${restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}.pdf`;
     
     // Carica il file su Cloudinary
     console.log('Inizio upload su Cloudinary', { tempFilePath, safeFileName });
@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     // Elimina il file temporaneo
     fs.unlinkSync(tempFilePath);
     
-    // Costruisci l'URL pubblico diretto
-    const menuUrl = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/menu-pdf/${safeFileName}`;
+    // Usa l'URL sicuro fornito da Cloudinary
+    const menuUrl = cloudinaryResponse.secure_url;
     
     // Restituisci i dati del file caricato
     return NextResponse.json({
