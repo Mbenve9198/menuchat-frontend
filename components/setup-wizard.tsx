@@ -699,7 +699,203 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 3: Review Link */}
+            {/* Step 3: Welcome Message */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <MessageSquare className="w-5 h-5 text-[#EF476F]" />
+                  <span className="text-sm font-medium text-[#EF476F]">Welcome Message</span>
+                </div>
+
+                {isGeneratingMessage ? (
+                  <div className="flex flex-col items-center justify-center p-8">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
+                    <p className="text-sm text-gray-700">Generating personalized welcome message with Claude 3.7 Sonnet...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* WhatsApp Mockup */}
+                    <div className="mt-3 mb-4">
+                      <div className="flex justify-center">
+                        <div className="w-[320px] border-[8px] border-gray-800 rounded-3xl overflow-hidden shadow-xl bg-white relative">
+                          {/* Notch superiore */}
+                          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-5 bg-gray-800 rounded-b-lg z-10"></div>
+                          
+                          {/* Barra superiore */}
+                          <div className="bg-[#075E54] text-white p-3 pt-6">
+                            <div className="flex items-center">
+                              <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                                {selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 ? (
+                                  <img 
+                                    src={selectedRestaurant.photos[0]} 
+                                    alt={selectedRestaurant?.name || "Restaurant"} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                      <path fillRule="evenodd" d="M10 0a10 10 0 100 20 10 10 0 000-20zM2 10a8 8 0 1116 0 8 8 0 01-16 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-base font-semibold truncate max-w-[180px]">{selectedRestaurant?.name || "Restaurant"}</div>
+                                <div className="text-xs opacity-80">online</div>
+                              </div>
+                              <div className="ml-auto flex gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Corpo chat */}
+                          <div className="bg-[#E5DDD5] h-[400px] p-3 overflow-y-auto" style={{ 
+                            backgroundImage: "url('https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png')",
+                            backgroundRepeat: "repeat"
+                          }}>
+                            <div className="flex flex-col gap-3">
+                              {/* Data */}
+                              <div className="flex justify-center mb-1">
+                                <div className="bg-white bg-opacity-80 px-2 py-1 rounded-lg text-[10px] text-gray-500">
+                                  {new Date().toLocaleDateString()}
+                                </div>
+                              </div>
+                              
+                              {/* Messaggio dell'utente */}
+                              <div className="self-end max-w-[85%]">
+                                <div className="bg-[#DCF8C6] p-2 rounded-lg shadow-sm relative">
+                                  <p className="text-sm">{triggerWord || `Hello ${selectedRestaurant?.name || "Restaurant"}`}</p>
+                                  <div className="text-right mt-1">
+                                    <span className="text-[10px] text-gray-500">{new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</span>
+                                    <span className="text-[10px] text-[#4FC3F7] ml-1">✓✓</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Messaggio del ristorante */}
+                              <div className="self-start max-w-[85%]">
+                                <div className="bg-white p-2 rounded-lg shadow-sm relative">
+                                  {/* Se il menu è un PDF, mostra l'anteprima del file */}
+                                  {menuLanguages.some(lang => lang.menuFile) && (
+                                    <div className="mb-2 flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                                      <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
+                                        PDF
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="text-xs font-medium text-gray-900">Menu.pdf</p>
+                                        <p className="text-[10px] text-gray-500">PDF Document</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco')}</p>
+                                  
+                                  {/* Se il menu è un URL, mostra il pulsante CTA */}
+                                  {!menuLanguages.some(lang => lang.menuFile) && menuLanguages.some(lang => lang.menuUrl) && (
+                                    <div className="mt-2 border-t pt-2">
+                                      <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
+                                        View Menu
+                                      </button>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="text-right mt-1">
+                                    <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Barra inferiore */}
+                          <div className="bg-[#F0F0F0] p-2">
+                            <div className="flex items-center">
+                              <div className="flex-grow bg-white rounded-full px-3 py-2 flex items-center">
+                                <span className="text-gray-400 text-sm">Type a message</span>
+                              </div>
+                              <div className="ml-2 w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Bottoni di azione */}
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
+                      <CustomButton
+                        variant="outline"
+                        size="sm"
+                        className="text-sm w-full sm:w-auto"
+                        onClick={() => {
+                          setIsEditingMessage(!isEditingMessage);
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Message
+                      </CustomButton>
+                      
+                      <CustomButton
+                        variant="outline"
+                        size="sm"
+                        className="text-sm w-full sm:w-auto"
+                        onClick={generateWelcomeMessage}
+                        disabled={isGeneratingMessage}
+                      >
+                        {isGeneratingMessage ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                            Regenerating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" /> 
+                            Regenerate with AI
+                          </>
+                        )}
+                      </CustomButton>
+                    </div>
+                    
+                    {isEditingMessage && (
+                      <div className="mt-4 space-y-2">
+                        <label htmlFor="welcomeMessage" className="block text-sm font-medium text-gray-700">
+                          Customize Message
+                        </label>
+                        <div>
+                          <textarea
+                            id="welcomeMessage"
+                            rows={6}
+                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                            value={welcomeMessage}
+                            onChange={(e) => setWelcomeMessage(e.target.value)}
+                            placeholder="Enter your welcome message..."
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          <MessageSquare className="w-3 h-3 inline mr-1" />
+                          This message will be automatically translated into all customer languages.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Review Link */}
             {currentStep === 2 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -757,7 +953,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 4: Review Request */}
+            {/* Step 5: Review Request */}
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -981,7 +1177,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               </div>
             )}
 
-            {/* Step 5: Trigger Phrase */}
+            {/* Step 6: Trigger Phrase */}
             {currentStep === 5 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
