@@ -1017,83 +1017,163 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     </div>
                   ) : (
                     <>
-                      {/* WhatsApp Preview */}
-                      <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
-                        <div className="bg-[#128C7E] text-white px-4 py-2 flex items-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                          </svg>
-                          <span className="text-sm font-medium">Review Request Preview</span>
-                        </div>
-                        <div className="p-4 bg-gray-50">
-                          {/* Messaggio utente */}
-                          <div className="flex justify-end mb-4">
-                            <div className="bg-[#DCF8C6] rounded-lg p-3 max-w-[80%] shadow-sm">
-                              <p className="text-sm">Order completed! 🎉</p>
-                              <div className="text-right mt-1">
-                                <span className="text-[10px] text-gray-500">2:30 PM</span>
-                                <span className="text-[10px] text-[#4FC3F7] ml-1">✓✓</span>
+                      {/* WhatsApp Mockup */}
+                      <div className="mt-3 mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-3">WhatsApp Preview:</p>
+                        <div className="flex justify-center">
+                          <div className="w-[320px] border-[8px] border-gray-800 rounded-3xl overflow-hidden shadow-xl bg-white relative">
+                            {/* Notch superiore */}
+                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-5 bg-gray-800 rounded-b-lg z-10"></div>
+                            
+                            {/* Barra superiore */}
+                            <div className="bg-[#075E54] text-white p-3 pt-6">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+                                  {selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 ? (
+                                    <img 
+                                      src={selectedRestaurant.photos[0]} 
+                                      alt={selectedRestaurant?.name || "Restaurant"} 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-600">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M10 0a10 10 0 100 20 10 10 0 000-20zM2 10a8 8 0 1116 0 8 8 0 01-16 0z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="ml-3">
+                                  <div className="text-base font-semibold truncate max-w-[180px]">{selectedRestaurant?.name || "Restaurant"}</div>
+                                  <div className="text-xs opacity-80">online</div>
+                                </div>
+                                <div className="ml-auto flex gap-3">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                  </svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          
-                          {/* Messaggio ristorante */}
-                          <div className="flex justify-start">
-                            <div className="bg-white rounded-lg p-3 max-w-[80%] shadow-sm border border-gray-100">
-                              <p className="text-sm">{reviewTemplates[0] || "Thanks for dining with us today! 🌟 Your opinion means the world to us - we'd love to hear about your experience with our dishes."}</p>
-                              <div className="mt-3 border-t pt-2">
-                                <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
-                                  Leave a Review
-                                </button>
+                            
+                            {/* Corpo chat */}
+                            <div className="bg-[#E5DDD5] h-[400px] p-3 overflow-y-auto" style={{ 
+                              backgroundImage: "url('https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png')",
+                              backgroundRepeat: "repeat"
+                            }}>
+                              <div className="flex flex-col gap-3">
+                                {/* Data */}
+                                <div className="flex justify-center mb-1">
+                                  <div className="bg-white bg-opacity-80 px-2 py-1 rounded-lg text-[10px] text-gray-500">
+                                    {new Date().toLocaleDateString()}
+                                  </div>
+                                </div>
+                                
+                                {/* Messaggio dell'utente */}
+                                <div className="self-end max-w-[85%]">
+                                  <div className="bg-[#DCF8C6] p-2 rounded-lg shadow-sm relative">
+                                    <p className="text-sm">Order completed! 🎉</p>
+                                    <div className="text-right mt-1">
+                                      <span className="text-[10px] text-gray-500">{new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</span>
+                                      <span className="text-[10px] text-[#4FC3F7] ml-1">✓✓</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Messaggio del ristorante */}
+                                <div className="self-start max-w-[85%]">
+                                  <div className="bg-white p-2 rounded-lg shadow-sm relative">
+                                    <p className="text-sm whitespace-pre-wrap">{customReviewMessage || reviewTemplates[0] || "Thanks for dining with us today! 🌟 Your opinion means the world to us - we'd love to hear about your experience with our dishes."}</p>
+                                    <div className="mt-2 border-t pt-2">
+                                      <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
+                                        Leave a Review
+                                      </button>
+                                    </div>
+                                    <div className="text-right mt-1">
+                                      <span className="text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-right mt-1">
-                                <span className="text-[10px] text-gray-500">2:32 PM</span>
+                            </div>
+                            
+                            {/* Barra inferiore */}
+                            <div className="bg-[#F0F0F0] p-2">
+                              <div className="flex items-center">
+                                <div className="flex-grow bg-white rounded-full px-3 py-2 flex items-center">
+                                  <span className="text-gray-400 text-sm">Type a message</span>
+                                </div>
+                                <div className="ml-2 w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-
-                      <div className="mt-4">
+                      
+                      {/* Bottoni di azione */}
+                      <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
                         <CustomButton
                           variant="outline"
                           size="sm"
-                          className="text-sm"
+                          className="text-sm w-full sm:w-auto"
+                          onClick={() => {
+                            setIsEditingMessage(!isEditingMessage);
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Edit Message
+                        </CustomButton>
+                        
+                        <CustomButton
+                          variant="outline"
+                          size="sm"
+                          className="text-sm w-full sm:w-auto"
                           onClick={generateReviewTemplates}
-                          disabled={isGeneratingTemplates || !selectedRestaurant}
+                          disabled={isGeneratingTemplates}
                         >
                           {isGeneratingTemplates ? (
                             <>
-                              <Loader2 className="mr-2 h-3 w-3 animate-spin" /> 
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                               Regenerating...
                             </>
                           ) : (
                             <>
-                              <Sparkles className="mr-2 h-3 w-3" /> 
+                              <Sparkles className="mr-2 h-4 w-4" /> 
                               Regenerate with AI
                             </>
                           )}
                         </CustomButton>
                       </div>
-
-                      {reviewTemplates[0] && (
+                      
+                      {isEditingMessage && (
                         <div className="mt-4 space-y-2">
-                          <Label htmlFor="customReviewMessage" className="text-gray-800 font-medium">
-                            Customize your review request
-                          </Label>
-                          <Textarea
-                            id="customReviewMessage"
-                            value={customReviewMessage}
-                            onChange={(e) => setCustomReviewMessage(e.target.value)}
-                            rows={3}
-                            className="rounded-xl border-orange-200 focus:border-orange-400 focus:ring-orange-400 transition-all"
-                          />
-                          <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
-                            <Sparkles className="w-4 h-4 text-blue-600" />
-                            <p className="text-xs text-blue-700">
-                              The review link will be automatically added as a button below your message.
-                            </p>
+                          <label htmlFor="customReviewMessage" className="text-gray-800 font-medium">
+                            Customize Message
+                          </label>
+                          <div>
+                            <textarea
+                              id="customReviewMessage"
+                              rows={6}
+                              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                              value={customReviewMessage || reviewTemplates[0] || ""}
+                              onChange={(e) => setCustomReviewMessage(e.target.value)}
+                              placeholder="Enter your review request message..."
+                            />
                           </div>
+                          <p className="text-xs text-gray-500">
+                            <MessageSquare className="w-3 h-3 inline mr-1" />
+                            The review link will be automatically added as a button below your message.
+                          </p>
                         </div>
                       )}
                     </>
