@@ -172,6 +172,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         body: JSON.stringify({ triggerPhrase: phrase })
       });
       
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella verifica del trigger');
+      }
+      
       const data = await response.json();
       return data.available;
     } catch (error) {
@@ -229,19 +234,16 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     setIsExploding(true);
 
     try {
-      // Ottieni l'URL del menu dalla prima lingua disponibile con un URL
       const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
       const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
       
       console.log("Menu languages:", menuLanguages);
       console.log("Effective menu URL:", effectiveMenuUrl);
 
-      // Otteniamo la foto principale del ristorante, se disponibile
       const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
         ? selectedRestaurant.photos[0] 
         : selectedRestaurant?.photo || null;
 
-      // Aggiungiamo una funzione per mappare i dati delle lingue del menu
       const mapMenuLanguagesToBotConfig = () => {
         return menuLanguages.map(lang => ({
           language: {
@@ -255,17 +257,14 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         }));
       };
 
-      // Prepara i dati completi per il backend
       const formData = {
         restaurantName,
         restaurantId: selectedRestaurant?.id,
-        // Inviamo un oggetto address completo compatibile con il modello aggiornato
         address: {
           formattedAddress: selectedRestaurant?.address || "",
           latitude: selectedRestaurant?.location?.lat,
           longitude: selectedRestaurant?.location?.lng
         },
-        // Inviamo tutti i dati disponibili dal ristorante
         googlePlaceId: selectedRestaurant?.id,
         googleMapsUrl: selectedRestaurant?.googleMapsUrl,
         mainPhoto,
@@ -282,12 +281,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         })),
         cuisineTypes: selectedRestaurant?.cuisineTypes || [],
         priceLevel: selectedRestaurant?.priceLevel,
-        // Dati di contatto, se disponibili
         contact: {
           phone: selectedRestaurant?.phoneNumber || "",
           website: selectedRestaurant?.website || ""
         },
-        // Orari di apertura, se disponibili
         operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
           day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
           rawText: hour
@@ -314,8 +311,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       console.log("Form data being sent:", formData);
 
-      // Send data to the API
-      const response = await fetch('/api/restaurants', {
+      const response = await fetch('/api/setup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -329,7 +325,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         throw new Error(`Failed to save restaurant data: ${errorData.error || 'Unknown error'}`);
       }
 
-      // Success! Wait 3 seconds and then complete
       setTimeout(() => {
         onComplete();
       }, 3000);
@@ -344,7 +339,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   const getMascotImage = () => {
     // Only use the excited star with raised hands for the final success step
@@ -398,12 +393,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     try {
       setIsGeneratingMessage(true);
       
-      // Verifichiamo di avere i dettagli completi del ristorante
       if (!selectedRestaurant) {
         throw new Error("No restaurant selected");
       }
 
-      const response = await fetch("/api/welcome", {
+      const response = await fetch("/api/generate-welcome-message", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -411,10 +405,15 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         body: JSON.stringify({
           restaurantId: selectedRestaurant.id,
           restaurantName: selectedRestaurant.name,
-          restaurantDetails: selectedRestaurant, // Inviamo l'oggetto completo
+          restaurantDetails: selectedRestaurant,
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella generazione del messaggio');
+      }
 
       const data = await response.json();
       if (data.success) {
@@ -448,7 +447,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         throw new Error("Nessun ristorante selezionato");
       }
 
-      const response = await fetch("/api/review", {
+      const response = await fetch("/api/review-templates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -460,6 +459,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           modelId: "claude-3-7-sonnet-20250219"
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella generazione dei template');
+      }
 
       const data = await response.json();
       if (data.success) {
