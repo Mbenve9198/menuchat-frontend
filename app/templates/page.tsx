@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { useParams } from 'next/navigation'
 import BubbleBackground from "@/components/bubble-background"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 interface Template {
   _id: string
@@ -51,8 +53,10 @@ interface TemplateGroup {
 }
 
 export default function TemplatesPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const params = useParams()
-  const restaurantId = params.restaurantId as string
+  const restaurantId = params.restaurantId as string || session?.user?.restaurantId
   const [templateGroups, setTemplateGroups] = useState<TemplateGroup[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null)
@@ -62,10 +66,20 @@ export default function TemplatesPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchTemplates()
-  }, [])
+    // Redirect to login if not authenticated
+    if (status === "unauthenticated") {
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
+      return
+    }
+
+    if (status === "authenticated" && session.user.restaurantId) {
+      fetchTemplates()
+    }
+  }, [status, session])
 
   const fetchTemplates = async () => {
+    if (!restaurantId) return
+
     try {
       const response = await fetch(`/api/templates?restaurantId=${restaurantId}`)
       const data = await response.json()
@@ -209,7 +223,7 @@ export default function TemplatesPage() {
     }
   }
 
-  if (isLoading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-gray-500" />

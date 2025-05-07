@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get restaurantId from query params
+    // Get session
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Non autorizzato' },
+        { status: 401 }
+      )
+    }
+
+    // Get restaurantId from query params or from session
     const { searchParams } = new URL(request.url)
-    const restaurantId = searchParams.get('restaurantId')
+    const restaurantId = searchParams.get('restaurantId') || session.user.restaurantId
 
     if (!restaurantId) {
       return NextResponse.json(
-        { error: 'Restaurant ID is required' },
+        { error: 'ID ristorante richiesto' },
         { status: 400 }
       )
     }
@@ -16,20 +27,21 @@ export async function GET(request: NextRequest) {
     // Get templates from backend
     const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${restaurantId}`, {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
       }
     })
 
     if (!response.ok) {
-      throw new Error('Failed to fetch templates')
+      throw new Error('Impossibile recuperare i template')
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in templates API route:', error)
+    console.error('Errore nella route API dei template:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Errore interno del server' },
       { status: 500 }
     )
   }
@@ -37,11 +49,20 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Get session
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Non autorizzato' },
+        { status: 401 }
+      )
+    }
+
     const { templateId, message } = await request.json()
     
     if (!templateId) {
       return NextResponse.json(
-        { error: 'Template ID is required' },
+        { error: 'ID template richiesto' },
         { status: 400 }
       )
     }
@@ -49,21 +70,22 @@ export async function PUT(request: NextRequest) {
     const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
       },
       body: JSON.stringify({ message })
     })
 
     if (!response.ok) {
-      throw new Error('Failed to update template')
+      throw new Error('Impossibile aggiornare il template')
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in templates API route:', error)
+    console.error('Errore nella route API dei template:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Errore interno del server' },
       { status: 500 }
     )
   }
