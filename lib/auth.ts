@@ -5,6 +5,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { jwtDecode } from 'jwt-decode'
 
 export const config = {
+  basePath: '/api/auth',
   providers: [
     CredentialsProvider({
       name: 'Credentials',
