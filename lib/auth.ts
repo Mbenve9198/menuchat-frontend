@@ -6,6 +6,7 @@ import { jwtDecode } from 'jwt-decode'
 
 export const config = {
   basePath: '/api/auth',
+  secret: process.env.NEXTAUTH_SECRET || 'my-secret-that-should-be-in-env-file',
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -77,7 +78,8 @@ export const config = {
     }
   },
   pages: {
-    signIn: '/auth/login'
+    signIn: '/auth/login',
+    error: '/auth/error'
   }
 } satisfies NextAuthConfig
 
