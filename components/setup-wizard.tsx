@@ -783,7 +783,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                                     </div>
                                   )}
                                   
-                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace('{customerName}', 'Marco')}</p>
+                                  <p className="text-sm whitespace-pre-wrap">{welcomeMessage.replace(/{customerName}/g, 'Marco')}</p>
                                   
                                   {/* Se il menu è un URL, mostra il pulsante CTA */}
                                   {!menuLanguages.some(lang => lang.menuFile) && menuLanguages.some(lang => lang.menuUrl) && (
@@ -868,7 +868,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                             rows={6}
                             className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                             value={welcomeMessage}
-                            onChange={(e) => setWelcomeMessage(e.target.value)}
+                            onChange={(e) => {
+                              let newValue = e.target.value;
+                              // Se l'utente sta facendo modifiche, assicurati che usi {customerName} per una migliore esperienza utente
+                              // La conversione a {{1}} sarà gestita sul backend
+                              setWelcomeMessage(newValue);
+                            }}
                             placeholder="Enter your welcome message..."
                           />
                         </div>
@@ -1025,7 +1030,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                               <div className="self-start max-w-[85%]">
                                 <div className="bg-white p-2 rounded-lg shadow-sm relative">
                                   <p className="text-sm whitespace-pre-wrap">
-                                    {customReviewMessage || "Generating review message..."}
+                                    {customReviewMessage ? customReviewMessage.replace(/{customerName}/g, 'Marco') : "Generating review message..."}
                                   </p>
                                   <div className="mt-2 border-t pt-2">
                                     <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
@@ -1106,7 +1111,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                             rows={6}
                             className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                             value={customReviewMessage || reviewTemplates[0] || ""}
-                            onChange={(e) => setCustomReviewMessage(e.target.value)}
+                            onChange={(e) => {
+                              let newValue = e.target.value;
+                              // Se l'utente sta facendo modifiche, assicurati che usi {customerName} per una migliore esperienza utente
+                              // La conversione a {{1}} sarà gestita sul backend
+                              setCustomReviewMessage(newValue);
+                            }}
                             placeholder="Enter your review request message..."
                           />
                         </div>
