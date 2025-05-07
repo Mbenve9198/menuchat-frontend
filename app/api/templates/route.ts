@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@auth/nextjs'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
     // Get session
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session) {
       return NextResponse.json(
         { error: 'Non autorizzato' },
@@ -50,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Get session
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     if (!session) {
       return NextResponse.json(
         { error: 'Non autorizzato' },

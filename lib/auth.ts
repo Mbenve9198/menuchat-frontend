@@ -1,9 +1,10 @@
+import NextAuth from 'next-auth'
 import type { NextAuthConfig } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { jwtDecode } from 'jwt-decode'
 
-export const authOptions: NextAuthConfig = {
+export const config = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -77,4 +78,6 @@ export const authOptions: NextAuthConfig = {
   pages: {
     signIn: '/auth/login'
   }
-} 
+} satisfies NextAuthConfig
+
+export const { handlers, auth, signIn, signOut } = NextAuth(config) 
