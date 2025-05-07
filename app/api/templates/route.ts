@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get session
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     // Get restaurantId from query params
     const { searchParams } = new URL(request.url)
     const restaurantId = searchParams.get('restaurantId')
@@ -27,8 +16,7 @@ export async function GET(request: NextRequest) {
     // Get templates from backend
     const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${restaurantId}`, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
+        'Content-Type': 'application/json'
       }
     })
 
@@ -49,15 +37,6 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // Get session
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     const { templateId, message } = await request.json()
     
     if (!templateId) {
@@ -70,8 +49,7 @@ export async function PUT(request: NextRequest) {
     const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ message })
     })
