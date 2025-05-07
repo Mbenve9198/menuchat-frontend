@@ -1,8 +1,9 @@
-import { NextAuthOptions } from 'next-auth'
+import type { NextAuthConfig } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { jwtDecode } from 'jwt-decode'
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthConfig = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -41,11 +42,11 @@ export const authOptions: NextAuthOptions = {
           const decoded = jwtDecode(data.token)
           
           return {
-            id: data.user._id,
+            id: data.user._id || data.user.id,
             email: data.user.email,
             name: data.user.fullName,
             accessToken: data.token,
-            restaurantId: data.user.restaurant,
+            restaurantId: data.user.restaurant || decoded.restaurantId,
             ...decoded
           }
         } catch (error) {
@@ -60,14 +61,14 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 giorni
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT, user: any }) {
       if (user) {
         token.accessToken = user.accessToken
         token.restaurantId = user.restaurantId
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any, token: JWT }) {
       session.accessToken = token.accessToken as string
       session.user.restaurantId = token.restaurantId as string
       return session

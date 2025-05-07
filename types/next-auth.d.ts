@@ -1,16 +1,13 @@
-import NextAuth from 'next-auth'
-import { JWT } from 'next-auth/jwt'
+import type { DefaultSession } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
 
 declare module 'next-auth' {
-  interface Session {
+  interface Session extends DefaultSession {
     accessToken: string
     user: {
       restaurantId: string
       id: string
-      name?: string
-      email?: string
-      image?: string
-    }
+    } & DefaultSession['user']
   }
 
   interface User {
