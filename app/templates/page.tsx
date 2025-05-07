@@ -20,6 +20,8 @@ import { Progress } from "@/components/ui/progress"
 import { CustomButton } from "@/components/ui/custom-button"
 import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "@/components/ui/textarea"
+import { useParams } from 'next/navigation'
+import BubbleBackground from "@/components/bubble-background"
 
 interface Template {
   _id: string
@@ -49,6 +51,8 @@ interface TemplateGroup {
 }
 
 export default function TemplatesPage() {
+  const params = useParams()
+  const restaurantId = params.restaurantId as string
   const [templateGroups, setTemplateGroups] = useState<TemplateGroup[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null)
@@ -63,9 +67,17 @@ export default function TemplatesPage() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/templates')
+      const response = await fetch(`/api/templates?restaurantId=${restaurantId}`)
       const data = await response.json()
       
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load templates')
+      }
+      
+      if (!data.success || !data.templates) {
+        throw new Error('Invalid response format')
+      }
+
       // Raggruppa i template per tipo
       const groups = data.templates.reduce((acc: TemplateGroup[], template: Template) => {
         const existingGroup = acc.find(g => g.type === template.type)
@@ -82,7 +94,7 @@ export default function TemplatesPage() {
       console.error('Error fetching templates:', error)
       toast({
         title: "Error",
-        description: "Failed to load templates",
+        description: error instanceof Error ? error.message : "Failed to load templates",
         variant: "destructive",
       })
     } finally {
@@ -127,12 +139,19 @@ export default function TemplatesPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          templateId: template._id,
           message: editedMessage
         })
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to update template')
+        throw new Error(data.error || 'Failed to update template')
+      }
+
+      if (!data.success) {
+        throw new Error('Invalid response format')
       }
 
       toast({
@@ -147,7 +166,7 @@ export default function TemplatesPage() {
       console.error('Error updating template:', error)
       toast({
         title: "Error",
-        description: "Failed to update template",
+        description: error instanceof Error ? error.message : "Failed to update template",
         variant: "destructive",
       })
     }
@@ -200,10 +219,15 @@ export default function TemplatesPage() {
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+      <BubbleBackground />
+
       <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6">
         <div className="w-full max-w-md mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-extrabold text-[#1B9AAA]">WhatsApp Templates</h1>
+            <div>
+              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">WhatsApp Templates</h1>
+              <p className="text-gray-700">Manage your message templates</p>
+            </div>
             <div className="relative w-8 h-8">
               <Image
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
@@ -216,12 +240,33 @@ export default function TemplatesPage() {
           </div>
 
           {templateGroups.map((group) => (
-            <div key={group.type} className="mb-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-3">
-                {group.type === 'MEDIA' ? 'Menu PDF Templates' :
-                 group.type === 'CALL_TO_ACTION' ? 'Menu URL Templates' :
-                 'Review Templates'}
-              </h2>
+            <motion.div
+              key={group.type}
+              className="mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                {group.type === 'MEDIA' ? (
+                  <div className="bg-[#1B9AAA]/10 p-2 rounded-full">
+                    <MessageSquare className="w-5 h-5 text-[#1B9AAA]" />
+                  </div>
+                ) : group.type === 'CALL_TO_ACTION' ? (
+                  <div className="bg-[#EF476F]/10 p-2 rounded-full">
+                    <Send className="w-5 h-5 text-[#EF476F]" />
+                  </div>
+                ) : (
+                  <div className="bg-[#06D6A0]/10 p-2 rounded-full">
+                    <Star className="w-5 h-5 text-[#06D6A0]" />
+                  </div>
+                )}
+                <h2 className="text-lg font-bold text-gray-800">
+                  {group.type === 'MEDIA' ? 'Menu PDF Templates' :
+                   group.type === 'CALL_TO_ACTION' ? 'Menu URL Templates' :
+                   'Review Templates'}
+                </h2>
+              </div>
 
               <div className="space-y-4">
                 {group.templates.map((template) => (
@@ -231,6 +276,7 @@ export default function TemplatesPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
+                    whileHover={{ y: -5 }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -255,20 +301,30 @@ export default function TemplatesPage() {
                     </div>
 
                     {template.status === 'REJECTED' && template.rejectionReason && (
-                      <div className="mb-3 p-2 bg-red-50 rounded-lg border border-red-100">
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mb-3 p-2 bg-red-50 rounded-lg border border-red-100"
+                      >
                         <p className="text-xs text-red-700">
                           <XCircle className="w-3 h-3 inline mr-1" />
                           Rejection reason: {template.rejectionReason}
                         </p>
-                      </div>
+                      </motion.div>
                     )}
 
                     {editingTemplate === template._id ? (
-                      <div className="space-y-3">
+                      <motion.div
+                        className="space-y-3"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
                         <Textarea
                           value={editedMessage}
                           onChange={(e) => setEditedMessage(e.target.value)}
-                          className="w-full min-h-[100px] text-sm"
+                          className="w-full min-h-[100px] text-sm rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                         />
                         <div className="flex gap-2">
                           <CustomButton
@@ -307,31 +363,40 @@ export default function TemplatesPage() {
                             Save
                           </CustomButton>
                         </div>
-                      </div>
+                      </motion.div>
                     ) : (
-                      <>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
                         <p className="text-sm text-gray-700 mb-3">
                           {template.components.body.text}
                         </p>
                         {expandedTemplate === template._id && (
-                          <div className="mt-3 pt-3 border-t">
+                          <motion.div
+                            className="mt-3 pt-3 border-t"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                          >
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                               <span>Last updated: {new Date(template.updatedAt).toLocaleDateString()}</span>
                               <button
                                 onClick={() => handleEdit(template)}
-                                className="text-blue-600 hover:text-blue-700 font-medium"
+                                className="text-[#1B9AAA] hover:text-[#26C6D9] font-medium"
                               >
                                 Edit Message
                               </button>
                             </div>
-                          </div>
+                          </motion.div>
                         )}
-                      </>
+                      </motion.div>
                     )}
                   </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

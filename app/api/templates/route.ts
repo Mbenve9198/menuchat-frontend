@@ -1,10 +1,34 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/templates`, {
+    // Get session
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get restaurantId from query params
+    const { searchParams } = new URL(request.url)
+    const restaurantId = searchParams.get('restaurantId')
+
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: 'Restaurant ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Get templates from backend
+    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${restaurantId}`, {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
       }
     })
 
@@ -23,16 +47,33 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
-    const { templateId } = await request.json()
+    // Get session
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { templateId, message } = await request.json()
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/templates/${templateId}`, {
+    if (!templateId) {
+      return NextResponse.json(
+        { error: 'Template ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
       },
-      body: JSON.stringify(request.body)
+      body: JSON.stringify({ message })
     })
 
     if (!response.ok) {
