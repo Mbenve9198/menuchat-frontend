@@ -1,0 +1,24 @@
+{
+  "common": {
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  },
+  "setup": {
+    "steps": {
+      "language": "Language",
+      "restaurant": "Restaurant",
+      "menu": "Menu",
+      "preview": "Preview"
+    },
+    "language": {
+      "title": "Select Language",
+      "description": "Choose the main language for your restaurant. We'll automatically generate messages in other languages too."
+    },
+    "completed": "Setup completed!",
+    "restart": "Start Over"
+  }
+} 

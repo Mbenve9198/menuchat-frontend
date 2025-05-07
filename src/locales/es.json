@@ -1,0 +1,24 @@
+{
+  "common": {
+    "back": "Atrás",
+    "next": "Siguiente",
+    "finish": "Finalizar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "loading": "Cargando..."
+  },
+  "setup": {
+    "steps": {
+      "language": "Idioma",
+      "restaurant": "Restaurante",
+      "menu": "Menú",
+      "preview": "Vista previa"
+    },
+    "language": {
+      "title": "Seleccionar idioma",
+      "description": "Elige el idioma principal para tu restaurante. Generaremos automáticamente los mensajes en otros idiomas también."
+    },
+    "completed": "¡Configuración completada!",
+    "restart": "Empezar de nuevo"
+  }
+} 
