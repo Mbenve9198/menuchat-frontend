@@ -89,23 +89,45 @@ export async function PUT(request: NextRequest) {
     const session = await auth()
     if (!session) {
       return NextResponse.json(
-        { error: 'Non autorizzato' },
+        { success: false, error: 'Non autorizzato' },
         { status: 401 }
       )
     }
 
-    const { templateId, message, buttonText } = await request.json()
-    
+    const data = await request.json()
+    const { templateId, message, buttonText } = data
+
     if (!templateId) {
       return NextResponse.json(
-        { error: 'ID template richiesto' },
+        { success: false, error: "Template ID is required" },
         { status: 400 }
       )
     }
 
-    // Se è richiesto l'aggiornamento del testo del pulsante
-    if (buttonText !== undefined) {
-      const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/button-text`, {
+    // Gestione aggiornamento del testo del messaggio
+    if (message) {
+      const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`
+        },
+        body: JSON.stringify({ message })
+      })
+
+      const result = await response.json()
+      
+      if (!response.ok) {
+        return NextResponse.json(
+          { success: false, error: result.error || "Failed to update template" },
+          { status: response.status }
+        )
+      }
+    }
+
+    // Gestione aggiornamento del testo del pulsante
+    if (buttonText) {
+      const buttonResponse = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/button-text`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -114,34 +136,21 @@ export async function PUT(request: NextRequest) {
         body: JSON.stringify({ buttonText })
       })
 
-      if (!response.ok) {
-        throw new Error('Impossibile aggiornare il testo del pulsante')
+      const buttonResult = await buttonResponse.json()
+      
+      if (!buttonResponse.ok) {
+        return NextResponse.json(
+          { success: false, error: buttonResult.error || "Failed to update button text" },
+          { status: buttonResponse.status }
+        )
       }
-
-      const data = await response.json()
-      return NextResponse.json(data)
     }
 
-    // Altrimenti, aggiorna il messaggio
-    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
-      },
-      body: JSON.stringify({ message })
-    })
-
-    if (!response.ok) {
-      throw new Error('Impossibile aggiornare il template')
-    }
-
-    const data = await response.json()
-    return NextResponse.json(data)
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Errore nella route API dei template:', error)
+    console.error('Error in template PUT route:', error)
     return NextResponse.json(
-      { error: 'Errore interno del server' },
+      { success: false, error: "Internal server error" },
       { status: 500 }
     )
   }

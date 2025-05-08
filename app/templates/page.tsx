@@ -152,10 +152,12 @@ function WhatsAppMockup({
                 
                 {/* Se il menu è un URL o è una recensione con CTA, mostra il pulsante appropriato */}
                 {(showMenuUrl || showReviewCta) && (
-                  <div className="mt-2 border-t pt-1.5 md:pt-2">
-                    <button className="w-full text-center py-1.5 md:py-2 text-[#0277BD] text-xs md:text-sm font-medium hover:bg-gray-50 rounded transition-colors">
-                      {showReviewCta ? reviewButtonText : "View Menu"}
-                    </button>
+                  <div className="mt-2 border-t pt-1.5 border-gray-200">
+                    <div className="flex justify-center w-full">
+                      <button className="bg-[#e9f2fd] text-[#127def] text-[10px] sm:text-xs py-1 px-3 rounded-3xl font-medium">
+                        {reviewButtonText || "Leave a Review"}
+                      </button>
+                    </div>
                   </div>
                 )}
                 
@@ -201,6 +203,8 @@ function TemplateCard({
   editMode,
   editedMessage,
   setEditedMessage,
+  editedButtonText,
+  setEditedButtonText,
   isGenerating,
   botConfig,
   restaurantPhoto
@@ -212,11 +216,12 @@ function TemplateCard({
   editMode: boolean,
   editedMessage: string,
   setEditedMessage: (message: string) => void,
+  editedButtonText: string,
+  setEditedButtonText: (text: string) => void,
   isGenerating: boolean,
   botConfig: {triggerWord: string} | null,
   restaurantPhoto: string
 }) {
-  const [editedButtonText, setEditedButtonText] = useState("")
   const [isLoadingButtonText, setIsLoadingButtonText] = useState(false)
   const { toast } = useToast()
 
@@ -247,39 +252,6 @@ function TemplateCard({
       })
     } finally {
       setIsLoadingButtonText(false)
-    }
-  }
-
-  const saveButtonText = async () => {
-    try {
-      const response = await fetch(`/api/templates`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          templateId: template._id,
-          buttonText: editedButtonText
-        })
-      })
-
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update button text')
-      }
-
-      toast({
-        title: "Successo",
-        description: "Testo del pulsante aggiornato con successo",
-      })
-    } catch (error) {
-      console.error('Error updating button text:', error)
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile aggiornare il testo del pulsante",
-        variant: "destructive",
-      })
     }
   }
 
@@ -344,9 +316,7 @@ function TemplateCard({
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
         showReviewCta={isReview}
-        reviewButtonText={editMode && isReview ? editedButtonText : 
-                         (template.components.buttons && template.components.buttons.length > 0 ? 
-                          template.components.buttons[0].text : "Leave a Review")}
+        reviewButtonText={editedButtonText}
       />
 
       {editMode ? (
@@ -374,19 +344,6 @@ function TemplateCard({
                   className="flex-1 text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
                   disabled={isLoadingButtonText}
                 />
-                <CustomButton
-                  variant="outline"
-                  size="sm"
-                  className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
-                  onClick={saveButtonText}
-                  disabled={isLoadingButtonText}
-                >
-                  {isLoadingButtonText ? (
-                    <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
-                  ) : (
-                    "Salva"
-                  )}
-                </CustomButton>
               </div>
             </div>
           )}
@@ -458,6 +415,7 @@ export default function TemplatesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null)
   const [editedMessage, setEditedMessage] = useState("")
+  const [editedButtonText, setEditedButtonText] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState<string>("") // Per il tab delle lingue
   const [activeTab, setActiveTab] = useState("menu") // menu o review
@@ -608,6 +566,42 @@ export default function TemplatesPage() {
 
   const handleSave = async (template: Template) => {
     try {
+      // Se è un template di recensione con testo del pulsante modificato, invia entrambi i dati
+      if (template.type === 'REVIEW' && editingTemplate === template._id) {
+        const response = await fetch(`/api/templates/${template._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            templateId: template._id,
+            message: editedMessage,
+            buttonText: editedButtonText
+          })
+        })
+
+        const data = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to update template')
+        }
+
+        if (!data.success) {
+          throw new Error('Invalid response format')
+        }
+
+        toast({
+          title: "Successo",
+          description: "Template aggiornato con successo",
+        })
+
+        // Refresh templates
+        await fetchTemplates()
+        setEditingTemplate(null)
+        return
+      }
+
+      // Per gli altri tipi di template, comportamento originale
       const response = await fetch(`/api/templates/${template._id}`, {
         method: 'PUT',
         headers: {
@@ -787,19 +781,19 @@ export default function TemplatesPage() {
               ) : (
                 <>
                   {/* Tab Lingue */}
-                  <div className="bg-white rounded-xl p-1.5 sm:p-2 overflow-x-auto">
-                    <div className="flex space-x-1.5 sm:space-x-2">
+                  <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4 overflow-x-auto">
+                    <div className="flex justify-center space-x-2 sm:space-x-3">
                       {availableLanguages().map(lang => (
                         <button
                           key={lang}
                           onClick={() => setCurrentLanguage(lang)}
-                          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm whitespace-nowrap rounded-md flex items-center gap-1 sm:gap-1.5 ${
+                          className={`px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base whitespace-nowrap rounded-lg flex items-center gap-1.5 sm:gap-2 min-w-[60px] justify-center ${
                             currentLanguage === lang 
-                              ? 'bg-blue-100 text-blue-700 font-medium' 
+                              ? 'bg-blue-100 text-blue-700 font-medium shadow-sm' 
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                           {lang}
                         </button>
                       ))}
@@ -818,6 +812,8 @@ export default function TemplatesPage() {
                         editMode={editingTemplate === template._id}
                         editedMessage={editedMessage}
                         setEditedMessage={setEditedMessage}
+                        editedButtonText={editedButtonText}
+                        setEditedButtonText={setEditedButtonText}
                         isGenerating={isGenerating}
                         botConfig={botConfig}
                         restaurantPhoto={restaurantProfileImage}
@@ -921,19 +917,19 @@ export default function TemplatesPage() {
                   </div>
                   
                   {/* Tab Lingue */}
-                  <div className="bg-white rounded-xl p-1.5 sm:p-2 overflow-x-auto">
-                    <div className="flex space-x-1.5 sm:space-x-2">
+                  <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4 overflow-x-auto">
+                    <div className="flex justify-center space-x-2 sm:space-x-3">
                       {availableLanguages().map(lang => (
                         <button
                           key={lang}
                           onClick={() => setCurrentLanguage(lang)}
-                          className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm whitespace-nowrap rounded-md flex items-center gap-1 sm:gap-1.5 ${
+                          className={`px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base whitespace-nowrap rounded-lg flex items-center gap-1.5 sm:gap-2 min-w-[60px] justify-center ${
                             currentLanguage === lang 
-                              ? 'bg-blue-100 text-blue-700 font-medium' 
+                              ? 'bg-blue-100 text-blue-700 font-medium shadow-sm' 
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
                           {lang}
                         </button>
                       ))}
@@ -952,6 +948,8 @@ export default function TemplatesPage() {
                         editMode={editingTemplate === template._id}
                         editedMessage={editedMessage}
                         setEditedMessage={setEditedMessage}
+                        editedButtonText={editedButtonText}
+                        setEditedButtonText={setEditedButtonText}
                         isGenerating={isGenerating}
                         botConfig={botConfig}
                         restaurantPhoto={restaurantProfileImage}
