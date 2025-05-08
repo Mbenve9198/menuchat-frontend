@@ -24,6 +24,7 @@ import BubbleBackground from "@/components/bubble-background"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
 
 interface Template {
   _id: string
@@ -201,7 +202,8 @@ function TemplateCard({
   editedMessage,
   setEditedMessage,
   isGenerating,
-  botConfig
+  botConfig,
+  restaurantPhoto
 }: { 
   template: Template, 
   onEdit: () => void, 
@@ -211,8 +213,76 @@ function TemplateCard({
   editedMessage: string,
   setEditedMessage: (message: string) => void,
   isGenerating: boolean,
-  botConfig: {triggerWord: string} | null
+  botConfig: {triggerWord: string} | null,
+  restaurantPhoto: string
 }) {
+  const [editedButtonText, setEditedButtonText] = useState("")
+  const [isLoadingButtonText, setIsLoadingButtonText] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    // Se è un template di recensione e siamo in modalità modifica, carica il testo del pulsante
+    if (template.type === 'REVIEW' && editMode) {
+      fetchButtonText()
+    }
+  }, [editMode, template.type, template._id])
+
+  const fetchButtonText = async () => {
+    if (!template._id) return
+
+    try {
+      setIsLoadingButtonText(true)
+      const response = await fetch(`/api/templates?templateId=${template._id}&buttonText=true`)
+      const data = await response.json()
+      
+      if (data.success && data.buttonText) {
+        setEditedButtonText(data.buttonText)
+      }
+    } catch (error) {
+      console.error('Error fetching button text:', error)
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare il testo del pulsante",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingButtonText(false)
+    }
+  }
+
+  const saveButtonText = async () => {
+    try {
+      const response = await fetch(`/api/templates`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          templateId: template._id,
+          buttonText: editedButtonText
+        })
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update button text')
+      }
+
+      toast({
+        title: "Successo",
+        description: "Testo del pulsante aggiornato con successo",
+      })
+    } catch (error) {
+      console.error('Error updating button text:', error)
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Impossibile aggiornare il testo del pulsante",
+        variant: "destructive",
+      })
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'APPROVED':
@@ -247,7 +317,6 @@ function TemplateCard({
     <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1 sm:gap-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm font-medium capitalize">{template.language}</span>
           <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(template.status)} bg-opacity-10`}>
             {getStatusIcon(template.status)}
             {template.status}
@@ -271,10 +340,13 @@ function TemplateCard({
         message={displayMessage} 
         userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(template.name || "Restaurant", botConfig)}`}
         restaurantName={template.name || "Restaurant"}
+        restaurantPhoto={restaurantPhoto}
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
         showReviewCta={isReview}
-        reviewButtonText="Leave a Review"
+        reviewButtonText={editMode && isReview ? editedButtonText : 
+                         (template.components.buttons && template.components.buttons.length > 0 ? 
+                          template.components.buttons[0].text : "Leave a Review")}
       />
 
       {editMode ? (
@@ -285,6 +357,40 @@ function TemplateCard({
             className="w-full min-h-[120px] sm:min-h-[150px] text-xs sm:text-sm rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
             placeholder="Write your message..."
           />
+          
+          {/* Campo per modificare il testo del pulsante, solo per i template di recensione */}
+          {isReview && (
+            <div className="mt-2">
+              <Label htmlFor="buttonText" className="text-xs sm:text-sm mb-1 block">
+                Testo del pulsante
+              </Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="buttonText"
+                  type="text"
+                  value={editedButtonText}
+                  onChange={(e) => setEditedButtonText(e.target.value)}
+                  placeholder="Testo del pulsante"
+                  className="flex-1 text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
+                  disabled={isLoadingButtonText}
+                />
+                <CustomButton
+                  variant="outline"
+                  size="sm"
+                  className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
+                  onClick={saveButtonText}
+                  disabled={isLoadingButtonText}
+                >
+                  {isLoadingButtonText ? (
+                    <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-spin" />
+                  ) : (
+                    "Salva"
+                  )}
+                </CustomButton>
+              </div>
+            </div>
+          )}
+          
           <div className="flex gap-1.5 sm:gap-2 justify-end">
             <CustomButton
               variant="outline"
@@ -324,7 +430,7 @@ function TemplateCard({
           </div>
         </div>
       ) : (
-        <div className="mt-3 sm:mt-4 flex justify-end">
+        <div className="mt-3 sm:mt-4 flex justify-center">
           <CustomButton
             variant="outline"
             size="sm"
@@ -356,6 +462,16 @@ export default function TemplatesPage() {
   const [currentLanguage, setCurrentLanguage] = useState<string>("") // Per il tab delle lingue
   const [activeTab, setActiveTab] = useState("menu") // menu o review
   const [botConfig, setBotConfig] = useState<{triggerWord: string} | null>(null) // Configurazione bot
+  const [restaurantProfileImage, setRestaurantProfileImage] = useState<string>("")
+  const [reviewSettings, setReviewSettings] = useState<{
+    reviewLink: string;
+    reviewPlatform: 'google' | 'yelp' | 'tripadvisor' | 'custom';
+  }>({
+    reviewLink: '',
+    reviewPlatform: 'google'
+  })
+  const [isEditingReviewSettings, setIsEditingReviewSettings] = useState(false)
+  const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
   const { toast } = useToast()
 
   // Ottenere tutte le lingue disponibili nei template
@@ -400,8 +516,51 @@ export default function TemplatesPage() {
 
     if (status === "authenticated" && session.user.restaurantId) {
       fetchTemplates()
+      fetchRestaurantProfileImage()
+      fetchReviewSettings()
     }
   }, [status, session])
+
+  const fetchRestaurantProfileImage = async () => {
+    if (!restaurantId) return
+
+    try {
+      const response = await fetch(`/api/restaurants?restaurantId=${restaurantId}&profileImage=true`)
+      const data = await response.json()
+      
+      if (data.success && data.profileImage) {
+        setRestaurantProfileImage(data.profileImage)
+      }
+    } catch (error) {
+      console.error('Error fetching restaurant profile image:', error)
+    }
+  }
+
+  const fetchReviewSettings = async () => {
+    if (!restaurantId) return
+
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/templates?restaurantId=${restaurantId}&reviewSettings=true`)
+      const data = await response.json()
+      
+      if (data.success && data.reviewSettings) {
+        setReviewSettings({
+          reviewLink: data.reviewSettings.reviewLink || '',
+          reviewPlatform: data.reviewSettings.reviewPlatform || 'google'
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching review settings:', error)
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare le impostazioni di recensione",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const fetchTemplates = async () => {
     if (!restaurantId) return
@@ -525,6 +684,52 @@ export default function TemplatesPage() {
     }
   }
 
+  const updateReviewSettings = async () => {
+    if (!restaurantId) return
+
+    try {
+      setIsUpdatingReviewSettings(true)
+      const response = await fetch(`/api/templates`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          restaurantId,
+          reviewLink: reviewSettings.reviewLink,
+          reviewPlatform: reviewSettings.reviewPlatform
+        })
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Impossibile aggiornare le impostazioni di recensione')
+      }
+
+      toast({
+        title: "Successo",
+        description: "Impostazioni di recensione aggiornate con successo",
+      })
+
+      setIsEditingReviewSettings(false)
+      
+      // Aggiorna i template se necessario
+      if (data.updatedTemplates > 0) {
+        fetchTemplates()
+      }
+    } catch (error) {
+      console.error('Error updating review settings:', error)
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Impossibile aggiornare le impostazioni di recensione",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingReviewSettings(false)
+    }
+  }
+
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -615,6 +820,7 @@ export default function TemplatesPage() {
                         setEditedMessage={setEditedMessage}
                         isGenerating={isGenerating}
                         botConfig={botConfig}
+                        restaurantPhoto={restaurantProfileImage}
                       />
                     ))}
                   </div>
@@ -629,6 +835,91 @@ export default function TemplatesPage() {
                 </div>
               ) : (
                 <>
+                  {/* Pannello impostazioni di recensione */}
+                  <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm sm:text-base font-medium text-gray-800">Impostazioni recensione</h3>
+                      <button
+                        onClick={() => setIsEditingReviewSettings(!isEditingReviewSettings)}
+                        className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {isEditingReviewSettings ? 'Annulla' : 'Modifica'}
+                      </button>
+                    </div>
+                    
+                    {isEditingReviewSettings ? (
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="reviewPlatform" className="text-xs sm:text-sm mb-1 block">
+                            Piattaforma di recensione
+                          </Label>
+                          <select
+                            id="reviewPlatform"
+                            value={reviewSettings.reviewPlatform}
+                            onChange={(e) => setReviewSettings({
+                              ...reviewSettings,
+                              reviewPlatform: e.target.value as 'google' | 'yelp' | 'tripadvisor' | 'custom'
+                            })}
+                            className="w-full text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
+                          >
+                            <option value="google">Google</option>
+                            <option value="yelp">Yelp</option>
+                            <option value="tripadvisor">TripAdvisor</option>
+                            <option value="custom">Personalizzato</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="reviewLink" className="text-xs sm:text-sm mb-1 block">
+                            URL per le recensioni
+                          </Label>
+                          <input
+                            id="reviewLink"
+                            type="text"
+                            value={reviewSettings.reviewLink}
+                            onChange={(e) => setReviewSettings({
+                              ...reviewSettings,
+                              reviewLink: e.target.value
+                            })}
+                            placeholder="https://..."
+                            className="w-full text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div className="pt-2">
+                          <CustomButton
+                            size="sm"
+                            onClick={updateReviewSettings}
+                            disabled={isUpdatingReviewSettings}
+                            className="w-full text-xs sm:text-sm justify-center"
+                          >
+                            {isUpdatingReviewSettings ? (
+                              <>
+                                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 animate-spin" />
+                                Aggiornamento...
+                              </>
+                            ) : (
+                              'Salva impostazioni'
+                            )}
+                          </CustomButton>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs sm:text-sm">
+                        <div className="mb-1">
+                          <span className="font-medium">Piattaforma: </span>
+                          <span className="text-gray-600 capitalize">{reviewSettings.reviewPlatform}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">URL: </span>
+                          <span className="text-gray-600 break-all">
+                            {reviewSettings.reviewLink || 'Non impostato'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   {/* Tab Lingue */}
                   <div className="bg-white rounded-xl p-1.5 sm:p-2 overflow-x-auto">
                     <div className="flex space-x-1.5 sm:space-x-2">
@@ -663,6 +954,7 @@ export default function TemplatesPage() {
                         setEditedMessage={setEditedMessage}
                         isGenerating={isGenerating}
                         botConfig={botConfig}
+                        restaurantPhoto={restaurantProfileImage}
                       />
                     ))}
                   </div>
