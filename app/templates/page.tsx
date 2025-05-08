@@ -77,7 +77,8 @@ function WhatsAppMockup({
   showMenuPdf = false,
   showMenuUrl = false,
   showReviewCta = false,
-  reviewButtonText = "Leave a Review"
+  reviewButtonText = "Leave a Review",
+  menuButtonText = "View Menu"
 }: { 
   message: string, 
   userMessage?: string, 
@@ -86,8 +87,12 @@ function WhatsAppMockup({
   showMenuPdf?: boolean,
   showMenuUrl?: boolean,
   showReviewCta?: boolean,
-  reviewButtonText?: string
+  reviewButtonText?: string,
+  menuButtonText?: string
 }) {
+  // Determina il testo del pulsante corretto in base al tipo
+  const buttonText = showMenuUrl ? menuButtonText : reviewButtonText;
+  
   return (
     <div className="flex justify-center mt-3 mb-4">
       <div className="w-full max-w-xs border-[6px] md:border-[8px] border-gray-800 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl bg-white relative">
@@ -175,7 +180,7 @@ function WhatsAppMockup({
                   <div className="mt-2 border-t pt-1.5 border-gray-200">
                     <div className="flex justify-center w-full">
                       <button className="bg-[#e9f2fd] text-[#127def] text-[10px] sm:text-xs py-1 px-3 rounded-3xl font-medium">
-                        {reviewButtonText || "Leave a Review"}
+                        {buttonText}
                       </button>
                     </div>
                   </div>
@@ -270,6 +275,34 @@ function TemplateCard({
   const isMenuUrl = template.type === 'CALL_TO_ACTION';
   const isReview = template.type === 'REVIEW';
   
+  // Ottieni il testo del pulsante dal template o usa quello modificato
+  const getButtonText = () => {
+    if (editMode) {
+      return editedButtonText;
+    }
+    
+    // Per i template di tipo CALL_TO_ACTION, prendi il testo dal pulsante
+    if (isMenuUrl && template.components.buttons && template.components.buttons.length > 0) {
+      return template.components.buttons[0].text;
+    }
+    
+    // Per i template di recensione
+    if (isReview && template.components.buttons && template.components.buttons.length > 0) {
+      return template.components.buttons[0].text;
+    }
+    
+    // Valori di default in base alla lingua
+    const defaultTexts: Record<string, string> = {
+      'it': isMenuUrl ? 'Vedi Menu' : 'Lascia una recensione',
+      'en': isMenuUrl ? 'View Menu' : 'Leave a review',
+      'es': isMenuUrl ? 'Ver Menú' : 'Dejar una reseña',
+      'de': isMenuUrl ? 'Menü anzeigen' : 'Bewertung abgeben',
+      'fr': isMenuUrl ? 'Voir le Menu' : 'Laisser un avis'
+    };
+    
+    return defaultTexts[template.language] || (isMenuUrl ? 'View Menu' : 'Leave a review');
+  };
+  
   return (
     <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
       <div className="mb-3 text-center">
@@ -297,7 +330,7 @@ function TemplateCard({
           </div>
           <div className="text-xs text-gray-500">
             Last update: {new Date(template.updatedAt).toLocaleDateString()}
-          </div>
+        </div>
         </div>
       </div>
 
@@ -318,7 +351,8 @@ function TemplateCard({
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
         showReviewCta={isReview}
-        reviewButtonText={editedButtonText}
+        reviewButtonText={isReview ? getButtonText() : "Leave a review"}
+        menuButtonText={isMenuUrl ? getButtonText() : "View Menu"}
       />
     </div>
   );
@@ -370,7 +404,7 @@ export default function TemplatesPage() {
   const [showTypeChangeAlert, setShowTypeChangeAlert] = useState(false)
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
-  
+
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
     const templates = activeTab === "menu" 
@@ -399,7 +433,7 @@ export default function TemplatesPage() {
       } 
       // Altrimenti se la lingua corrente non è tra quelle disponibili, prendi la prima
       else if (!currentLanguage || !languages.includes(currentLanguage)) {
-        setCurrentLanguage(languages[0]);
+      setCurrentLanguage(languages[0]);
       }
     }
   }, [menuTemplates, reviewTemplates, activeTab]);
@@ -693,27 +727,27 @@ export default function TemplatesPage() {
       
       // Se è un template di recensione
       if (template.type === 'REVIEW') {
-        const response = await fetch(`/api/templates/${template._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+      const response = await fetch(`/api/templates/${template._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
             message: editedMessage,
             buttonText: editedButtonText,
             updateAllLanguages: updateAllLanguages
-          })
         })
+      })
 
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to update template')
-        }
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update template')
+      }
 
-        if (!data.success) {
-          throw new Error('Invalid response format')
-        }
+      if (!data.success) {
+        throw new Error('Invalid response format')
+      }
 
         // Imposta il messaggio di successo e mostra l'animazione
         setSuccessMessage(updateAllLanguages 
@@ -721,8 +755,8 @@ export default function TemplatesPage() {
           : "Template aggiornato con successo!");
         setShowSuccessAnimation(true);
 
-        // Refresh templates
-        await fetchTemplates()
+      // Refresh templates
+      await fetchTemplates()
         setIsEditorOpen(false);
         setSelectedTemplate(null);
         return
@@ -1227,17 +1261,17 @@ export default function TemplatesPage() {
                   <div>
                     {getFilteredTemplates().map(template => (
                       <div 
-                        key={template._id} 
+                        key={template._id}
                         onClick={() => !isEditorOpen && handleEdit(template)}
                         className="cursor-pointer"
                       >
                         <TemplateCard
-                          template={template}
-                          onRegenerate={() => regenerateWithAI(template)}
+                        template={template}
+                        onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
-                          editedMessage={editedMessage}
+                        editedMessage={editedMessage}
                           editedButtonText={editedButtonText}
-                          isGenerating={isGenerating}
+                        isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
                           onCheckStatus={(id) => {
@@ -1369,17 +1403,17 @@ export default function TemplatesPage() {
                   <div>
                     {getFilteredTemplates().map(template => (
                       <div 
-                        key={template._id} 
+                        key={template._id}
                         onClick={() => !isEditorOpen && handleEdit(template)}
                         className="cursor-pointer"
                       >
                         <TemplateCard
-                          template={template}
-                          onRegenerate={() => regenerateWithAI(template)}
+                        template={template}
+                        onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
-                          editedMessage={editedMessage}
+                        editedMessage={editedMessage}
                           editedButtonText={editedButtonText}
-                          isGenerating={isGenerating}
+                        isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
                           onCheckStatus={(id) => {
