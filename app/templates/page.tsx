@@ -724,6 +724,26 @@ export default function TemplatesPage() {
     }
   }
 
+  // Funzione per ottenere l'emoji della bandiera in base al codice lingua
+  const getFlagEmoji = (langCode: string) => {
+    // Mappatura tra codici lingua e emoji bandiere
+    const flagMap: Record<string, string> = {
+      'it': '🇮🇹',
+      'en': '🇬🇧',
+      'es': '🇪🇸',
+      'de': '🇩🇪',
+      'fr': '🇫🇷',
+      'pt': '🇵🇹',
+      'nl': '🇳🇱',
+      'zh': '🇨🇳',
+      'ja': '🇯🇵',
+      'ru': '🇷🇺',
+      'ar': '🇸🇦'
+    };
+    
+    return flagMap[langCode] || '🌐';
+  }
+
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -793,7 +813,7 @@ export default function TemplatesPage() {
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span className="text-lg">{getFlagEmoji(lang)}</span>
                           {lang}
                         </button>
                       ))}
@@ -929,7 +949,7 @@ export default function TemplatesPage() {
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <Globe className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span className="text-lg">{getFlagEmoji(lang)}</span>
                           {lang}
                         </button>
                       ))}
