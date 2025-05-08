@@ -809,6 +809,14 @@ export default function TemplatesPage() {
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200 pb-24">
       <BubbleBackground />
 
+      {/* Overlay scuro quando la modifica è attiva */}
+      {isEditorOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-40 z-10"
+          onClick={cancelEdit}
+        ></div>
+      )}
+
       {/* Finestra di dialogo per la conferma */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -838,7 +846,7 @@ export default function TemplatesPage() {
         </DialogContent>
       </Dialog>
       
-      <div className="relative z-10 flex flex-col items-center min-h-screen px-2 sm:px-4 py-4 sm:py-6">
+      <div className={`relative z-${isEditorOpen ? '5' : '10'} flex flex-col items-center min-h-screen px-2 sm:px-4 py-4 sm:py-6`}>
         <div className="w-full max-w-md mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
@@ -899,7 +907,7 @@ export default function TemplatesPage() {
                   {/* Template Cards */}
                   <div>
                     {getFilteredTemplates().map(template => (
-                      <div key={template._id} onClick={() => handleEdit(template)}>
+                      <div key={template._id} onClick={() => !isEditorOpen && handleEdit(template)}>
                         <TemplateCard
                           template={template}
                           onRegenerate={() => regenerateWithAI(template)}
@@ -909,7 +917,7 @@ export default function TemplatesPage() {
                           isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={checkTemplateStatus}
+                          onCheckStatus={(id) => !isEditorOpen && checkTemplateStatus(id)}
                           isCheckingStatus={isCheckingStatus}
                         />
                       </div>
@@ -1034,7 +1042,7 @@ export default function TemplatesPage() {
                   {/* Template Cards */}
                   <div>
                     {getFilteredTemplates().map(template => (
-                      <div key={template._id} onClick={() => handleEdit(template)}>
+                      <div key={template._id} onClick={() => !isEditorOpen && handleEdit(template)}>
                         <TemplateCard
                           template={template}
                           onRegenerate={() => regenerateWithAI(template)}
@@ -1044,7 +1052,7 @@ export default function TemplatesPage() {
                           isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={checkTemplateStatus}
+                          onCheckStatus={(id) => !isEditorOpen && checkTemplateStatus(id)}
                           isCheckingStatus={isCheckingStatus}
                         />
                       </div>
@@ -1059,17 +1067,17 @@ export default function TemplatesPage() {
 
       {/* Banner fisso in basso per modificare il template */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-20 bg-white shadow-md transition-all duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-20 bg-white shadow-lg transition-all duration-300 rounded-t-2xl ${
           isEditorOpen 
-            ? 'h-72 md:h-64' 
+            ? 'h-[50vh] max-h-[500px]' 
             : 'h-16'
         }`}
       >
-        <div className="container mx-auto max-w-md p-3">
+        <div className="container mx-auto max-w-md p-4 h-full flex flex-col">
           {isEditorOpen && selectedTemplate ? (
-            <div className="h-full flex flex-col">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-medium">
+            <>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm md:text-base font-medium">
                   Modifica {getSelectedTemplateType()} Template ({currentLanguage})
                 </h3>
                 <button 
@@ -1080,73 +1088,72 @@ export default function TemplatesPage() {
                 </button>
               </div>
               
-              <Textarea
-                value={editedMessage}
-                onChange={(e) => setEditedMessage(e.target.value)}
-                className="w-full flex-grow min-h-0 text-xs sm:text-sm rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 mb-2"
-                placeholder="Write your message..."
-              />
-              
-              {selectedTemplate.type === 'REVIEW' && (
-                <div className="mb-2">
-                  <Label htmlFor="buttonText" className="text-xs sm:text-sm mb-1 block">
-                    Testo del pulsante
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="buttonText"
-                      type="text"
-                      value={editedButtonText}
-                      onChange={(e) => setEditedButtonText(e.target.value)}
-                      placeholder="Testo del pulsante"
-                      className="flex-1 text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
-                    />
+              <div className="flex-grow overflow-y-auto mb-4">
+                <Textarea
+                  value={editedMessage}
+                  onChange={(e) => setEditedMessage(e.target.value)}
+                  className="w-full h-full min-h-[150px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                  placeholder="Write your message..."
+                />
+                
+                {selectedTemplate.type === 'REVIEW' && (
+                  <div className="mt-3">
+                    <Label htmlFor="buttonText" className="text-sm md:text-base mb-1 block">
+                      Testo del pulsante
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="buttonText"
+                        type="text"
+                        value={editedButtonText}
+                        onChange={(e) => setEditedButtonText(e.target.value)}
+                        placeholder="Testo del pulsante"
+                        className="flex-1 text-sm md:text-base p-3 border border-gray-300 rounded-md"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               
-              <div className="flex gap-2 justify-end">
+              <div className="grid grid-cols-3 gap-3">
                 <CustomButton
                   variant="outline"
-                  size="sm"
-                  className="text-xs py-1.5 px-3"
+                  className="text-sm py-3 justify-center"
                   onClick={cancelEdit}
                 >
                   Cancel
                 </CustomButton>
                 <CustomButton
                   variant="outline"
-                  size="sm"
-                  className="text-xs py-1.5 px-3"
+                  className="text-sm py-3 justify-center"
                   onClick={() => regenerateWithAI(selectedTemplate)}
                   disabled={isGenerating}
                 >
                   {isGenerating ? (
                     <>
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                       Generating...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Regenerate with AI
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      Regenerate
                     </>
                   )}
                 </CustomButton>
                 <CustomButton
-                  size="sm"
-                  className="text-xs py-1.5 px-3"
+                  className="text-sm py-3 justify-center"
                   onClick={initiateTemplateSave}
                 >
-                  <Send className="w-3 h-3 mr-1" />
+                  <Send className="w-4 h-4 mr-1" />
                   Save
                 </CustomButton>
               </div>
-            </div>
+            </>
           ) : (
-            <div className="flex justify-center">
+            <div className="flex justify-center h-full items-center">
               <CustomButton
-                className="w-full text-center flex items-center justify-center py-2"
+                className="w-full text-center flex items-center justify-center py-2 px-4"
                 onClick={() => {
                   if (getFilteredTemplates().length > 0) {
                     handleEdit(getFilteredTemplates()[0])
