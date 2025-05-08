@@ -206,14 +206,10 @@ function getTriggerWord(restaurantName: string, botConfig: {triggerWord: string}
 // Componente per una singola template card
 function TemplateCard({ 
   template, 
-  onEdit, 
-  onSave, 
   onRegenerate, 
   editMode,
   editedMessage,
-  setEditedMessage,
   editedButtonText,
-  setEditedButtonText,
   isGenerating,
   botConfig,
   restaurantPhoto,
@@ -221,52 +217,17 @@ function TemplateCard({
   isCheckingStatus
 }: { 
   template: Template, 
-  onEdit: () => void, 
-  onSave: () => void,
   onRegenerate: () => void,
   editMode: boolean,
   editedMessage: string,
-  setEditedMessage: (message: string) => void,
   editedButtonText: string,
-  setEditedButtonText: (text: string) => void,
   isGenerating: boolean,
   botConfig: {triggerWord: string} | null,
   restaurantPhoto: string,
   onCheckStatus: (templateId: string) => void,
   isCheckingStatus: string | null
 }) {
-  const [isLoadingButtonText, setIsLoadingButtonText] = useState(false)
   const { toast } = useToast()
-
-  useEffect(() => {
-    // Se è un template di recensione e siamo in modalità modifica, carica il testo del pulsante
-    if (template.type === 'REVIEW' && editMode) {
-      fetchButtonText()
-    }
-  }, [editMode, template.type, template._id])
-
-  const fetchButtonText = async () => {
-    if (!template._id) return
-
-    try {
-      setIsLoadingButtonText(true)
-      const response = await fetch(`/api/templates?templateId=${template._id}&buttonText=true`)
-      const data = await response.json()
-      
-      if (data.success && data.buttonText) {
-        setEditedButtonText(data.buttonText)
-      }
-    } catch (error) {
-      console.error('Error fetching button text:', error)
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare il testo del pulsante",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingButtonText(false)
-    }
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -343,89 +304,6 @@ function TemplateCard({
         showReviewCta={isReview}
         reviewButtonText={editedButtonText}
       />
-
-      {editMode ? (
-        <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
-          <Textarea
-            value={editedMessage}
-            onChange={(e) => setEditedMessage(e.target.value)}
-            className="w-full min-h-[120px] sm:min-h-[150px] text-xs sm:text-sm rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-            placeholder="Write your message..."
-          />
-          
-          {/* Campo per modificare il testo del pulsante, solo per i template di recensione */}
-          {isReview && (
-            <div className="mt-2">
-              <Label htmlFor="buttonText" className="text-xs sm:text-sm mb-1 block">
-                Testo del pulsante
-              </Label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="buttonText"
-                  type="text"
-                  value={editedButtonText}
-                  onChange={(e) => setEditedButtonText(e.target.value)}
-                  placeholder="Testo del pulsante"
-                  className="flex-1 text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
-                  disabled={isLoadingButtonText}
-                />
-              </div>
-            </div>
-          )}
-          
-          <div className="flex gap-1.5 sm:gap-2 justify-end">
-            <CustomButton
-              variant="outline"
-              size="sm"
-              className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
-              onClick={onEdit}
-            >
-              Cancel
-            </CustomButton>
-            <CustomButton
-              variant="outline"
-              size="sm"
-              className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
-              onClick={onRegenerate}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-                  Regenerate with AI
-                </>
-              )}
-            </CustomButton>
-            <CustomButton
-              size="sm"
-              className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
-              onClick={onSave}
-            >
-              <Send className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-              Save
-            </CustomButton>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 sm:mt-4 flex justify-center">
-          <CustomButton
-            variant="outline"
-            size="sm"
-            className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
-            onClick={onEdit}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit Message
-          </CustomButton>
-        </div>
-      )}
     </div>
   );
 }
@@ -455,14 +333,18 @@ export default function TemplatesPage() {
   })
   const [isEditingReviewSettings, setIsEditingReviewSettings] = useState(false)
   const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
-  const { toast } = useToast()
   const [isCheckingStatus, setIsCheckingStatus] = useState<string | null>(null)
+  const { toast } = useToast()
   
   // Stato per la dialog di conferma
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [templateToSave, setTemplateToSave] = useState<Template | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-
+  
+  // Ref al template selezionato
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
     const templates = activeTab === "menu" 
@@ -587,17 +469,52 @@ export default function TemplatesPage() {
   }
 
   const handleEdit = (template: Template) => {
-    if (editingTemplate === template._id) {
-      setEditingTemplate(null);
+    if (selectedTemplate?._id === template._id && isEditorOpen) {
+      // Se è già selezionato, chiudi l'editor
+      setIsEditorOpen(false);
+      setSelectedTemplate(null);
     } else {
-      setEditingTemplate(template._id);
+      // Altrimenti, seleziona il template e apri l'editor
+      setSelectedTemplate(template);
       setEditedMessage(template.components.body.text);
+      setIsEditorOpen(true);
+      
+      // Carica il testo del pulsante se è un template di recensione
+      if (template.type === 'REVIEW') {
+        fetchButtonText(template._id);
+      }
     }
   }
 
-  const initiateTemplateSave = (template: Template) => {
-    setTemplateToSave(template);
+  const fetchButtonText = async (templateId: string) => {
+    if (!templateId) return;
+
+    try {
+      const response = await fetch(`/api/templates?templateId=${templateId}&buttonText=true`);
+      const data = await response.json();
+      
+      if (data.success && data.buttonText) {
+        setEditedButtonText(data.buttonText);
+      }
+    } catch (error) {
+      console.error('Error fetching button text:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare il testo del pulsante",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const initiateTemplateSave = () => {
+    if (!selectedTemplate) return;
+    setTemplateToSave(selectedTemplate);
     setSaveDialogOpen(true);
+  }
+  
+  const cancelEdit = () => {
+    setIsEditorOpen(false);
+    setSelectedTemplate(null);
   }
   
   const saveTemplate = async (updateAllLanguages: boolean) => {
@@ -610,7 +527,7 @@ export default function TemplatesPage() {
       const template = templateToSave;
       
       // Se è un template di recensione con testo del pulsante modificato, invia entrambi i dati
-      if (template.type === 'REVIEW' && editingTemplate === template._id) {
+      if (template.type === 'REVIEW') {
         const response = await fetch(`/api/templates/${template._id}`, {
           method: 'PUT',
           headers: {
@@ -642,7 +559,8 @@ export default function TemplatesPage() {
 
         // Refresh templates
         await fetchTemplates()
-        setEditingTemplate(null)
+        setIsEditorOpen(false);
+        setSelectedTemplate(null);
         return
       }
 
@@ -676,8 +594,9 @@ export default function TemplatesPage() {
       })
 
       // Refresh templates
-      await fetchTemplates()
-      setEditingTemplate(null)
+      await fetchTemplates();
+      setIsEditorOpen(false);
+      setSelectedTemplate(null);
     } catch (error) {
       console.error('Error updating template:', error)
       toast({
@@ -881,8 +800,13 @@ export default function TemplatesPage() {
     return templates.filter(t => t.language === currentLanguage);
   }
 
+  const getSelectedTemplateType = () => {
+    if (!selectedTemplate) return '';
+    return selectedTemplate.type === 'REVIEW' ? 'Review' : 'Menu';
+  }
+
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200 pb-24">
       <BubbleBackground />
 
       {/* Finestra di dialogo per la conferma */}
@@ -975,23 +899,20 @@ export default function TemplatesPage() {
                   {/* Template Cards */}
                   <div>
                     {getFilteredTemplates().map(template => (
-                      <TemplateCard
-                        key={template._id}
-                        template={template}
-                        onEdit={() => handleEdit(template)}
-                        onSave={() => initiateTemplateSave(template)}
-                        onRegenerate={() => regenerateWithAI(template)}
-                        editMode={editingTemplate === template._id}
-                        editedMessage={editedMessage}
-                        setEditedMessage={setEditedMessage}
-                        editedButtonText={editedButtonText}
-                        setEditedButtonText={setEditedButtonText}
-                        isGenerating={isGenerating}
-                        botConfig={botConfig}
-                        restaurantPhoto={restaurantProfileImage}
-                        onCheckStatus={checkTemplateStatus}
-                        isCheckingStatus={isCheckingStatus}
-                      />
+                      <div key={template._id} onClick={() => handleEdit(template)}>
+                        <TemplateCard
+                          template={template}
+                          onRegenerate={() => regenerateWithAI(template)}
+                          editMode={selectedTemplate?._id === template._id && isEditorOpen}
+                          editedMessage={editedMessage}
+                          editedButtonText={editedButtonText}
+                          isGenerating={isGenerating}
+                          botConfig={botConfig}
+                          restaurantPhoto={restaurantProfileImage}
+                          onCheckStatus={checkTemplateStatus}
+                          isCheckingStatus={isCheckingStatus}
+                        />
+                      </div>
                     ))}
                   </div>
                 </>
@@ -1113,29 +1034,133 @@ export default function TemplatesPage() {
                   {/* Template Cards */}
                   <div>
                     {getFilteredTemplates().map(template => (
-                      <TemplateCard
-                        key={template._id}
-                        template={template}
-                        onEdit={() => handleEdit(template)}
-                        onSave={() => initiateTemplateSave(template)}
-                        onRegenerate={() => regenerateWithAI(template)}
-                        editMode={editingTemplate === template._id}
-                        editedMessage={editedMessage}
-                        setEditedMessage={setEditedMessage}
-                        editedButtonText={editedButtonText}
-                        setEditedButtonText={setEditedButtonText}
-                        isGenerating={isGenerating}
-                        botConfig={botConfig}
-                        restaurantPhoto={restaurantProfileImage}
-                        onCheckStatus={checkTemplateStatus}
-                        isCheckingStatus={isCheckingStatus}
-                      />
+                      <div key={template._id} onClick={() => handleEdit(template)}>
+                        <TemplateCard
+                          template={template}
+                          onRegenerate={() => regenerateWithAI(template)}
+                          editMode={selectedTemplate?._id === template._id && isEditorOpen}
+                          editedMessage={editedMessage}
+                          editedButtonText={editedButtonText}
+                          isGenerating={isGenerating}
+                          botConfig={botConfig}
+                          restaurantPhoto={restaurantProfileImage}
+                          onCheckStatus={checkTemplateStatus}
+                          isCheckingStatus={isCheckingStatus}
+                        />
+                      </div>
                     ))}
                   </div>
                 </>
               )}
             </TabsContent>
           </Tabs>
+        </div>
+      </div>
+
+      {/* Banner fisso in basso per modificare il template */}
+      <div 
+        className={`fixed bottom-0 left-0 right-0 z-20 bg-white shadow-md transition-all duration-300 ${
+          isEditorOpen 
+            ? 'h-72 md:h-64' 
+            : 'h-16'
+        }`}
+      >
+        <div className="container mx-auto max-w-md p-3">
+          {isEditorOpen && selectedTemplate ? (
+            <div className="h-full flex flex-col">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">
+                  Modifica {getSelectedTemplateType()} Template ({currentLanguage})
+                </h3>
+                <button 
+                  onClick={cancelEdit}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <Textarea
+                value={editedMessage}
+                onChange={(e) => setEditedMessage(e.target.value)}
+                className="w-full flex-grow min-h-0 text-xs sm:text-sm rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400 mb-2"
+                placeholder="Write your message..."
+              />
+              
+              {selectedTemplate.type === 'REVIEW' && (
+                <div className="mb-2">
+                  <Label htmlFor="buttonText" className="text-xs sm:text-sm mb-1 block">
+                    Testo del pulsante
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="buttonText"
+                      type="text"
+                      value={editedButtonText}
+                      onChange={(e) => setEditedButtonText(e.target.value)}
+                      placeholder="Testo del pulsante"
+                      className="flex-1 text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2 justify-end">
+                <CustomButton
+                  variant="outline"
+                  size="sm"
+                  className="text-xs py-1.5 px-3"
+                  onClick={cancelEdit}
+                >
+                  Cancel
+                </CustomButton>
+                <CustomButton
+                  variant="outline"
+                  size="sm"
+                  className="text-xs py-1.5 px-3"
+                  onClick={() => regenerateWithAI(selectedTemplate)}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Regenerate with AI
+                    </>
+                  )}
+                </CustomButton>
+                <CustomButton
+                  size="sm"
+                  className="text-xs py-1.5 px-3"
+                  onClick={initiateTemplateSave}
+                >
+                  <Send className="w-3 h-3 mr-1" />
+                  Save
+                </CustomButton>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <CustomButton
+                className="w-full text-center flex items-center justify-center py-2"
+                onClick={() => {
+                  if (getFilteredTemplates().length > 0) {
+                    handleEdit(getFilteredTemplates()[0])
+                  }
+                }}
+                disabled={getFilteredTemplates().length === 0}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Message
+              </CustomButton>
+            </div>
+          )}
         </div>
       </div>
     </main>
