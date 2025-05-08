@@ -187,12 +187,8 @@ function WhatsAppMockup({
 
 // Funzione per ottenere il trigger word basato sul nome del ristorante e la configurazione
 function getTriggerWord(restaurantName: string, botConfig: {triggerWord: string} | null): string {
-  // Se abbiamo il trigger word dalla configurazione del bot, lo usiamo
-  if (botConfig?.triggerWord) {
-    return botConfig.triggerWord;
-  }
-  // Altrimenti usiamo un valore di default
-  return `Hello ${restaurantName}`;
+  // Dato che l'API non è implementata nel backend, usiamo "Menu" come trigger word di default
+  return "Menu";
 }
 
 // Componente per una singola template card
@@ -404,7 +400,6 @@ export default function TemplatesPage() {
 
     if (status === "authenticated" && session.user.restaurantId) {
       fetchTemplates()
-      fetchBotConfig() // Aggiungo il recupero della configurazione del bot
     }
   }, [status, session])
 
@@ -440,27 +435,6 @@ export default function TemplatesPage() {
       })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  // Funzione per recuperare la configurazione del bot
-  const fetchBotConfig = async () => {
-    if (!restaurantId) return
-
-    try {
-      const response = await fetch(`/api/bot-config?restaurantId=${restaurantId}`)
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load bot configuration')
-      }
-      
-      if (data.success && data.botConfig) {
-        setBotConfig(data.botConfig)
-      }
-    } catch (error) {
-      console.error('Error fetching bot configuration:', error)
-      // Non mostriamo un toast di errore qui per non confondere l'utente
     }
   }
 
