@@ -54,14 +54,18 @@ function WhatsAppMockup({
   restaurantName = "Restaurant", 
   restaurantPhoto = "",
   showMenuPdf = false,
-  showMenuUrl = false
+  showMenuUrl = false,
+  showReviewCta = false,
+  reviewButtonText = "Leave a Review"
 }: { 
   message: string, 
   userMessage?: string, 
   restaurantName?: string, 
   restaurantPhoto?: string,
   showMenuPdf?: boolean,
-  showMenuUrl?: boolean
+  showMenuUrl?: boolean,
+  showReviewCta?: boolean,
+  reviewButtonText?: string
 }) {
   return (
     <div className="flex justify-center mt-3 mb-4">
@@ -145,11 +149,11 @@ function WhatsAppMockup({
                 
                 <p className="text-xs md:text-sm whitespace-pre-wrap">{message.replace('{customerName}', 'Marco')}</p>
                 
-                {/* Se il menu è un URL, mostra il pulsante CTA */}
-                {showMenuUrl && (
+                {/* Se il menu è un URL o è una recensione con CTA, mostra il pulsante appropriato */}
+                {(showMenuUrl || showReviewCta) && (
                   <div className="mt-2 border-t pt-1.5 md:pt-2">
                     <button className="w-full text-center py-1.5 md:py-2 text-[#0277BD] text-xs md:text-sm font-medium hover:bg-gray-50 rounded transition-colors">
-                      Visualizza il Menu
+                      {showReviewCta ? reviewButtonText : "View Menu"}
                     </button>
                   </div>
                 )}
@@ -166,7 +170,7 @@ function WhatsAppMockup({
         <div className="bg-[#F0F0F0] p-1.5 md:p-2">
           <div className="flex items-center">
             <div className="flex-grow bg-white rounded-full px-3 py-1.5 md:py-2 flex items-center">
-              <span className="text-gray-400 text-xs md:text-sm">Scrivi un messaggio</span>
+              <span className="text-gray-400 text-xs md:text-sm">Type a message</span>
             </div>
             <div className="ml-2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -181,6 +185,16 @@ function WhatsAppMockup({
   );
 }
 
+// Funzione per ottenere il trigger word basato sul nome del ristorante e la configurazione
+function getTriggerWord(restaurantName: string, botConfig: {triggerWord: string} | null): string {
+  // Se abbiamo il trigger word dalla configurazione del bot, lo usiamo
+  if (botConfig?.triggerWord) {
+    return botConfig.triggerWord;
+  }
+  // Altrimenti usiamo un valore di default
+  return `Hello ${restaurantName}`;
+}
+
 // Componente per una singola template card
 function TemplateCard({ 
   template, 
@@ -190,7 +204,8 @@ function TemplateCard({
   editMode,
   editedMessage,
   setEditedMessage,
-  isGenerating
+  isGenerating,
+  botConfig
 }: { 
   template: Template, 
   onEdit: () => void, 
@@ -199,7 +214,8 @@ function TemplateCard({
   editMode: boolean,
   editedMessage: string,
   setEditedMessage: (message: string) => void,
-  isGenerating: boolean
+  isGenerating: boolean,
+  botConfig: {triggerWord: string} | null
 }) {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -229,6 +245,7 @@ function TemplateCard({
   const displayMessage = editMode ? editedMessage : template.components.body.text;
   const isMenuPdf = template.type === 'MEDIA';
   const isMenuUrl = template.type === 'CALL_TO_ACTION';
+  const isReview = template.type === 'REVIEW';
   
   return (
     <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
@@ -241,7 +258,7 @@ function TemplateCard({
           </div>
         </div>
         <div className="text-[10px] sm:text-xs text-gray-500">
-          Ultimo aggiornamento: {new Date(template.updatedAt).toLocaleDateString()}
+          Last update: {new Date(template.updatedAt).toLocaleDateString()}
         </div>
       </div>
 
@@ -249,17 +266,19 @@ function TemplateCard({
         <div className="mb-3 p-2 bg-red-50 rounded-lg border border-red-100">
           <p className="text-[10px] sm:text-xs text-red-700">
             <XCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 inline mr-1" />
-            Motivo del rifiuto: {template.rejectionReason}
+            Rejection reason: {template.rejectionReason}
           </p>
         </div>
       )}
 
       <WhatsAppMockup 
         message={displayMessage} 
-        userMessage={template.type === 'REVIEW' ? "Ordine completato! 🎉" : `Ciao ${template.name || "Ristorante"}`}
-        restaurantName={template.name || "Ristorante"}
+        userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(template.name || "Restaurant", botConfig)}`}
+        restaurantName={template.name || "Restaurant"}
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
+        showReviewCta={isReview}
+        reviewButtonText="Leave a Review"
       />
 
       {editMode ? (
@@ -268,7 +287,7 @@ function TemplateCard({
             value={editedMessage}
             onChange={(e) => setEditedMessage(e.target.value)}
             className="w-full min-h-[120px] sm:min-h-[150px] text-xs sm:text-sm rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-            placeholder="Scrivi il messaggio..."
+            placeholder="Write your message..."
           />
           <div className="flex gap-1.5 sm:gap-2 justify-end">
             <CustomButton
@@ -277,7 +296,7 @@ function TemplateCard({
               className="text-[10px] sm:text-xs py-1 sm:py-1.5 px-2 sm:px-3"
               onClick={onEdit}
             >
-              Annulla
+              Cancel
             </CustomButton>
             <CustomButton
               variant="outline"
@@ -289,12 +308,12 @@ function TemplateCard({
               {isGenerating ? (
                 <>
                   <Loader2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 animate-spin" />
-                  Generazione...
+                  Generating...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-                  Rigenera con AI
+                  Regenerate with AI
                 </>
               )}
             </CustomButton>
@@ -304,7 +323,7 @@ function TemplateCard({
               onClick={onSave}
             >
               <Send className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-              Salva
+              Save
             </CustomButton>
           </div>
         </div>
@@ -319,7 +338,7 @@ function TemplateCard({
             <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            Modifica Messaggio
+            Edit Message
           </CustomButton>
         </div>
       )}
@@ -340,6 +359,7 @@ export default function TemplatesPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState<string>("") // Per il tab delle lingue
   const [activeTab, setActiveTab] = useState("menu") // menu o review
+  const [botConfig, setBotConfig] = useState<{triggerWord: string} | null>(null) // Configurazione bot
   const { toast } = useToast()
 
   // Ottenere tutte le lingue disponibili nei template
@@ -348,15 +368,30 @@ export default function TemplatesPage() {
       ? menuTemplates 
       : reviewTemplates;
       
-    // Estrai le lingue uniche e ordina alfabeticamente
-    return Array.from(new Set(templates.map(t => t.language))).sort();
+    // Estrai le lingue uniche e ordina, ma metti sempre l'inglese per primo se presente
+    const languages = Array.from(new Set(templates.map(t => t.language)));
+    
+    // Riordina l'array mettendo 'en' in prima posizione se presente
+    if (languages.includes('en')) {
+      const result = ['en', ...languages.filter(lang => lang !== 'en')];
+      return result;
+    }
+    
+    return languages.sort();
   }
 
   useEffect(() => {
     // Aggiorna la lingua corrente quando cambiano i templates o il tab
     const languages = availableLanguages();
-    if (languages.length > 0 && (!currentLanguage || !languages.includes(currentLanguage))) {
-      setCurrentLanguage(languages[0]);
+    if (languages.length > 0) {
+      // Se c'è "en" tra le lingue disponibili, selezionala di default
+      if (languages.includes('en') && (!currentLanguage || currentLanguage !== 'en')) {
+        setCurrentLanguage('en');
+      } 
+      // Altrimenti se la lingua corrente non è tra quelle disponibili, prendi la prima
+      else if (!currentLanguage || !languages.includes(currentLanguage)) {
+        setCurrentLanguage(languages[0]);
+      }
     }
   }, [menuTemplates, reviewTemplates, activeTab]);
 
@@ -369,6 +404,7 @@ export default function TemplatesPage() {
 
     if (status === "authenticated" && session.user.restaurantId) {
       fetchTemplates()
+      fetchBotConfig() // Aggiungo il recupero della configurazione del bot
     }
   }, [status, session])
 
@@ -404,6 +440,27 @@ export default function TemplatesPage() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Funzione per recuperare la configurazione del bot
+  const fetchBotConfig = async () => {
+    if (!restaurantId) return
+
+    try {
+      const response = await fetch(`/api/bot-config?restaurantId=${restaurantId}`)
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load bot configuration')
+      }
+      
+      if (data.success && data.botConfig) {
+        setBotConfig(data.botConfig)
+      }
+    } catch (error) {
+      console.error('Error fetching bot configuration:', error)
+      // Non mostriamo un toast di errore qui per non confondere l'utente
     }
   }
 
@@ -477,7 +534,7 @@ export default function TemplatesPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Impossibile generare il messaggio')
+        throw new Error('Unable to generate message')
       }
 
       const data = await response.json()
@@ -485,8 +542,8 @@ export default function TemplatesPage() {
     } catch (error) {
       console.error('Error generating message:', error)
       toast({
-        title: "Errore",
-        description: "Impossibile generare il messaggio",
+        title: "Error",
+        description: "Unable to generate message",
         variant: "destructive",
       })
     } finally {
@@ -516,8 +573,8 @@ export default function TemplatesPage() {
         <div className="w-full max-w-md mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA]">Template WhatsApp</h1>
-              <p className="text-sm sm:text-base text-gray-700">Gestisci i tuoi template di messaggi</p>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA]">WhatsApp Templates</h1>
+              <p className="text-sm sm:text-base text-gray-700">Manage your message templates</p>
             </div>
             <div className="relative w-8 h-8">
               <Image
@@ -546,7 +603,7 @@ export default function TemplatesPage() {
             <TabsContent value="menu" className="space-y-3 sm:space-y-4">
               {menuTemplates.length === 0 ? (
                 <div className="bg-white rounded-xl p-4 sm:p-6 text-center">
-                  <p className="text-gray-500 text-sm sm:text-base">Nessun template di menu disponibile</p>
+                  <p className="text-gray-500 text-sm sm:text-base">No menu templates available</p>
                 </div>
               ) : (
                 <>
@@ -583,6 +640,7 @@ export default function TemplatesPage() {
                         editedMessage={editedMessage}
                         setEditedMessage={setEditedMessage}
                         isGenerating={isGenerating}
+                        botConfig={botConfig}
                       />
                     ))}
                   </div>
@@ -593,7 +651,7 @@ export default function TemplatesPage() {
             <TabsContent value="review" className="space-y-3 sm:space-y-4">
               {reviewTemplates.length === 0 ? (
                 <div className="bg-white rounded-xl p-4 sm:p-6 text-center">
-                  <p className="text-gray-500 text-sm sm:text-base">Nessun template di recensioni disponibile</p>
+                  <p className="text-gray-500 text-sm sm:text-base">No review templates available</p>
                 </div>
               ) : (
                 <>
@@ -630,6 +688,7 @@ export default function TemplatesPage() {
                         editedMessage={editedMessage}
                         setEditedMessage={setEditedMessage}
                         isGenerating={isGenerating}
+                        botConfig={botConfig}
                       />
                     ))}
                   </div>
