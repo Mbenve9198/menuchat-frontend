@@ -14,7 +14,10 @@ import {
   Send,
   FileText,
   Globe,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  File,
+  Link
 } from "lucide-react"
 import Image from "next/image"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -34,6 +37,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { FileUpload } from "@/components/ui/file-upload"
 
 interface Template {
   _id: string
@@ -51,6 +56,11 @@ interface Template {
       text: string
       url: string
     }>
+    header?: {
+      type: string
+      format: string
+      example: string
+    }
   }
   createdAt: string
   updatedAt: string
@@ -350,6 +360,13 @@ export default function TemplatesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   
+  // Stati per la gestione del menu
+  const [menuType, setMenuType] = useState<"url" | "file">("url")
+  const [menuUrl, setMenuUrl] = useState("")
+  const [menuFile, setMenuFile] = useState<File | null>(null)
+  const [menuPdfUrl, setMenuPdfUrl] = useState("")
+  const [isUploadingMenu, setIsUploadingMenu] = useState(false)
+  
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
     const templates = activeTab === "menu" 
@@ -484,6 +501,18 @@ export default function TemplatesPage() {
       setEditedMessage(template.components.body.text);
       setIsEditorOpen(true);
       
+      // Determina il tipo di menu in base al tipo di template
+      if (template.type === 'MEDIA') {
+        setMenuType("file");
+        setMenuPdfUrl(template.components.header?.example || "");
+        setMenuUrl("");
+      } else if (template.type === 'CALL_TO_ACTION') {
+        setMenuType("url");
+        setMenuUrl(template.components.buttons?.[0]?.url || "");
+        setMenuPdfUrl("");
+        setMenuFile(null);
+      }
+      
       // Carica il testo del pulsante se è un template di recensione
       if (template.type === 'REVIEW') {
         fetchButtonText(template._id);
@@ -520,6 +549,69 @@ export default function TemplatesPage() {
   const cancelEdit = () => {
     setIsEditorOpen(false);
     setSelectedTemplate(null);
+    setMenuFile(null);
+    setMenuUrl("");
+    setMenuPdfUrl("");
+  }
+  
+  const handleFileChange = async (file: File | null) => {
+    if (!file) {
+      setMenuFile(null);
+      setMenuPdfUrl("");
+      return;
+    }
+    
+    setMenuFile(file);
+    setMenuType("file");
+    setIsUploadingMenu(true);
+    
+    try {
+      // Creiamo un FormData per la richiesta
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('languageCode', currentLanguage);
+      
+      if (selectedTemplate) {
+        formData.append('restaurantName', selectedTemplate.name || 'restaurant');
+      }
+      
+      // Inviamo la richiesta al nostro endpoint di upload
+      const response = await fetch('/api/upload/menu-pdf', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore durante il caricamento del file');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMenuPdfUrl(data.file.url);
+        toast({
+          title: "Upload completato",
+          description: `Il menu PDF è stato caricato con successo.`,
+        });
+      } else {
+        throw new Error(data.error || 'Errore durante il caricamento del file');
+      }
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Errore di caricamento",
+        description: error.message || "Si è verificato un errore durante il caricamento del file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingMenu(false);
+    }
+  }
+  
+  const handleUrlChange = (url: string) => {
+    setMenuUrl(url);
+    if (url) setMenuType("url");
   }
   
   const saveTemplate = async (updateAllLanguages: boolean) => {
@@ -530,8 +622,26 @@ export default function TemplatesPage() {
       setSaveDialogOpen(false);
       
       const template = templateToSave;
+      const isTypeChanged = 
+        (menuType === "url" && template.type === "MEDIA") || 
+        (menuType === "file" && template.type === "CALL_TO_ACTION");
       
-      // Se è un template di recensione con testo del pulsante modificato, invia entrambi i dati
+      // Se è cambiato il tipo di template (da PDF a URL o viceversa), dobbiamo creare un nuovo template
+      if (isTypeChanged && template.type !== 'REVIEW') {
+        // Implementare la logica per cambiare tipo di template
+        // Per semplicità, mostriamo un messaggio che questa funzione richiede ancora implementazione
+        toast({
+          title: "Funzionalità in sviluppo",
+          description: "Il cambio di tipo di template (da PDF a URL o viceversa) richiede implementazione lato server.",
+          variant: "default",
+        });
+        
+        setIsSaving(false);
+        setTemplateToSave(null);
+        return;
+      }
+      
+      // Se è un template di recensione
       if (template.type === 'REVIEW') {
         const response = await fetch(`/api/templates/${template._id}`, {
           method: 'PUT',
@@ -568,17 +678,26 @@ export default function TemplatesPage() {
         setSelectedTemplate(null);
         return
       }
+      
+      // Per i template di menu
+      let requestBody: any = {
+        message: editedMessage,
+        updateAllLanguages: updateAllLanguages
+      };
+      
+      // Aggiungi i dati specifici per il tipo di menu
+      if (menuType === "url" && menuUrl) {
+        requestBody.menuUrl = menuUrl;
+      } else if (menuType === "file" && menuPdfUrl) {
+        requestBody.menuPdfUrl = menuPdfUrl;
+      }
 
-      // Per gli altri tipi di template, comportamento originale
       const response = await fetch(`/api/templates/${template._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          message: editedMessage,
-          updateAllLanguages: updateAllLanguages
-        })
+        body: JSON.stringify(requestBody)
       })
 
       const data = await response.json()
@@ -612,6 +731,9 @@ export default function TemplatesPage() {
     } finally {
       setIsSaving(false);
       setTemplateToSave(null);
+      setMenuFile(null);
+      setMenuUrl("");
+      setMenuPdfUrl("");
     }
   }
 
@@ -807,7 +929,66 @@ export default function TemplatesPage() {
 
   const getSelectedTemplateType = () => {
     if (!selectedTemplate) return '';
-    return selectedTemplate.type === 'REVIEW' ? 'Review' : 'Menu';
+    if (selectedTemplate.type === 'REVIEW') return 'Review';
+    // Determina il tipo in base alla selezione corrente dell'utente
+    return menuType === "file" ? 'Menu PDF' : 'Menu URL';
+  }
+
+  // Determina l'anteprima da mostrare in base al tipo di menu selezionato
+  const getTemplatePreview = () => {
+    if (!selectedTemplate) return null;
+    
+    if (selectedTemplate.type === 'REVIEW') {
+      return (
+        <div className="mb-4 bg-gray-50 p-3 rounded-lg border text-sm">
+          <div className="font-medium mb-2">Anteprima:</div>
+          <div className="bg-white p-3 rounded border">
+            <p className="text-gray-800">{editedMessage}</p>
+            <div className="mt-2 pt-2 border-t">
+              <button className="w-full text-center py-2 text-blue-600 font-medium">
+                {editedButtonText || "Lascia una recensione"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (menuType === "file") {
+      return (
+        <div className="mb-4 bg-gray-50 p-3 rounded-lg border text-sm">
+          <div className="font-medium mb-2">Anteprima:</div>
+          <div className="bg-white p-3 rounded border">
+            <div className="mb-2 flex items-center gap-2 p-2 bg-gray-50 rounded border">
+              <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
+                PDF
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium">Menu.pdf</p>
+                <p className="text-[10px] text-gray-500">PDF Document</p>
+              </div>
+            </div>
+            <p className="text-gray-800">{editedMessage}</p>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="mb-4 bg-gray-50 p-3 rounded-lg border text-sm">
+        <div className="font-medium mb-2">Anteprima:</div>
+        <div className="bg-white p-3 rounded border">
+          <p className="text-gray-800">{editedMessage}</p>
+          {menuUrl && (
+            <div className="mt-2 pt-2 border-t">
+              <button className="w-full text-center py-2 text-blue-600 font-medium">
+                View Menu
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1088,7 +1269,7 @@ export default function TemplatesPage() {
       <div 
         className={`fixed bottom-0 left-0 right-0 z-20 bg-white shadow-lg transition-all duration-300 rounded-t-2xl ${
           isEditorOpen 
-            ? 'h-[50vh] max-h-[500px]' 
+            ? 'h-[60vh] max-h-[600px]' 
             : 'h-16'
         }`}
       >
@@ -1108,15 +1289,90 @@ export default function TemplatesPage() {
               </div>
               
               <div className="flex-grow overflow-y-auto mb-4">
+                {/* Anteprima del template */}
+                {getTemplatePreview()}
+                
+                {/* Input per modificare il messaggio */}
                 <Textarea
                   value={editedMessage}
                   onChange={(e) => setEditedMessage(e.target.value)}
-                  className="w-full h-full min-h-[150px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                  className="w-full mb-3 min-h-[80px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                   placeholder="Write your message..."
                 />
                 
+                {/* Opzioni per il tipo di menu (solo per i template di tipo menu) */}
+                {selectedTemplate.type !== 'REVIEW' && (
+                  <div className="mb-3">
+                    <Tabs
+                      value={menuType}
+                      onValueChange={(value) => setMenuType(value as "url" | "file")}
+                      className="w-full"
+                    >
+                      <TabsList className="grid grid-cols-2 mb-3">
+                        <TabsTrigger value="url" className="flex items-center gap-1.5">
+                          <Link className="w-3.5 h-3.5" />
+                          Menu URL
+                        </TabsTrigger>
+                        <TabsTrigger value="file" className="flex items-center gap-1.5">
+                          <File className="w-3.5 h-3.5" />
+                          Upload PDF
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="url" className="space-y-3 mt-2">
+                        <Label htmlFor="menu-url" className="text-gray-700 text-sm">
+                          Menu URL
+                        </Label>
+                        <Input
+                          id="menu-url"
+                          placeholder="https://your-restaurant.com/menu"
+                          value={menuUrl}
+                          onChange={(e) => handleUrlChange(e.target.value)}
+                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="file" className="space-y-3 mt-2">
+                        <Label className="text-gray-700 text-sm block mb-2">
+                          Upload PDF Menu
+                        </Label>
+                        
+                        {menuPdfUrl ? (
+                          <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
+                            <File className="w-8 h-8 text-green-500 mb-2" />
+                            <p className="text-sm text-green-700 mb-1">PDF caricato con successo</p>
+                            <a 
+                              href={menuPdfUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 underline"
+                            >
+                              Visualizza PDF
+                            </a>
+                          </div>
+                        ) : (
+                          <FileUpload
+                            selectedFile={menuFile}
+                            onFileSelect={handleFileChange}
+                            accept=".pdf"
+                            maxSize={5}
+                          />
+                        )}
+                        
+                        {isUploadingMenu && (
+                          <div className="flex items-center mt-2 text-blue-600">
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <span className="text-xs">Caricamento in corso...</span>
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                )}
+                
+                {/* Campo per modificare il testo del pulsante, solo per i template di recensione */}
                 {selectedTemplate.type === 'REVIEW' && (
-                  <div className="mt-3">
+                  <div className="mb-3">
                     <Label htmlFor="buttonText" className="text-sm md:text-base mb-1 block">
                       Testo del pulsante
                     </Label>

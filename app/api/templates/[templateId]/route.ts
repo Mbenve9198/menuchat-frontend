@@ -16,7 +16,7 @@ export async function PUT(
     }
 
     const data = await request.json()
-    const { message, buttonText, updateAllLanguages } = data
+    const { message, buttonText, updateAllLanguages, menuUrl, menuPdfUrl } = data
     const templateId = params.templateId
 
     if (!templateId) {
@@ -26,59 +26,48 @@ export async function PUT(
       )
     }
 
-    // Gestione aggiornamento del testo del messaggio
+    // Creiamo l'oggetto da inviare al backend
+    const updateData: any = {
+      updateAllLanguages: updateAllLanguages === true
+    }
+
+    // Aggiungiamo i dati in base a quelli forniti
     if (message !== undefined) {
-      const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
-        },
-        body: JSON.stringify({ 
-          message, 
-          updateAllLanguages: updateAllLanguages === true 
-        })
-      })
-
-      const result = await response.json()
-      
-      if (!response.ok) {
-        return NextResponse.json(
-          { success: false, error: result.error || "Failed to update template" },
-          { status: response.status }
-        )
-      }
-
-      return NextResponse.json(result)
+      updateData.message = message
     }
-
-    // Gestione aggiornamento del testo del pulsante
+    
     if (buttonText !== undefined) {
-      const buttonResponse = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/button-text`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
-        },
-        body: JSON.stringify({ 
-          buttonText, 
-          updateAllLanguages: updateAllLanguages === true
-        })
-      })
-
-      const buttonResult = await buttonResponse.json()
-      
-      if (!buttonResponse.ok) {
-        return NextResponse.json(
-          { success: false, error: buttonResult.error || "Failed to update button text" },
-          { status: buttonResponse.status }
-        )
-      }
-
-      return NextResponse.json(buttonResult)
+      updateData.buttonText = buttonText
+    }
+    
+    if (menuUrl !== undefined) {
+      updateData.menuUrl = menuUrl
+    }
+    
+    if (menuPdfUrl !== undefined) {
+      updateData.menuPdfUrl = menuPdfUrl
     }
 
-    return NextResponse.json({ success: false, error: "No update data provided" }, { status: 400 })
+    // Inviamo la richiesta al backend
+    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
+      },
+      body: JSON.stringify(updateData)
+    })
+
+    const result = await response.json()
+    
+    if (!response.ok) {
+      return NextResponse.json(
+        { success: false, error: result.error || "Failed to update template" },
+        { status: response.status }
+      )
+    }
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error in template PUT route:', error)
     return NextResponse.json(
