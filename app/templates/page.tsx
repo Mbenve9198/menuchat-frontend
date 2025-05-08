@@ -13,7 +13,8 @@ import {
   Sparkles,
   Send,
   FileText,
-  Globe
+  Globe,
+  RefreshCw
 } from "lucide-react"
 import Image from "next/image"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -207,7 +208,9 @@ function TemplateCard({
   setEditedButtonText,
   isGenerating,
   botConfig,
-  restaurantPhoto
+  restaurantPhoto,
+  onCheckStatus,
+  isCheckingStatus
 }: { 
   template: Template, 
   onEdit: () => void, 
@@ -220,7 +223,9 @@ function TemplateCard({
   setEditedButtonText: (text: string) => void,
   isGenerating: boolean,
   botConfig: {triggerWord: string} | null,
-  restaurantPhoto: string
+  restaurantPhoto: string,
+  onCheckStatus: (templateId: string) => void,
+  isCheckingStatus: string | null
 }) {
   const [isLoadingButtonText, setIsLoadingButtonText] = useState(false)
   const { toast } = useToast()
@@ -293,6 +298,18 @@ function TemplateCard({
             {getStatusIcon(template.status)}
             {template.status}
           </div>
+          <button 
+            onClick={() => onCheckStatus(template._id)}
+            className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 text-gray-500 hover:text-blue-500 transition-colors"
+            title="Aggiorna stato approvazione"
+            disabled={isCheckingStatus === template._id}
+          >
+            {isCheckingStatus === template._id ? (
+              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+            )}
+          </button>
         </div>
         <div className="text-[10px] sm:text-xs text-gray-500">
           Last update: {new Date(template.updatedAt).toLocaleDateString()}
@@ -431,6 +448,7 @@ export default function TemplatesPage() {
   const [isEditingReviewSettings, setIsEditingReviewSettings] = useState(false)
   const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
   const { toast } = useToast()
+  const [isCheckingStatus, setIsCheckingStatus] = useState<string | null>(null)
 
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
@@ -649,15 +667,27 @@ export default function TemplatesPage() {
         ? '/api/review'
         : '/api/welcome'
 
+      // Prendi i dati del ristorante dalle informazioni del template
+      const restaurantData = {
+        restaurantId: template.restaurant,
+        restaurantName: template.name || '',
+        restaurantDetails: {
+          name: template.name || '',
+          rating: 4.5, // Valore predefinito
+          ratingsTotal: 100, // Valore predefinito
+          cuisineTypes: ['Italian'], // Valore predefinito
+          reviews: [] // Nessuna recensione predefinita
+        },
+        type: template.type === 'MEDIA' ? 'pdf' : 'url',
+        menuType: template.type === 'MEDIA' ? 'pdf' : 'url'
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          restaurantId: template.restaurant,
-          type: template.type === 'MEDIA' ? 'pdf' : 'url'
-        })
+        body: JSON.stringify(restaurantData)
       })
 
       if (!response.ok) {
@@ -665,7 +695,13 @@ export default function TemplatesPage() {
       }
 
       const data = await response.json()
-      setEditedMessage(data.message || data.templates[0])
+      
+      // Gestisce sia i template di menu che quelli di recensione
+      if (template.type === 'REVIEW') {
+        setEditedMessage(data.templates?.[0] || '')
+      } else {
+        setEditedMessage(data.message || '')
+      }
     } catch (error) {
       console.error('Error generating message:', error)
       toast({
@@ -743,6 +779,61 @@ export default function TemplatesPage() {
     
     return flagMap[langCode] || '🌐';
   }
+
+  // Controlla lo stato del template chiamando l'API
+  const checkTemplateStatus = async (templateId: string) => {
+    if (!templateId) return;
+    
+    try {
+      setIsCheckingStatus(templateId);
+      
+      const response = await fetch(`/api/templates/${templateId}/status`);
+      
+      if (!response.ok) {
+        throw new Error('Impossibile recuperare lo stato del template');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Errore nel controllo dello stato');
+      }
+      
+      // Aggiorna lo stato del template nella lista
+      const updateTemplates = (templates: Template[]) => {
+        return templates.map(t => {
+          if (t._id === templateId) {
+            return {
+              ...t,
+              status: data.template.status,
+              rejectionReason: data.template.rejectionReason
+            };
+          }
+          return t;
+        });
+      };
+      
+      if (activeTab === "menu") {
+        setMenuTemplates(updateTemplates(menuTemplates));
+      } else {
+        setReviewTemplates(updateTemplates(reviewTemplates));
+      }
+      
+      toast({
+        title: "Successo",
+        description: "Stato del template aggiornato",
+      });
+    } catch (error) {
+      console.error('Error checking template status:', error);
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Impossibile controllare lo stato del template",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingStatus(null);
+    }
+  };
 
   if (status === "loading" || isLoading) {
     return (
@@ -837,6 +928,8 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                         botConfig={botConfig}
                         restaurantPhoto={restaurantProfileImage}
+                        onCheckStatus={checkTemplateStatus}
+                        isCheckingStatus={isCheckingStatus}
                       />
                     ))}
                   </div>
@@ -973,6 +1066,8 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                         botConfig={botConfig}
                         restaurantPhoto={restaurantProfileImage}
+                        onCheckStatus={checkTemplateStatus}
+                        isCheckingStatus={isCheckingStatus}
                       />
                     ))}
                   </div>
