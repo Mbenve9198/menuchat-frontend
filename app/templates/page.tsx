@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   MessageSquare,
   Star,
@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Upload,
   File,
-  Link
+  Link,
+  Trophy
 } from "lucide-react"
 import Image from "next/image"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -366,6 +367,9 @@ export default function TemplatesPage() {
   const [menuFile, setMenuFile] = useState<File | null>(null)
   const [menuPdfUrl, setMenuPdfUrl] = useState("")
   const [isUploadingMenu, setIsUploadingMenu] = useState(false)
+  const [showTypeChangeAlert, setShowTypeChangeAlert] = useState(false)
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
   
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
@@ -552,6 +556,7 @@ export default function TemplatesPage() {
     setMenuFile(null);
     setMenuUrl("");
     setMenuPdfUrl("");
+    setShowTypeChangeAlert(false);
   }
   
   const handleFileChange = async (file: File | null) => {
@@ -628,14 +633,59 @@ export default function TemplatesPage() {
       
       // Se è cambiato il tipo di template (da PDF a URL o viceversa), dobbiamo creare un nuovo template
       if (isTypeChanged && template.type !== 'REVIEW') {
-        // Implementare la logica per cambiare tipo di template
-        // Per semplicità, mostriamo un messaggio che questa funzione richiede ancora implementazione
+        // Creiamo un nuovo template con il tipo corretto
+        const newTemplateType = menuType === "url" ? "CALL_TO_ACTION" : "MEDIA";
+        
         toast({
-          title: "Funzionalità in sviluppo",
-          description: "Il cambio di tipo di template (da PDF a URL o viceversa) richiede implementazione lato server.",
-          variant: "default",
+          title: "Cambio tipo template",
+          description: `Conversione da ${template.type} a ${newTemplateType} in corso...`,
         });
         
+        const requestBody: any = {
+          message: editedMessage,
+          newType: newTemplateType,
+          updateAllLanguages: updateAllLanguages
+        };
+        
+        // Aggiungi i dati specifici per il tipo di menu
+        if (menuType === "url" && menuUrl) {
+          requestBody.menuUrl = menuUrl;
+        } else if (menuType === "file" && menuPdfUrl) {
+          requestBody.menuPdfUrl = menuPdfUrl;
+        }
+        
+        // Invia richiesta per creare nuovo template
+        const response = await fetch(`/api/templates/${template._id}/convert`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to convert template');
+        }
+        
+        if (!data.success) {
+          throw new Error('Invalid response format');
+        }
+        
+        // Imposta il messaggio di successo e mostra l'animazione
+        setSuccessMessage(updateAllLanguages 
+          ? "Template convertito in tutte le lingue!" 
+          : "Template convertito con successo!");
+        setShowSuccessAnimation(true);
+        
+        // Refresh templates
+        await fetchTemplates();
+        setIsEditorOpen(false);
+        setSelectedTemplate(null);
+        setMenuFile(null);
+        setMenuUrl("");
+        setMenuPdfUrl("");
         setIsSaving(false);
         setTemplateToSave(null);
         return;
@@ -665,12 +715,11 @@ export default function TemplatesPage() {
           throw new Error('Invalid response format')
         }
 
-        toast({
-          title: "Successo",
-          description: updateAllLanguages 
-            ? "Template aggiornato in tutte le lingue con successo" 
-            : "Template aggiornato con successo",
-        })
+        // Imposta il messaggio di successo e mostra l'animazione
+        setSuccessMessage(updateAllLanguages 
+          ? "Template aggiornato in tutte le lingue!" 
+          : "Template aggiornato con successo!");
+        setShowSuccessAnimation(true);
 
         // Refresh templates
         await fetchTemplates()
@@ -710,12 +759,11 @@ export default function TemplatesPage() {
         throw new Error('Invalid response format')
       }
 
-      toast({
-        title: "Successo",
-        description: updateAllLanguages 
-          ? "Template aggiornato in tutte le lingue con successo" 
-          : "Template aggiornato con successo",
-      })
+      // Imposta il messaggio di successo e mostra l'animazione
+      setSuccessMessage(updateAllLanguages 
+        ? "Template aggiornato in tutte le lingue!" 
+        : "Template aggiornato con successo!");
+      setShowSuccessAnimation(true);
 
       // Refresh templates
       await fetchTemplates();
@@ -913,6 +961,21 @@ export default function TemplatesPage() {
     }
   };
 
+  // Aggiungi questa funzione per verificare il cambio di tipo
+  const handleMenuTypeChange = (value: "url" | "file") => {
+    if (selectedTemplate) {
+      const isTypeChanging = 
+        (value === "url" && selectedTemplate.type === "MEDIA") || 
+        (value === "file" && selectedTemplate.type === "CALL_TO_ACTION");
+      
+      if (isTypeChanging) {
+        setShowTypeChangeAlert(true);
+      }
+    }
+    
+    setMenuType(value);
+  };
+
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -934,63 +997,6 @@ export default function TemplatesPage() {
     return menuType === "file" ? 'Menu PDF' : 'Menu URL';
   }
 
-  // Determina l'anteprima da mostrare in base al tipo di menu selezionato
-  const getTemplatePreview = () => {
-    if (!selectedTemplate) return null;
-    
-    if (selectedTemplate.type === 'REVIEW') {
-      return (
-        <div className="mb-4 bg-gray-50 p-3 rounded-lg border text-sm">
-          <div className="font-medium mb-2">Anteprima:</div>
-          <div className="bg-white p-3 rounded border">
-            <p className="text-gray-800">{editedMessage}</p>
-            <div className="mt-2 pt-2 border-t">
-              <button className="w-full text-center py-2 text-blue-600 font-medium">
-                {editedButtonText || "Lascia una recensione"}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (menuType === "file") {
-      return (
-        <div className="mb-4 bg-gray-50 p-3 rounded-lg border text-sm">
-          <div className="font-medium mb-2">Anteprima:</div>
-          <div className="bg-white p-3 rounded border">
-            <div className="mb-2 flex items-center gap-2 p-2 bg-gray-50 rounded border">
-              <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
-                PDF
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium">Menu.pdf</p>
-                <p className="text-[10px] text-gray-500">PDF Document</p>
-              </div>
-            </div>
-            <p className="text-gray-800">{editedMessage}</p>
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="mb-4 bg-gray-50 p-3 rounded-lg border text-sm">
-        <div className="font-medium mb-2">Anteprima:</div>
-        <div className="bg-white p-3 rounded border">
-          <p className="text-gray-800">{editedMessage}</p>
-          {menuUrl && (
-            <div className="mt-2 pt-2 border-t">
-              <button className="w-full text-center py-2 text-blue-600 font-medium">
-                View Menu
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200 pb-24">
       <BubbleBackground />
@@ -1002,6 +1008,133 @@ export default function TemplatesPage() {
           onClick={cancelEdit}
         ></div>
       )}
+
+      {/* Animazione di successo */}
+      <AnimatePresence>
+        {showSuccessAnimation && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onAnimationComplete={() => {
+              setTimeout(() => {
+                setShowSuccessAnimation(false);
+              }, 2000);
+            }}
+          >
+            <motion.div
+              className="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center max-w-xs w-full relative overflow-hidden"
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 20 }}
+            >
+              {/* Sfondo colorato con pattern confetti */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 opacity-10" 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 0.1 }}
+              />
+              
+              {/* Confetti che cadono */}
+              {Array.from({ length: 30 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full"
+                  style={{
+                    backgroundColor: ['#ffcc00', '#ff6699', '#33ccff', '#99ff66'][i % 4],
+                    left: `${Math.random() * 100}%`,
+                    top: `-5%`
+                  }}
+                  initial={{ y: -10, opacity: 0 }}
+                  animate={{ 
+                    y: ['0%', '100%'], 
+                    opacity: [0, 1, 1, 0],
+                    rotate: [0, 360]
+                  }}
+                  transition={{ 
+                    duration: 1.5 + Math.random(), 
+                    delay: Math.random() * 0.5,
+                    repeat: Infinity,
+                    repeatDelay: 3
+                  }}
+                />
+              ))}
+              
+              {/* Icona e messaggio */}
+              <motion.div 
+                className="relative z-10 flex flex-col items-center"
+                initial={{ y: 10 }}
+                animate={{ y: 0 }}
+                transition={{ type: "spring", bounce: 0.5 }}
+              >
+                <motion.div
+                  className="relative"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: [0.8, 1.2, 1] }}
+                  transition={{ times: [0, 0.5, 1], duration: 0.6 }}
+                >
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                  </div>
+                  
+                  {/* Raggi attorno all'icona */}
+                  <motion.div
+                    className="absolute inset-0 z-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute w-1 h-4 bg-yellow-400 rounded-full"
+                        style={{
+                          left: '50%',
+                          top: '50%',
+                          transformOrigin: 'center',
+                          transform: `rotate(${i * 45}deg) translateY(-14px)`
+                        }}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: [0, 1, 0] }}
+                        transition={{ 
+                          times: [0, 0.5, 1],
+                          duration: 0.6, 
+                          delay: 0.2 + (i * 0.05),
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                </motion.div>
+                
+                <motion.h3
+                  className="mt-4 text-xl font-bold text-center text-green-700"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  {successMessage}
+                </motion.h3>
+                
+                {/* Immagine mascotte */}
+                <motion.div
+                  className="absolute -bottom-4 -right-4 w-16 h-16"
+                  initial={{ opacity: 0, y: 20, rotate: -10 }}
+                  animate={{ opacity: 1, y: 0, rotate: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Image
+                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
+                    alt="Mascot"
+                    width={64}
+                    height={64}
+                    className="drop-shadow-lg"
+                  />
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Finestra di dialogo per la conferma */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
@@ -1289,8 +1422,35 @@ export default function TemplatesPage() {
               </div>
               
               <div className="flex-grow overflow-y-auto mb-4">
-                {/* Anteprima del template */}
-                {getTemplatePreview()}
+                {/* Avviso cambio tipo template */}
+                {showTypeChangeAlert && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <div className="flex items-start">
+                      <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">
+                          Stai cambiando il tipo di template
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          {menuType === "url" 
+                            ? "Stai passando da PDF a URL. Questo creerà un nuovo template con un pulsante invece del PDF." 
+                            : "Stai passando da URL a PDF. Questo creerà un nuovo template con un PDF invece del pulsante link."}
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Il template originale verrà disattivato e dovremo inviare il nuovo template per approvazione.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-right">
+                      <button
+                        onClick={() => setShowTypeChangeAlert(false)}
+                        className="text-xs text-amber-800 hover:text-amber-900"
+                      >
+                        Ho capito
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Input per modificare il messaggio */}
                 <Textarea
@@ -1305,7 +1465,7 @@ export default function TemplatesPage() {
                   <div className="mb-3">
                     <Tabs
                       value={menuType}
-                      onValueChange={(value) => setMenuType(value as "url" | "file")}
+                      onValueChange={(value) => handleMenuTypeChange(value as "url" | "file")}
                       className="w-full"
                     >
                       <TabsList className="grid grid-cols-2 mb-3">
