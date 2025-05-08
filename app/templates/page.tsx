@@ -243,13 +243,13 @@ function TemplateCard({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'APPROVED':
-        return <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+        return '✅'
       case 'REJECTED':
-        return <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-red-500" />
+        return '❌'
       case 'PENDING':
-        return <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />
+        return '⏳'
       default:
-        return <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+        return '❓'
     }
   }
 
@@ -261,27 +261,32 @@ function TemplateCard({
   
   return (
     <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-1 sm:gap-0">
-        <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(template.status)} bg-opacity-10`}>
-            {getStatusIcon(template.status)}
-            {template.status}
-          </div>
-          <button 
-            onClick={() => onCheckStatus(template._id)}
-            className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 text-gray-500 hover:text-blue-500 transition-colors"
-            title="Aggiorna stato approvazione"
-            disabled={isCheckingStatus === template._id}
+      <div className="mb-3 text-center">
+        <div className="flex flex-col items-center justify-center">
+          <div 
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(template.status)} bg-opacity-10 mb-1`}
           >
-            {isCheckingStatus === template._id ? (
-              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
-            )}
-          </button>
-        </div>
-        <div className="text-[10px] sm:text-xs text-gray-500">
-          Last update: {new Date(template.updatedAt).toLocaleDateString()}
+            <span className="text-lg mr-1">{getStatusIcon(template.status)}</span>
+            {template.status}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation(); // Impedisce la propagazione al genitore
+                onCheckStatus(template._id);
+              }}
+              className="flex items-center justify-center w-6 h-6 ml-1 text-gray-500 hover:text-blue-500 transition-colors"
+              title="Aggiorna stato approvazione"
+              disabled={isCheckingStatus === template._id}
+            >
+              {isCheckingStatus === template._id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+          <div className="text-xs text-gray-500">
+            Last update: {new Date(template.updatedAt).toLocaleDateString()}
+          </div>
         </div>
       </div>
 
@@ -907,7 +912,11 @@ export default function TemplatesPage() {
                   {/* Template Cards */}
                   <div>
                     {getFilteredTemplates().map(template => (
-                      <div key={template._id} onClick={() => !isEditorOpen && handleEdit(template)}>
+                      <div 
+                        key={template._id} 
+                        onClick={() => !isEditorOpen && handleEdit(template)}
+                        className="cursor-pointer"
+                      >
                         <TemplateCard
                           template={template}
                           onRegenerate={() => regenerateWithAI(template)}
@@ -917,7 +926,10 @@ export default function TemplatesPage() {
                           isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id) => !isEditorOpen && checkTemplateStatus(id)}
+                          onCheckStatus={(id) => {
+                            // Solo aggiorna lo stato senza aprire il pannello di editing
+                            checkTemplateStatus(id);
+                          }}
                           isCheckingStatus={isCheckingStatus}
                         />
                       </div>
@@ -1042,7 +1054,11 @@ export default function TemplatesPage() {
                   {/* Template Cards */}
                   <div>
                     {getFilteredTemplates().map(template => (
-                      <div key={template._id} onClick={() => !isEditorOpen && handleEdit(template)}>
+                      <div 
+                        key={template._id} 
+                        onClick={() => !isEditorOpen && handleEdit(template)}
+                        className="cursor-pointer"
+                      >
                         <TemplateCard
                           template={template}
                           onRegenerate={() => regenerateWithAI(template)}
@@ -1052,7 +1068,10 @@ export default function TemplatesPage() {
                           isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id) => !isEditorOpen && checkTemplateStatus(id)}
+                          onCheckStatus={(id) => {
+                            // Solo aggiorna lo stato senza aprire il pannello di editing
+                            checkTemplateStatus(id);
+                          }}
                           isCheckingStatus={isCheckingStatus}
                         />
                       </div>
