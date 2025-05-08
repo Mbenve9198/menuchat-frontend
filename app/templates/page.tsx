@@ -26,6 +26,14 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Template {
   _id: string
@@ -449,6 +457,11 @@ export default function TemplatesPage() {
   const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
   const { toast } = useToast()
   const [isCheckingStatus, setIsCheckingStatus] = useState<string | null>(null)
+  
+  // Stato per la dialog di conferma
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [templateToSave, setTemplateToSave] = useState<Template | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
@@ -582,8 +595,20 @@ export default function TemplatesPage() {
     }
   }
 
-  const handleSave = async (template: Template) => {
+  const initiateTemplateSave = (template: Template) => {
+    setTemplateToSave(template);
+    setSaveDialogOpen(true);
+  }
+  
+  const saveTemplate = async (updateAllLanguages: boolean) => {
+    if (!templateToSave) return;
+    
     try {
+      setIsSaving(true);
+      setSaveDialogOpen(false);
+      
+      const template = templateToSave;
+      
       // Se è un template di recensione con testo del pulsante modificato, invia entrambi i dati
       if (template.type === 'REVIEW' && editingTemplate === template._id) {
         const response = await fetch(`/api/templates/${template._id}`, {
@@ -592,9 +617,9 @@ export default function TemplatesPage() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            templateId: template._id,
             message: editedMessage,
-            buttonText: editedButtonText
+            buttonText: editedButtonText,
+            updateAllLanguages: updateAllLanguages
           })
         })
 
@@ -610,7 +635,9 @@ export default function TemplatesPage() {
 
         toast({
           title: "Successo",
-          description: "Template aggiornato con successo",
+          description: updateAllLanguages 
+            ? "Template aggiornato in tutte le lingue con successo" 
+            : "Template aggiornato con successo",
         })
 
         // Refresh templates
@@ -626,8 +653,8 @@ export default function TemplatesPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          templateId: template._id,
-          message: editedMessage
+          message: editedMessage,
+          updateAllLanguages: updateAllLanguages
         })
       })
 
@@ -643,7 +670,9 @@ export default function TemplatesPage() {
 
       toast({
         title: "Successo",
-        description: "Template aggiornato con successo",
+        description: updateAllLanguages 
+          ? "Template aggiornato in tutte le lingue con successo" 
+          : "Template aggiornato con successo",
       })
 
       // Refresh templates
@@ -656,6 +685,9 @@ export default function TemplatesPage() {
         description: error instanceof Error ? error.message : "Impossibile aggiornare il template",
         variant: "destructive",
       })
+    } finally {
+      setIsSaving(false);
+      setTemplateToSave(null);
     }
   }
 
@@ -853,6 +885,35 @@ export default function TemplatesPage() {
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
 
+      {/* Finestra di dialogo per la conferma */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aggiorna template in tutte le lingue?</DialogTitle>
+            <DialogDescription className="pt-2">
+              Puoi scegliere di aggiornare solo questo template o tradurre automaticamente il messaggio e aggiornare tutte le lingue.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 flex sm:justify-between gap-2">
+            <CustomButton
+              variant="outline"
+              onClick={() => saveTemplate(false)}
+              disabled={isSaving}
+              className="flex-1"
+            >
+              Solo questa lingua
+            </CustomButton>
+            <CustomButton 
+              onClick={() => saveTemplate(true)}
+              disabled={isSaving}
+              className="flex-1"
+            >
+              Tutte le lingue
+            </CustomButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <div className="relative z-10 flex flex-col items-center min-h-screen px-2 sm:px-4 py-4 sm:py-6">
         <div className="w-full max-w-md mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -918,7 +979,7 @@ export default function TemplatesPage() {
                         key={template._id}
                         template={template}
                         onEdit={() => handleEdit(template)}
-                        onSave={() => handleSave(template)}
+                        onSave={() => initiateTemplateSave(template)}
                         onRegenerate={() => regenerateWithAI(template)}
                         editMode={editingTemplate === template._id}
                         editedMessage={editedMessage}
@@ -1056,7 +1117,7 @@ export default function TemplatesPage() {
                         key={template._id}
                         template={template}
                         onEdit={() => handleEdit(template)}
-                        onSave={() => handleSave(template)}
+                        onSave={() => initiateTemplateSave(template)}
                         onRegenerate={() => regenerateWithAI(template)}
                         editMode={editingTemplate === template._id}
                         editedMessage={editedMessage}
