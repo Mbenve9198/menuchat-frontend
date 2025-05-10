@@ -20,59 +20,79 @@ import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import "react-circular-progressbar/dist/styles.css"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export default function Dashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [restaurantData, setRestaurantData] = useState<any>(null)
+  const [menuStats, setMenuStats] = useState({
+    menusSent: 0,
+    reviewRequests: 0,
+    reviewsCollected: 0,
+    weeklyGoalProgress: 0
+  })
+  const [activities, setActivities] = useState([])
   const [greeting, setGreeting] = useState("Good day")
-  const [restaurantName, setRestaurantName] = useState("Pizza Palace")
-  const [daysActive, setDaysActive] = useState(14)
-  const [restaurantLevel, setRestaurantLevel] = useState(3)
-  const [menusSent, setMenusSent] = useState(128)
-  const [reviewRequests, setReviewRequests] = useState(75)
-  const [reviewsCollected, setReviewsCollected] = useState(42)
-  const [weeklyGoalProgress, setWeeklyGoalProgress] = useState(60)
-  const [isNewRecord, setIsNewRecord] = useState(true)
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      type: "menu_view",
-      emoji: "📋",
-      message: "Menu viewed by customer",
-      time: "10 minutes ago",
-      expanded: false,
-    },
-    {
-      id: 2,
-      type: "review_request",
-      emoji: "⭐",
-      message: "Review request sent",
-      time: "1 hour ago",
-      expanded: false,
-    },
-    {
-      id: 3,
-      type: "new_review",
-      emoji: "🏆",
-      message: "New 5-star review received!",
-      time: "3 hours ago",
-      expanded: false,
-    },
-    {
-      id: 4,
-      type: "menu_update",
-      emoji: "✏️",
-      message: "Menu updated",
-      time: "Yesterday",
-      expanded: false,
-    },
-    {
-      id: 5,
-      type: "menu_view",
-      emoji: "📋",
-      message: "Menu viewed by customer",
-      time: "Yesterday",
-      expanded: false,
-    },
-  ])
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.restaurantId) {
+      fetchRestaurantData()
+      fetchStats()
+      fetchActivities()
+    }
+  }, [status, session])
+
+  const fetchRestaurantData = async () => {
+    try {
+      const response = await fetch(`/api/restaurants/${session?.user?.restaurantId}`)
+      const data = await response.json()
+      if (data.success) {
+        setRestaurantData(data.restaurant)
+      }
+    } catch (error) {
+      console.error("Error fetching restaurant data:", error)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`/api/stats?restaurantId=${session?.user?.restaurantId}`)
+      const data = await response.json()
+      if (data.success) {
+        setMenuStats({
+          menusSent: data.menusSent || 0,
+          reviewRequests: data.reviewRequests || 0,
+          reviewsCollected: data.reviewsCollected || 0,
+          weeklyGoalProgress: data.weeklyGoalProgress || 0
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error)
+    }
+  }
+
+  const fetchActivities = async () => {
+    try {
+      const response = await fetch(`/api/activities?restaurantId=${session?.user?.restaurantId}`)
+      const data = await response.json()
+      if (data.success) {
+        setActivities(data.activities)
+      }
+    } catch (error) {
+      console.error("Error fetching activities:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     // Set greeting based on time of day
@@ -85,6 +105,18 @@ export default function Dashboard() {
       setGreeting("Good Evening")
     }
   }, [])
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1B9AAA]"></div>
+      </div>
+    )
+  }
+
+  if (!session || !restaurantData) {
+    return null
+  }
 
   const toggleActivityExpand = (id: number) => {
     setActivities(
@@ -109,7 +141,7 @@ export default function Dashboard() {
         <div className="w-full max-w-md mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">{restaurantName}</h1>
+              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">{restaurantData.name}</h1>
               <div className="relative w-8 h-8 ml-2">
                 <Image
                   src={getMascotImage() || "/placeholder.svg"}
@@ -126,12 +158,12 @@ export default function Dashboard() {
               whileHover={{ scale: 1.05 }}
             >
               <Star className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
-              <span className="text-sm font-bold text-[#EF476F]">Level {restaurantLevel}</span>
+              <span className="text-sm font-bold text-[#EF476F]">Level {restaurantData.level || 1}</span>
             </motion.div>
           </div>
 
           <p className="text-lg text-gray-700 mb-4">
-            {greeting}, {restaurantName}! 🌞
+            {greeting}, {restaurantData.name}! 🌞
           </p>
 
           <motion.div
@@ -141,7 +173,9 @@ export default function Dashboard() {
             transition={{ delay: 0.2 }}
           >
             <Calendar className="w-4 h-4 text-[#EF476F]" />
-            <span className="text-xs font-medium text-gray-700">{daysActive} days active</span>
+            <span className="text-xs font-medium text-gray-700">
+              {Math.ceil((Date.now() - new Date(restaurantData.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days active
+            </span>
           </motion.div>
         </div>
 
@@ -158,7 +192,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Menus Sent</h3>
-                <p className="text-3xl font-extrabold text-[#1B9AAA]">{menusSent}</p>
+                <p className="text-3xl font-extrabold text-[#1B9AAA]">{menuStats.menusSent}</p>
               </div>
               <div className="bg-[#1B9AAA]/10 p-3 rounded-full">
                 <MessageSquare className="w-6 h-6 text-[#1B9AAA]" />
@@ -190,7 +224,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Review Requests</h3>
-                <p className="text-3xl font-extrabold text-[#EF476F]">{reviewRequests}</p>
+                <p className="text-3xl font-extrabold text-[#EF476F]">{menuStats.reviewRequests}</p>
               </div>
               <div className="bg-[#EF476F]/10 p-3 rounded-full">
                 <Megaphone className="w-6 h-6 text-[#EF476F]" />
@@ -228,7 +262,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
-                <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected}</p>
+                <p className="text-3xl font-extrabold text-[#06D6A0]">{menuStats.reviewsCollected}</p>
               </div>
               <div className="bg-[#06D6A0]/10 p-3 rounded-full">
                 <Award className="w-6 h-6 text-[#06D6A0]" />
@@ -242,10 +276,10 @@ export default function Dashboard() {
                     <Star key={star} className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
                   ))}
                 </div>
-                <span className="ml-2 text-sm font-medium text-gray-700">4.8 avg</span>
+                <span className="ml-2 text-sm font-medium text-gray-700">{restaurantData.googleRating?.rating || 0} avg</span>
               </div>
 
-              {isNewRecord && (
+              {menuStats.reviewsCollected > 0 && (
                 <div className="bg-[#F8FFE5] px-3 py-1 rounded-full text-xs font-bold text-[#06D6A0] flex items-center">
                   <Trophy className="w-3 h-3 mr-1" /> New record!
                 </div>
@@ -263,15 +297,17 @@ export default function Dashboard() {
         >
           <div className="flex justify-between items-start mb-4">
             <h3 className="text-lg font-bold text-gray-800">Weekly Goal</h3>
-            <div className="bg-[#FFE14D]/20 px-3 py-1 rounded-full text-xs font-bold text-gray-700">5 days left</div>
+            <div className="bg-[#FFE14D]/20 px-3 py-1 rounded-full text-xs font-bold text-gray-700">
+              {7 - new Date().getDay()} days left
+            </div>
           </div>
 
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm text-gray-600 mb-1">Get 10 new reviews this week</p>
               <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700">6/10 completed</span>
-                <span className="ml-2 text-xs text-green-600">(4 more to go!)</span>
+                <span className="text-sm font-medium text-gray-700">{menuStats.weeklyGoalProgress}/10 completed</span>
+                <span className="ml-2 text-xs text-green-600">({10 - menuStats.weeklyGoalProgress} more to go!)</span>
               </div>
             </div>
             <div className="relative">
@@ -280,10 +316,10 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="text-5xl font-extrabold text-[#EF476F]">{weeklyGoalProgress}%</div>
+            <div className="text-5xl font-extrabold text-[#EF476F]">{(menuStats.weeklyGoalProgress / 10) * 100}%</div>
             <div className="w-24 h-24">
               <CircularProgressbar
-                value={weeklyGoalProgress}
+                value={(menuStats.weeklyGoalProgress / 10) * 100}
                 styles={buildStyles({
                   pathColor: "#EF476F",
                   trailColor: "#f5f5f5",
@@ -303,11 +339,11 @@ export default function Dashboard() {
           <h3 className="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
 
           <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-            {activities.map((activity) => (
+            {activities.map((activity: any) => (
               <motion.div
-                key={activity.id}
+                key={activity._id}
                 className={`bg-gray-50 rounded-xl p-3 cursor-pointer ${activity.expanded ? "bg-gray-100" : ""}`}
-                onClick={() => toggleActivityExpand(activity.id)}
+                onClick={() => toggleActivityExpand(activity._id)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 layout
@@ -318,7 +354,9 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">{activity.message}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(activity.createdAt).toLocaleDateString()} {new Date(activity.createdAt).toLocaleTimeString()}
+                    </p>
 
                     {activity.expanded && (
                       <motion.div
@@ -326,23 +364,7 @@ export default function Dashboard() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                       >
-                        {activity.type === "menu_view" && (
-                          <>Customer viewed your full menu for 2 minutes and 15 seconds.</>
-                        )}
-                        {activity.type === "review_request" && (
-                          <>Review request sent to customer who ordered 1 hour ago.</>
-                        )}
-                        {activity.type === "new_review" && (
-                          <>
-                            <div className="flex mb-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star key={star} className="w-3 h-3 text-[#FFE14D] fill-[#FFE14D]" />
-                              ))}
-                            </div>
-                            "Great food and amazing service! Will definitely come back again."
-                          </>
-                        )}
-                        {activity.type === "menu_update" && <>You updated your menu with 3 new items.</>}
+                        {activity.details}
                       </motion.div>
                     )}
                   </div>
@@ -368,7 +390,7 @@ export default function Dashboard() {
 
             <CustomButton
               className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
-              onClick={() => {}}
+              onClick={() => router.push("/templates")}
             >
               <Edit3 className="w-6 h-6 mb-1" />
               Edit Messages
