@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Textarea } from './ui/textarea';
 import { Loader2, Sparkles, ImageIcon, Upload } from 'lucide-react';
 import { toast } from './ui/use-toast';
@@ -129,7 +129,7 @@ export function ImagePromptDialog({
   const generateImage = async () => {
     if (!prompt.trim()) {
       toast({
-        title: "Prompt richiesto",
+        title: "Errore",
         description: "Inserisci un prompt per generare l'immagine",
         variant: "destructive",
       });
@@ -144,17 +144,16 @@ export function ImagePromptDialog({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt
+          prompt: prompt.trim()
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore nella generazione dell\'immagine');
+        throw new Error(data.error || 'Errore nella generazione dell\'immagine');
       }
 
-      const data = await response.json();
-      
       if (!data.success || !data.data?.imageUrl) {
         throw new Error('URL immagine non trovato nella risposta');
       }
@@ -168,10 +167,10 @@ export function ImagePromptDialog({
         description: "Immagine generata con successo",
       });
     } catch (error) {
-      console.error('Errore nella generazione:', error);
+      console.error('Errore:', error);
       toast({
         title: "Errore",
-        description: error instanceof Error ? error.message : "Errore nella generazione",
+        description: error instanceof Error ? error.message : "Impossibile generare l'immagine",
         variant: "destructive",
       });
     } finally {
@@ -184,6 +183,9 @@ export function ImagePromptDialog({
       <DialogContent className="sm:max-w-[500px] bg-white rounded-3xl shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-800">Immagine Campagna</DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">
+            Genera un'immagine con l'AI o carica un'immagine dal tuo computer
+          </DialogDescription>
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'upload')} className="w-full">
