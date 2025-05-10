@@ -828,7 +828,7 @@ export default function TemplatesPage() {
       setIsGenerating(true)
       
       // Prima otteniamo i dettagli del ristorante
-      const restaurantResponse = await fetch(`/api/restaurants/${template.restaurant}`);
+      const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${template.restaurant}`);
       const restaurantData = await restaurantResponse.json();
       
       if (!restaurantResponse.ok || !restaurantData.success) {
