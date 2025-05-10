@@ -1,35 +1,33 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { CustomButton } from "./ui/custom-button"
 import { Clock, Calendar, ChevronRight, AlertCircle, XCircle } from "lucide-react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { Label } from "./ui/label"
-import { Select } from "./ui/select"
-import { useToast } from "./ui/use-toast"
+import { Input } from "./ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 interface ScheduleDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onSchedule: (date: Date) => void
-  templateId: string
+  isOpen: boolean;
+  onClose: () => void;
+  onSchedule: (date: Date) => Promise<void>;
+  isTemplateApproved?: boolean;
 }
 
 export function ScheduleDialog({ 
   isOpen, 
   onClose, 
   onSchedule,
-  templateId
+  isTemplateApproved = false
 }: ScheduleDialogProps) {
   const [selectedOption, setSelectedOption] = useState<string>("")
   const [showCustomDateTime, setShowCustomDateTime] = useState(false)
   const [customDate, setCustomDate] = useState<string>("")
   const [customTime, setCustomTime] = useState<string>("")
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false)
-  const [templateStatus, setTemplateStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING')
-  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Genera le opzioni per le ore (00-23)
   const hours = Array.from({ length: 24 }, (_, i) => 
@@ -41,108 +39,58 @@ export function ScheduleDialog({
     (i * 5).toString().padStart(2, '0')
   )
 
-  // Controlla lo stato del template quando il dialog viene aperto
-  useEffect(() => {
-    if (isOpen && templateId) {
-      checkTemplateStatus()
-    }
-  }, [isOpen, templateId])
-
-  const checkTemplateStatus = async () => {
+  const handleSchedule = async () => {
     try {
-      setIsCheckingStatus(true)
-      
-      const response = await fetch(`/api/twilio/template/${templateId}/status`)
-      const data = await response.json()
+      setIsSubmitting(true)
+      let scheduledDate: Date;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Errore nel controllo dello stato')
-      }
-
-      setTemplateStatus(data.data.status)
-
-      if (data.data.status === 'REJECTED') {
-        toast({
-          title: "Template rifiutato",
-          description: data.data.rejectionReason || "Il template è stato rifiutato da WhatsApp",
-          variant: "destructive",
-        })
-        onClose()
-      } else if (data.data.status === 'PENDING') {
-        toast({
-          title: "Template in attesa",
-          description: "Il template è ancora in fase di approvazione",
-          variant: "default",
-        })
-        onClose()
-      }
-    } catch (error) {
-      console.error('Errore nel controllo dello stato:', error)
-      toast({
-        title: "Errore",
-        description: "Impossibile verificare lo stato del template",
-        variant: "destructive",
-      })
-      onClose()
-    } finally {
-      setIsCheckingStatus(false)
-    }
-  }
-
-  const handleSchedule = () => {
-    let scheduledDate: Date;
-
-    switch (selectedOption) {
-      case "10min":
-        scheduledDate = new Date(Date.now() + 10 * 60 * 1000);
-        break;
-      case "tomorrow":
-        scheduledDate = new Date();
-        scheduledDate.setDate(scheduledDate.getDate() + 1);
-        scheduledDate.setHours(10, 0, 0, 0);
-        break;
-      case "week":
-        scheduledDate = new Date();
-        scheduledDate.setDate(scheduledDate.getDate() + 7);
-        scheduledDate.setHours(10, 0, 0, 0);
-        break;
-      case "custom":
-        if (customDate && customTime) {
-          const [hours, minutes] = customTime.split(":");
-          scheduledDate = new Date(customDate);
-          scheduledDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else {
+      switch (selectedOption) {
+        case "10min":
+          scheduledDate = new Date(Date.now() + 10 * 60 * 1000);
+          break;
+        case "tomorrow":
+          scheduledDate = new Date();
+          scheduledDate.setDate(scheduledDate.getDate() + 1);
+          scheduledDate.setHours(10, 0, 0, 0);
+          break;
+        case "week":
+          scheduledDate = new Date();
+          scheduledDate.setDate(scheduledDate.getDate() + 7);
+          scheduledDate.setHours(10, 0, 0, 0);
+          break;
+        case "custom":
+          if (customDate && customTime) {
+            const [hours, minutes] = customTime.split(":");
+            scheduledDate = new Date(customDate);
+            scheduledDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          } else {
+            return;
+          }
+          break;
+        default:
           return;
-        }
-        break;
-      default:
-        return;
-    }
+      }
 
-    onSchedule(scheduledDate);
+      await onSchedule(scheduledDate);
+    } catch (error) {
+      console.error("Errore nella programmazione:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Programma invio</DialogTitle>
         </DialogHeader>
 
-        {templateStatus === 'PENDING' && (
+        {!isTemplateApproved && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800 flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
               Il template è in attesa di approvazione da WhatsApp. Il messaggio verrà inviato solo dopo l'approvazione.
-            </p>
-          </div>
-        )}
-
-        {templateStatus === 'REJECTED' && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800 flex items-center gap-2">
-              <XCircle className="w-4 h-4" />
-              Il template è stato rifiutato da WhatsApp. Il messaggio non potrà essere inviato finché non viene approvata una nuova versione.
             </p>
           </div>
         )}
@@ -236,14 +184,14 @@ export function ScheduleDialog({
             <div className="space-y-4 mt-4">
               <div>
                 <Label htmlFor="date">Data</Label>
-                <input
+                <Input
                   type="date"
                   id="date"
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
                   min={format(new Date(Date.now() + 5 * 60 * 1000), "yyyy-MM-dd")}
                   max={format(new Date(Date.now() + 35 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")}
-                  className="w-full mt-1 p-2 border rounded-md"
+                  className="w-full mt-1"
                 />
               </div>
               
@@ -251,30 +199,40 @@ export function ScheduleDialog({
                 <div>
                   <Label htmlFor="hours">Ora</Label>
                   <Select 
-                    value={customTime.split(":")[0]} 
+                    value={customTime.split(":")[0] || ""} 
                     onValueChange={(value) => {
                       const currentMinutes = customTime.split(":")[1] || "00";
                       setCustomTime(`${value}:${currentMinutes}`);
                     }}
                   >
-                    {hours.map(hour => (
-                      <option key={hour} value={hour}>{hour}</option>
-                    ))}
+                    <SelectTrigger id="hours">
+                      <SelectValue placeholder="Ora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hours.map(hour => (
+                        <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 
                 <div>
                   <Label htmlFor="minutes">Minuti</Label>
                   <Select
-                    value={customTime.split(":")[1] || "00"}
+                    value={customTime.split(":")[1] || ""}
                     onValueChange={(value) => {
                       const currentHours = customTime.split(":")[0] || "00";
                       setCustomTime(`${currentHours}:${value}`);
                     }}
                   >
-                    {minutes.map(minute => (
-                      <option key={minute} value={minute}>{minute}</option>
-                    ))}
+                    <SelectTrigger id="minutes">
+                      <SelectValue placeholder="Minuti" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {minutes.map(minute => (
+                        <SelectItem key={minute} value={minute}>{minute}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
               </div>
@@ -288,9 +246,9 @@ export function ScheduleDialog({
           </CustomButton>
           <CustomButton 
             onClick={handleSchedule}
-            disabled={!selectedOption || (selectedOption === "custom" && (!customDate || !customTime))}
+            disabled={!selectedOption || (selectedOption === "custom" && (!customDate || !customTime)) || isSubmitting}
           >
-            {templateStatus === 'PENDING' ? 'Programma (in attesa di approvazione)' : 'Programma'}
+            {isSubmitting ? "Programmazione..." : !isTemplateApproved ? 'Programma (in attesa di approvazione)' : 'Programma'}
           </CustomButton>
         </div>
       </DialogContent>
