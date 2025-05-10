@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Textarea } from './ui/textarea';
-import { Loader2, Sparkles, ImageIcon, Upload } from 'lucide-react';
+import { Loader2, Sparkles, ImageIcon } from 'lucide-react';
 import { toast } from './ui/use-toast';
 import { CustomButton } from './ui/custom-button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileUpload } from './ui/file-upload';
 
 interface ImagePromptDialogProps {
   isOpen: boolean;
@@ -26,16 +24,14 @@ export function ImagePromptDialog({
   campaignType,
   objective
 }: ImagePromptDialogProps) {
-  const [activeTab, setActiveTab] = useState<'ai' | 'upload'>('ai');
   const [prompt, setPrompt] = useState('');
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   // Genera il prompt automaticamente all'apertura del dialog
   useEffect(() => {
-    if (isOpen && activeTab === 'ai') {
+    if (isOpen) {
       generatePrompt();
     }
   }, [isOpen]);
@@ -75,54 +71,6 @@ export function ImagePromptDialog({
       });
     } finally {
       setIsGeneratingPrompt(false);
-    }
-  };
-
-  const handleFileUpload = async (file: File | null) => {
-    if (!file) {
-      setSelectedFile(null);
-      return;
-    }
-
-    try {
-      setIsGeneratingImage(true);
-      
-      // Crea il FormData per l'upload
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Chiamata all'API di upload
-      const response = await fetch('/api/upload/campaign-image', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore durante il caricamento del file');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        await onGenerate(data.file.url);
-        onClose();
-        toast({
-          title: "Successo",
-          description: "Immagine caricata con successo",
-        });
-      } else {
-        throw new Error(data.error || 'Errore durante il caricamento del file');
-      }
-    } catch (error) {
-      console.error('Errore nel caricamento del file:', error);
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Errore nel caricamento del file",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingImage(false);
     }
   };
 
@@ -182,67 +130,44 @@ export function ImagePromptDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] bg-white rounded-3xl shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-gray-800">Immagine Campagna</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-gray-800">Genera Immagine con AI</DialogTitle>
           <DialogDescription className="text-sm text-gray-600">
-            Genera un'immagine con l'AI o carica un'immagine dal tuo computer
+            Modifica il prompt per personalizzare l'immagine generata
           </DialogDescription>
         </DialogHeader>
-        
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'upload')} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Genera con AI
-            </TabsTrigger>
-            <TabsTrigger value="upload" className="flex items-center gap-2">
-              <Upload className="w-4 h-4" />
-              Carica Immagine
-            </TabsTrigger>
-          </TabsList>
 
-          <TabsContent value="ai" className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">Prompt per DALL-E</label>
-                <CustomButton
-                  size="sm"
-                  onClick={generatePrompt}
-                  className="text-xs py-1 px-3 flex items-center"
-                  disabled={isGeneratingPrompt}
-                >
-                  {isGeneratingPrompt ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      Rigenerazione...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Rigenera Prompt
-                    </>
-                  )}
-                </CustomButton>
-              </div>
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={isGeneratingPrompt ? "Generazione prompt in corso..." : "Modifica il prompt per personalizzare l'immagine..."}
-                rows={6}
-                className="rounded-xl border-gray-200 resize-none"
-              />
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">Prompt per DALL-E</label>
+              <CustomButton
+                size="sm"
+                onClick={generatePrompt}
+                className="text-xs py-1 px-3 flex items-center"
+                disabled={isGeneratingPrompt}
+              >
+                {isGeneratingPrompt ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Rigenerazione...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Rigenera Prompt
+                  </>
+                )}
+              </CustomButton>
             </div>
-          </TabsContent>
-
-          <TabsContent value="upload" className="space-y-4">
-            <FileUpload
-              selectedFile={selectedFile}
-              onFileSelect={handleFileUpload}
-              accept="image/*"
-              maxSize={5}
-              label="Carica un'immagine"
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={isGeneratingPrompt ? "Generazione prompt in corso..." : "Modifica il prompt per personalizzare l'immagine..."}
+              rows={6}
+              className="rounded-xl border-gray-200 resize-none"
             />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
 
         <DialogFooter className="space-x-2">
           <CustomButton
@@ -252,25 +177,23 @@ export function ImagePromptDialog({
           >
             Annulla
           </CustomButton>
-          {activeTab === 'ai' && (
-            <CustomButton 
-              onClick={generateImage}
-              disabled={!prompt.trim() || isGeneratingImage}
-              className="flex items-center"
-            >
-              {isGeneratingImage ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generazione...
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Genera Immagine
-                </>
-              )}
-            </CustomButton>
-          )}
+          <CustomButton 
+            onClick={generateImage}
+            disabled={!prompt.trim() || isGeneratingImage}
+            className="flex items-center"
+          >
+            {isGeneratingImage ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generazione...
+              </>
+            ) : (
+              <>
+                <ImageIcon className="w-4 h-4 mr-2" />
+                Genera Immagine
+              </>
+            )}
+          </CustomButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
