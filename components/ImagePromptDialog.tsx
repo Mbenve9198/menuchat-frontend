@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Textarea } from './ui/textarea';
@@ -26,10 +28,10 @@ export function ImagePromptDialog({
 }: ImagePromptDialogProps) {
   const [activeTab, setActiveTab] = useState<'ai' | 'upload'>('ai');
   const [prompt, setPrompt] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   // Genera il prompt automaticamente all'apertura del dialog
   useEffect(() => {
@@ -40,7 +42,7 @@ export function ImagePromptDialog({
 
   const generatePrompt = async () => {
     try {
-      setIsLoading(true);
+      setIsGeneratingPrompt(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image-prompt`, {
         method: 'POST',
         headers: {
@@ -72,7 +74,7 @@ export function ImagePromptDialog({
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsGeneratingPrompt(false);
     }
   };
 
@@ -83,7 +85,7 @@ export function ImagePromptDialog({
     }
 
     try {
-      setIsUploading(true);
+      setIsGeneratingImage(true);
       
       // Crea il FormData per l'upload
       const formData = new FormData();
@@ -120,11 +122,11 @@ export function ImagePromptDialog({
         variant: "destructive",
       });
     } finally {
-      setIsUploading(false);
+      setIsGeneratingImage(false);
     }
   };
 
-  const handleGenerate = async () => {
+  const generateImage = async () => {
     if (!prompt.trim()) {
       toast({
         title: "Prompt richiesto",
@@ -135,7 +137,7 @@ export function ImagePromptDialog({
     }
 
     try {
-      setIsGenerating(true);
+      setIsGeneratingImage(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image`, {
         method: 'POST',
         headers: {
@@ -152,6 +154,12 @@ export function ImagePromptDialog({
       }
 
       const data = await response.json();
+      
+      if (!data.success || !data.data?.imageUrl) {
+        throw new Error('URL immagine non trovato nella risposta');
+      }
+
+      setGeneratedImageUrl(data.data.imageUrl);
       await onGenerate(data.data.imageUrl);
       onClose();
       
@@ -167,7 +175,7 @@ export function ImagePromptDialog({
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingImage(false);
     }
   };
 
@@ -198,9 +206,9 @@ export function ImagePromptDialog({
                   size="sm"
                   onClick={generatePrompt}
                   className="text-xs py-1 px-3 flex items-center"
-                  disabled={isLoading}
+                  disabled={isGeneratingPrompt}
                 >
-                  {isLoading ? (
+                  {isGeneratingPrompt ? (
                     <>
                       <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                       Rigenerazione...
@@ -216,7 +224,7 @@ export function ImagePromptDialog({
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={isLoading ? "Generazione prompt in corso..." : "Modifica il prompt per personalizzare l'immagine..."}
+                placeholder={isGeneratingPrompt ? "Generazione prompt in corso..." : "Modifica il prompt per personalizzare l'immagine..."}
                 rows={6}
                 className="rounded-xl border-gray-200 resize-none"
               />
@@ -244,11 +252,11 @@ export function ImagePromptDialog({
           </CustomButton>
           {activeTab === 'ai' && (
             <CustomButton 
-              onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
+              onClick={generateImage}
+              disabled={!prompt.trim() || isGeneratingImage}
               className="flex items-center"
             >
-              {isGenerating ? (
+              {isGeneratingImage ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Generazione...
