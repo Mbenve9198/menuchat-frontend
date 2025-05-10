@@ -427,13 +427,17 @@ export default function TemplatesPage() {
     // Aggiorna la lingua corrente quando cambiano i templates o il tab
     const languages = availableLanguages();
     if (languages.length > 0) {
-      // Se c'è "en" tra le lingue disponibili, selezionala di default
-      if (languages.includes('en') && (!currentLanguage || currentLanguage !== 'en')) {
+      // Se la lingua corrente è tra quelle disponibili, mantienila
+      if (currentLanguage && languages.includes(currentLanguage)) {
+        return;
+      }
+      // Se c'è "en" tra le lingue disponibili e non c'è una lingua corrente, usa "en"
+      if (languages.includes('en') && !currentLanguage) {
         setCurrentLanguage('en');
       } 
-      // Altrimenti se la lingua corrente non è tra quelle disponibili, prendi la prima
+      // Se non c'è una lingua corrente o non è tra quelle disponibili, prendi la prima
       else if (!currentLanguage || !languages.includes(currentLanguage)) {
-      setCurrentLanguage(languages[0]);
+        setCurrentLanguage(languages[0]);
       }
     }
   }, [menuTemplates, reviewTemplates, activeTab]);
@@ -969,7 +973,7 @@ export default function TemplatesPage() {
         throw new Error(data.error || 'Errore nel controllo dello stato');
       }
       
-      // Aggiorna lo stato del template nella lista
+      // Aggiorna lo stato del template nella lista mantenendo la lingua corrente
       const updateTemplates = (templates: Template[]) => {
         return templates.map(t => {
           if (t._id === templateId) {
@@ -984,9 +988,25 @@ export default function TemplatesPage() {
       };
       
       if (activeTab === "menu") {
-        setMenuTemplates(updateTemplates(menuTemplates));
+        setMenuTemplates(prev => {
+          const updated = updateTemplates(prev);
+          // Mantiene la lingua corrente invece di resettarla
+          const languages = Array.from(new Set(updated.map(t => t.language)));
+          if (!languages.includes(currentLanguage)) {
+            setCurrentLanguage(languages[0]);
+          }
+          return updated;
+        });
       } else {
-        setReviewTemplates(updateTemplates(reviewTemplates));
+        setReviewTemplates(prev => {
+          const updated = updateTemplates(prev);
+          // Mantiene la lingua corrente invece di resettarla
+          const languages = Array.from(new Set(updated.map(t => t.language)));
+          if (!languages.includes(currentLanguage)) {
+            setCurrentLanguage(languages[0]);
+          }
+          return updated;
+        });
       }
       
       toast({
