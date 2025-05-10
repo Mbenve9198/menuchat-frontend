@@ -298,16 +298,37 @@ export default function CreateCampaign() {
     try {
       setIsGeneratingImage(true);
       
-      // Qui implementeremo la chiamata a DALL-E
-      // Per ora usiamo un placeholder
-      setGeneratedImageUrl('/placeholder-image.png');
-      setUseGeneratedImage(true);
+      // Prima chiamiamo l'API per generare l'immagine
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.user?.accessToken}`
+        },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella generazione dell\'immagine');
+      }
+
+      const data = await response.json();
       
+      // Aggiorna lo stato con l'URL dell'immagine generata
+      setGeneratedImageUrl(data.data.imageUrl);
+      setUseGeneratedImage(true);
+
+      toast({
+        title: "Immagine generata",
+        description: "L'immagine è stata generata con successo",
+      });
+
     } catch (error) {
       console.error('Errore nella generazione dell\'immagine:', error);
       toast({
         title: "Errore",
-        description: "Errore nella generazione dell'immagine",
+        description: error instanceof Error ? error.message : "Errore nella generazione dell'immagine",
         variant: "destructive",
       });
     } finally {

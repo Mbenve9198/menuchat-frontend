@@ -57,32 +57,39 @@ export function ImagePromptDialog({
   const handleGenerate = async () => {
     try {
       setIsGenerating(true);
-      
-      // Prima genera l'immagine con DALL-E
-      const response = await fetch('/api/ai/generate-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt
-        }),
-      });
 
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error);
+      // Prima generiamo il prompt con Claude
+      if (!prompt) {
+        const promptResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image-prompt`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messageText,
+            campaignType,
+            objective,
+          }),
+        });
+
+        if (!promptResponse.ok) {
+          const errorData = await promptResponse.json();
+          throw new Error(errorData.error || 'Errore nella generazione del prompt');
+        }
+
+        const promptData = await promptResponse.json();
+        setPrompt(promptData.data.prompt);
       }
 
-      // Passa l'URL dell'immagine generata al componente padre
-      await onGenerate(data.data.imageUrl);
+      // Poi generiamo l'immagine con il prompt
+      await onGenerate(prompt);
       onClose();
+
     } catch (error) {
-      console.error('Errore nella generazione dell\'immagine:', error);
+      console.error('Errore nella generazione:', error);
       toast({
         title: "Errore",
-        description: "Errore nella generazione dell'immagine",
+        description: error instanceof Error ? error.message : "Errore nella generazione",
         variant: "destructive",
       });
     } finally {
