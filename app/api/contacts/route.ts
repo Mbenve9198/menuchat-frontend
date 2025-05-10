@@ -4,13 +4,13 @@ import { auth } from "@/lib/auth"
 // Funzione per fare il fetch dei contatti dal backend
 async function fetchContactsFromBackend(restaurantId: string, token: string) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-    console.log("Connecting to API:", apiUrl)
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+    console.log("Connecting to API:", backendUrl)
     console.log("Restaurant ID:", restaurantId)
     console.log("Token available:", !!token)
     console.log("Token first 20 chars:", token ? token.substring(0, 20) + "..." : "no token")
     
-    const url = `${apiUrl}/contacts/restaurant/${restaurantId}`
+    const url = `${backendUrl}/api/contacts/restaurant/${restaurantId}`
     console.log("Fetching from URL:", url)
     
     const response = await fetch(url, {
