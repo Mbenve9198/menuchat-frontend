@@ -104,11 +104,8 @@ export default function CreateCampaign() {
   const [isApproved, setIsApproved] = useState(false)
   // Add a new state variable for campaign details/objective
   const [campaignObjective, setCampaignObjective] = useState("")
-  const [imagePrompt, setImagePrompt] = useState("")
-  const [showImagePromptDialog, setShowImagePromptDialog] = useState(false)
-  const [uploadedImage, setUploadedImage] = useState<File | null>(null)
-  const [uploadedImageUrl, setUploadedImageUrl] = useState("")
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   // Recupera i contatti dal backend
   useEffect(() => {
@@ -246,213 +243,154 @@ export default function CreateCampaign() {
     setSelectedCountryCode(code === selectedCountryCode ? null : code)
   }
 
-  // Funzione aggiornata per generare il testo del messaggio usando Claude 3.7
-  const generateMessageText = async () => {
+  // Update the generateMessageText function to use the campaign objective
+  const generateMessageText = () => {
     setIsGeneratingText(true)
-    
-    try {
-      // Effettua una chiamata API a Claude 3.7
-      const response = await fetch("/api/generate-message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          campaignType,
-          language,
-          objective: campaignObjective,
-          restaurantId: session?.user?.restaurantId
-        }),
-      })
 
-      const data = await response.json()
-      
-      if (data.success) {
-        setMessageText(data.messageText)
-        setPrimaryCta(data.cta)
-        setPrimaryCtaType(data.ctaType || "url")
+    // Simulate AI text generation with the campaign objective as context
+    setTimeout(() => {
+      let generatedText = ""
+
+      // Use the campaign objective to personalize the message if provided
+      const objective = campaignObjective.trim()
+      const hasObjective = objective.length > 0
+
+      if (campaignType === "promo") {
+        generatedText = hasObjective
+          ? `🌟 Special Offer! ${objective.includes("discount") ? objective : "Enjoy 20% off your next order this weekend."} Use code TASTY20 at checkout. Limited time only!`
+          : "🌟 Special Offer! Enjoy 20% off your next order this weekend. Use code TASTY20 at checkout. Limited time only!"
+      } else if (campaignType === "event") {
+        generatedText = hasObjective
+          ? `🎉 You're invited! ${objective.includes("event") ? objective : "Join us for our special tasting event this Friday at 7PM."} Reserve your spot now!`
+          : "🎉 You're invited! Join us for our special tasting event this Friday at 7PM. Reserve your spot now!"
+      } else if (campaignType === "update") {
+        generatedText = hasObjective
+          ? `🍽️ ${objective.includes("menu") ? objective : "Our menu just got better! Check out our 5 new seasonal dishes, available now."} Which one will be your favorite?`
+          : "🍽️ Our menu just got better! Check out our 5 new seasonal dishes, available now. Which one will be your favorite?"
+      } else if (campaignType === "feedback") {
+        generatedText = hasObjective
+          ? `👋 ${objective.includes("feedback") ? objective : "We value your opinion! How was your recent experience with us?"} Take our quick 1-minute survey and get a free dessert on your next visit!`
+          : "👋 We value your opinion! How was your recent experience with us? Take our quick 1-minute survey and get a free dessert on your next visit!"
       } else {
-        throw new Error(data.error || "Errore nella generazione del messaggio")
+        generatedText = hasObjective
+          ? `Hello from Pizza Palace! ${objective}`
+          : "Hello from Pizza Palace! We miss you and would love to see you again soon. Check out what's new on our menu!"
       }
-    } catch (error) {
-      console.error("Error generating message:", error)
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile generare il messaggio",
-        variant: "destructive",
-      })
-      // Messaggio fallback in caso di errore
-      setMessageText(
-        campaignType === "promo"
-          ? `🌟 Offerta Speciale! ${campaignObjective.trim() ? campaignObjective : "Approfitta del 20% di sconto sul tuo prossimo ordine questo weekend."}`
-          : campaignType === "event"
-          ? `🎉 Sei invitato! ${campaignObjective.trim() ? campaignObjective : "Partecipa al nostro evento speciale questo venerdì alle 19:00."}`
-          : campaignType === "update"
-          ? `🍽️ ${campaignObjective.trim() ? campaignObjective : "Il nostro menu è migliorato! Scopri i nostri 5 nuovi piatti stagionali, disponibili ora."}`
-          : `👋 ${campaignObjective.trim() ? campaignObjective : "La tua opinione è importante! Com'è stata la tua recente esperienza con noi?"}`
-      )
+
+      setMessageText(generatedText)
       setPrimaryCta(
         campaignType === "promo"
-          ? "Ordina Ora"
+          ? "Order Now"
           : campaignType === "event"
-          ? "Prenota"
-          : campaignType === "update"
-          ? "Vedi Menu"
-          : "Rispondi"
+            ? "Reserve a Spot"
+            : campaignType === "update"
+              ? "View Menu"
+              : "Take Survey",
       )
-    } finally {
       setIsGeneratingText(false)
-    }
+    }, 1500)
   }
 
-  // Funzione per preparare e mostrare il prompt per la generazione dell'immagine
-  const prepareImagePrompt = () => {
-    // Crea un prompt basato sul tipo di campagna e sull'obiettivo
-    let basePrompt = ""
-    
-    if (campaignType === "promo") {
-      basePrompt = "Un'immagine accattivante per una promozione di un ristorante che mostra cibo delizioso con effetto sconto"
-    } else if (campaignType === "event") {
-      basePrompt = "Un'immagine elegante per un evento in un ristorante, con tavoli ben allestiti e un'atmosfera accogliente"
-    } else if (campaignType === "update") {
-      basePrompt = "Un'immagine di piatti nuovi e colorati per un aggiornamento del menu di un ristorante"
-    } else if (campaignType === "feedback") {
-      basePrompt = "Un'immagine che rappresenta il concetto di feedback cliente in un ristorante, con elementi visivi di valutazione"
-    } else {
-      basePrompt = "Un'immagine accattivante di cibo per un ristorante"
-    }
-    
-    // Aggiungi dettagli specifici dal messaggio o dall'obiettivo della campagna
-    if (campaignObjective.trim()) {
-      basePrompt += `. ${campaignObjective}`
-    }
-    
-    setImagePrompt(basePrompt)
-    setShowImagePromptDialog(true)
-  }
-
-  // Funzione per generare l'immagine con DALL-E
-  const generateImage = async () => {
-    setShowImagePromptDialog(false)
-    setIsGeneratingImage(true)
-    
-    try {
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: imagePrompt,
-          restaurantId: session?.user?.restaurantId
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        setGeneratedImageUrl(data.imageUrl)
-        setUseGeneratedImage(true)
-      } else {
-        throw new Error(data.error || "Errore nella generazione dell'immagine")
-      }
-    } catch (error) {
-      console.error("Error generating image:", error)
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile generare l'immagine",
-        variant: "destructive",
-      })
-      setGeneratedImageUrl("/fallback-image.jpg")
-    } finally {
-      setIsGeneratingImage(false)
-    }
-  }
-
-  // Funzione per caricare un'immagine personalizzata
-  const handleUploadImage = async (file: File | null) => {
-    if (!file) {
-      setUploadedImage(null)
-      setUploadedImageUrl("")
-      return
-    }
-    
-    setUploadedImage(file)
-    setIsUploadingImage(true)
-    
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-      
-      const response = await fetch("/api/upload/campaign-image", {
-        method: "POST",
-        body: formData
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        setUploadedImageUrl(data.file.url)
-        setGeneratedImageUrl(data.file.url)
-        setUseGeneratedImage(true)
-        toast({
-          title: "Successo",
-          description: "Immagine caricata con successo",
-        })
-      } else {
-        throw new Error(data.error || "Errore durante il caricamento dell'immagine")
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error)
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile caricare l'immagine",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUploadingImage(false)
-    }
-  }
-
-  // Aggiungi useEffect per generare automaticamente il messaggio quando si passa allo step 3
-  useEffect(() => {
-    if (currentStep === 2 && !messageText && campaignType) {
-      generateMessageText()
-    }
-  }, [currentStep, campaignType])
-
-  // Update the handleNext function to validate the new step
-  const handleNext = () => {
-    if (currentStep === 0 && selectedCount === 0) {
-      toast({
-        title: "No contacts selected",
-        description: "Please select at least one contact to continue",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (currentStep === 1 && !campaignType) {
-      toast({
-        title: "Campaign type required",
-        description: "Please select a campaign type to continue",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (currentStep === 2 && !messageText) {
+  const generateImage = () => {
+    if (!messageText) {
       toast({
         title: "Message text required",
-        description: "Please generate or enter message text",
+        description: "Please generate or enter message text first",
         variant: "destructive",
       })
       return
     }
 
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
-      window.scrollTo(0, 0)
+    setIsGeneratingImage(true)
+
+    // Simulate AI image generation
+    setTimeout(() => {
+      // Use a placeholder image based on campaign type
+      let imageUrl = ""
+
+      if (campaignType === "promo") {
+        imageUrl = "/restaurant-special-offer.png"
+      } else if (campaignType === "event") {
+        imageUrl = "/restaurant-event-invitation.png"
+      } else if (campaignType === "update") {
+        imageUrl = "/restaurant-menu-items.png"
+      } else if (campaignType === "feedback") {
+        imageUrl = "/restaurant-feedback-survey.png"
+      } else {
+        imageUrl = "/delicious-restaurant-meal.png"
+      }
+
+      setGeneratedImageUrl(imageUrl)
+      setUseGeneratedImage(true)
+      setIsGeneratingImage(false)
+    }, 2000)
+  }
+
+  // Update the handleNext function to validate the new step
+  const handleNext = async () => {
+    if (currentStep === 0 && selectedCount === 0) {
+      toast({
+        title: "Nessun contatto selezionato",
+        description: "Seleziona almeno un contatto per continuare",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (currentStep === 1) {
+      if (!campaignType || !campaignObjective) {
+        toast({
+          title: "Informazioni mancanti",
+          description: "Seleziona il tipo di campagna e inserisci l'obiettivo",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Genera il template prima di passare allo step successivo
+      try {
+        setIsGeneratingTemplate(true);
+        setGenerationError(null);
+
+        const response = await fetch('/api/ai/generate-template', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            campaignType,
+            objective: campaignObjective,
+            language,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error);
+        }
+
+        // Aggiorna gli stati con i dati generati
+        setMessageText(data.data.messageText);
+        setPrimaryCta(data.data.cta.text);
+        setPrimaryCtaType(data.data.cta.type);
+
+        // Procedi allo step successivo
+        setCurrentStep(currentStep + 1);
+        window.scrollTo(0, 0);
+      } catch (error) {
+        setGenerationError(error.message);
+        toast({
+          title: "Errore nella generazione",
+          description: "Si è verificato un errore. Riprova.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsGeneratingTemplate(false);
+      }
+    } else {
+      setCurrentStep(currentStep + 1);
+      window.scrollTo(0, 0);
     }
   }
 
@@ -717,7 +655,7 @@ export default function CreateCampaign() {
                   <div className="space-y-4">
                     {/* Campaign type */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Campaign type <span className="text-[#EF476F]">*</span></Label>
+                      <Label className="text-sm font-medium text-gray-700">Campaign type</Label>
                       <RadioGroup value={campaignType} onValueChange={setCampaignType} className="space-y-2">
                         {campaignTypes.map((type) => (
                           <Label
@@ -757,7 +695,7 @@ export default function CreateCampaign() {
                     {/* Campaign objective/details */}
                     <div className="space-y-2">
                       <Label htmlFor="campaign-objective" className="text-sm font-medium text-gray-700">
-                        Campaign details & objective <span className="text-[#EF476F]">*</span>
+                        Campaign details & objective
                       </Label>
                       <Textarea
                         id="campaign-objective"
@@ -812,18 +750,30 @@ export default function CreateCampaign() {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Loading indicator per generazione testo */}
-                    {isGeneratingText && (
+                    {/* Generate button */}
+                    {!messageText && (
                       <div className="bg-gray-50 rounded-xl p-4 text-center">
-                        <div className="flex flex-col items-center gap-2">
-                          <Loader2 className="w-8 h-8 text-[#EF476F] animate-spin" />
-                          <p className="text-sm text-gray-700">Generazione del messaggio in corso...</p>
-                        </div>
+                        <p className="text-sm text-gray-700 mb-3">Ready to generate your campaign content?</p>
+                        <CustomButton
+                          onClick={generateMessageText}
+                          className="py-2 px-4 flex items-center justify-center mx-auto"
+                          disabled={isGeneratingText || !campaignType}
+                        >
+                          {isGeneratingText ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" /> Generate with AI
+                            </>
+                          )}
+                        </CustomButton>
                       </div>
                     )}
 
                     {/* Message text */}
-                    {messageText && !isGeneratingText && (
+                    {(messageText || isGeneratingText) && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label htmlFor="message-text" className="text-sm font-medium text-gray-700">
@@ -857,107 +807,61 @@ export default function CreateCampaign() {
                     )}
 
                     {/* Image generation */}
-                    {messageText && !isGeneratingText && (
+                    {messageText && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-medium text-gray-700">Campaign image</Label>
-                          <div className="flex gap-2">
-                            <CustomButton
-                              size="sm"
-                              onClick={prepareImagePrompt}
-                              className="text-xs py-1 px-3 flex items-center"
-                              disabled={isGeneratingImage}
-                            >
-                              {isGeneratingImage ? (
-                                <>
-                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Generating...
-                                </>
-                              ) : generatedImageUrl ? (
-                                <>
-                                  <ImageIcon className="w-3 h-3 mr-1" /> Regenerate image
-                                </>
-                              ) : (
-                                <>
-                                  <ImageIcon className="w-3 h-3 mr-1" /> Generate image
-                                </>
-                              )}
-                            </CustomButton>
-                          </div>
-                        </div>
-
-                        {/* Generatore di immagini e uploader */}
-                        <div className="mt-3 border rounded-xl overflow-hidden">
-                          <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-                            <h4 className="text-sm font-medium text-gray-700">Campaign image</h4>
-                            <div className="flex gap-2">
-                              <div className="relative">
-                                <input
-                                  type="file"
-                                  id="imageUpload"
-                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                  onChange={(e) => handleUploadImage(e.target.files?.[0] || null)}
-                                  accept="image/*"
-                                />
-                                <CustomButton
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs py-1 px-3"
-                                  disabled={isUploadingImage}
-                                >
-                                  {isUploadingImage ? "Uploading..." : "Upload image"}
-                                </CustomButton>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="p-4 flex flex-col items-center">
-                            {generatedImageUrl ? (
-                              <div className="relative">
-                                <Image
-                                  src={generatedImageUrl}
-                                  alt="Campaign image"
-                                  width={300}
-                                  height={200}
-                                  className="max-h-[200px] w-auto object-contain"
-                                />
-                              </div>
-                            ) : isGeneratingImage ? (
-                              <div className="h-[200px] w-full flex items-center justify-center">
-                                <div className="flex flex-col items-center gap-2">
-                                  <Loader2 className="w-8 h-8 text-[#EF476F] animate-spin" />
-                                  <p className="text-sm text-gray-500">Generating image...</p>
-                                </div>
-                              </div>
+                          <CustomButton
+                            size="sm"
+                            onClick={generateImage}
+                            className="text-xs py-1 px-3 flex items-center"
+                            disabled={isGeneratingImage || !messageText}
+                          >
+                            {isGeneratingImage ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Generating...
+                              </>
+                            ) : generatedImageUrl ? (
+                              <>
+                                <ImageIcon className="w-3 h-3 mr-1" /> Regenerate image
+                              </>
                             ) : (
-                              <div className="h-[200px] w-full flex items-center justify-center border-2 border-dashed rounded-lg">
-                                <div className="text-center">
-                                  <ImageIcon className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-                                  <p className="text-sm text-gray-500">
-                                    Generate an image or upload your own
-                                  </p>
-                                </div>
-                              </div>
+                              <>
+                                <ImageIcon className="w-3 h-3 mr-1" /> Generate image
+                              </>
                             )}
-                          </div>
+                          </CustomButton>
                         </div>
 
                         {generatedImageUrl && (
-                          <div className="flex items-center">
-                            <Checkbox
-                              id="use-image"
-                              checked={useGeneratedImage}
-                              onCheckedChange={(checked) => setUseGeneratedImage(checked === true)}
-                              className="mr-2 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
-                            />
-                            <Label htmlFor="use-image" className="text-sm text-gray-700">
-                              Include this image in the campaign
-                            </Label>
+                          <div className="space-y-2">
+                            <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                              <Image
+                                src={generatedImageUrl || "/placeholder.svg"}
+                                alt="Generated campaign image"
+                                width={400}
+                                height={300}
+                                className="w-full h-auto"
+                              />
+                            </div>
+                            <div className="flex items-center">
+                              <Checkbox
+                                id="use-image"
+                                checked={useGeneratedImage}
+                                onCheckedChange={(checked) => setUseGeneratedImage(checked === true)}
+                                className="mr-2 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
+                              />
+                              <Label htmlFor="use-image" className="text-sm text-gray-700">
+                                Include this image in the campaign
+                              </Label>
+                            </div>
                           </div>
                         )}
                       </div>
                     )}
 
                     {/* Call to action */}
-                    {messageText && !isGeneratingText && (
+                    {messageText && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">Primary call to action</Label>
                         <div className="flex gap-2">
@@ -992,7 +896,7 @@ export default function CreateCampaign() {
                 </div>
 
                 {/* Message preview */}
-                {messageText && !isGeneratingText && (
+                {messageText && (
                   <div className="bg-white rounded-3xl p-6 shadow-xl">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">Message Preview</h3>
                     <div className="bg-gray-100 rounded-xl p-4">
@@ -1019,47 +923,6 @@ export default function CreateCampaign() {
                             Opt-out
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Dialog per modificare il prompt dell'immagine */}
-                {showImagePromptDialog && (
-                  <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl p-6 max-w-lg w-full space-y-4 animate-in zoom-in-95">
-                      <h3 className="text-lg font-bold text-gray-800">Personalizza il prompt per l'immagine</h3>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="image-prompt" className="text-sm font-medium text-gray-700">
-                          Descrivi l'immagine che vorresti generare
-                        </Label>
-                        <Textarea
-                          id="image-prompt"
-                          value={imagePrompt}
-                          onChange={(e) => setImagePrompt(e.target.value)}
-                          className="rounded-xl min-h-[120px] border-gray-200"
-                          placeholder="Descrivi l'immagine che vorresti generare per la tua campagna..."
-                        />
-                        <p className="text-xs text-gray-500">
-                          Fornisci dettagli specifici per ottenere risultati migliori, ad esempio stile, colori, soggetti, atmosfera.
-                        </p>
-                      </div>
-                      
-                      <div className="flex justify-end gap-3">
-                        <CustomButton
-                          variant="outline"
-                          onClick={() => setShowImagePromptDialog(false)}
-                          className="text-gray-800"
-                        >
-                          Annulla
-                        </CustomButton>
-                        <CustomButton
-                          onClick={generateImage}
-                          disabled={!imagePrompt.trim()}
-                        >
-                          Genera Immagine
-                        </CustomButton>
                       </div>
                     </div>
                   </div>
@@ -1198,7 +1061,7 @@ export default function CreateCampaign() {
         {!isApproved && (
           <div className="w-full max-w-md mt-6 flex justify-between">
             <CustomButton variant="outline" onClick={handlePrevious} className="text-gray-800 py-2 px-4">
-              {currentStep === 0 ? "Cancel" : "Back"}
+              {currentStep === 0 ? "Annulla" : "Indietro"}
             </CustomButton>
 
             {currentStep < steps.length - 1 && (
@@ -1207,11 +1070,18 @@ export default function CreateCampaign() {
                 className="py-2 px-4"
                 disabled={
                   (currentStep === 0 && selectedCount === 0) ||
-                  (currentStep === 1 && (!campaignType || !campaignObjective.trim())) ||
-                  (currentStep === 2 && !messageText)
+                  (currentStep === 1 && (!campaignType || !campaignObjective)) ||
+                  isGeneratingTemplate
                 }
               >
-                Continue
+                {isGeneratingTemplate ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 
+                    Generazione...
+                  </>
+                ) : (
+                  "Continua"
+                )}
               </CustomButton>
             )}
           </div>
