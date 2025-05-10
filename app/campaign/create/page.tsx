@@ -109,6 +109,8 @@ export default function CreateCampaign() {
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [primaryCtaValue, setPrimaryCtaValue] = useState("")
   const [isImagePromptDialogOpen, setIsImagePromptDialogOpen] = useState(false)
+  const [showMenuUrl, setShowMenuUrl] = useState(false)
+  const [showReviewCta, setShowReviewCta] = useState(false)
 
   // Recupera i contatti dal backend
   useEffect(() => {
@@ -925,14 +927,15 @@ export default function CreateCampaign() {
                 {/* Message preview */}
                 {messageText && (
                   <div className="bg-white rounded-3xl p-6 shadow-xl">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Message Preview</h3>
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Anteprima Messaggio</h3>
                     <div className="bg-gray-100 rounded-xl p-4">
                       <div className="flex flex-col gap-3">
                         <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[280px]">
+                          {/* Immagine della campagna */}
                           {useGeneratedImage && generatedImageUrl && (
                             <div className="mb-2 rounded-md overflow-hidden">
                               <Image
-                                src={generatedImageUrl || "/placeholder.svg"}
+                                src={generatedImageUrl}
                                 alt="Campaign image"
                                 width={260}
                                 height={180}
@@ -940,14 +943,33 @@ export default function CreateCampaign() {
                               />
                             </div>
                           )}
-                          <p className="text-sm">{messageText || "Your message will appear here..."}</p>
-                          {primaryCta && (
-                            <div className="mt-2 bg-[#EF476F] text-white text-sm font-medium py-1 px-3 rounded-md inline-block">
-                              {primaryCta}
+                          
+                          {/* Testo del messaggio */}
+                          <p className="text-sm whitespace-pre-wrap">{messageText}</p>
+                          
+                          {/* Pulsanti CTA */}
+                          {(showMenuUrl || showReviewCta) && (
+                            <div className="mt-2 border-t pt-1.5 border-gray-200">
+                              {/* Pulsante principale */}
+                              <div className="flex justify-center w-full">
+                                <button className="bg-[#e9f2fd] text-[#127def] text-[10px] sm:text-xs py-1 px-3 rounded-3xl font-medium w-full">
+                                  {primaryCta}
+                                </button>
+                              </div>
+                              {/* Pulsante Opt-out */}
+                              <div className="flex justify-center w-full mt-1">
+                                <button className="bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] py-1 px-3 rounded-3xl font-medium w-full">
+                                  Opt-out
+                                </button>
+                              </div>
                             </div>
                           )}
-                          <div className="mt-1 bg-gray-200 text-gray-700 text-xs py-1 px-2 rounded-md inline-block">
-                            Opt-out
+                          
+                          {/* Timestamp */}
+                          <div className="text-right mt-1">
+                            <span className="text-[8px] md:text-[10px] text-gray-500">
+                              {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}
+                            </span>
                           </div>
                         </div>
                       </div>
