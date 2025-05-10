@@ -305,6 +305,12 @@ export default function CreateCampaign() {
     try {
       setIsGeneratingImage(true);
       
+      // Verifica se il prompt sembra essere un URL
+      const urlPattern = /^https?:\/\/\S+/i;
+      if (urlPattern.test(prompt.trim())) {
+        throw new Error("Il prompt non può essere un URL. Usa una descrizione testuale per generare l'immagine.");
+      }
+      
       // Prima chiamiamo l'API per generare l'immagine
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image`, {
         method: 'POST',

@@ -10,7 +10,7 @@ import { CustomButton } from './ui/custom-button';
 interface ImagePromptDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (imageUrl: string) => Promise<void>;
+  onGenerate: (prompt: string) => Promise<void>;
   messageText: string;
   campaignType: string;
   objective: string;
@@ -84,6 +84,17 @@ export function ImagePromptDialog({
       return;
     }
 
+    // Verifica se il prompt sembra essere un URL
+    const urlPattern = /^https?:\/\/\S+/i;
+    if (urlPattern.test(prompt.trim())) {
+      toast({
+        title: "Errore",
+        description: "Il prompt non può essere un URL. Inserisci una descrizione testuale per generare l'immagine.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsGeneratingImage(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image`, {
@@ -109,7 +120,7 @@ export function ImagePromptDialog({
       const imageUrl = data.data.imageUrl;
       
       setGeneratedImageUrl(imageUrl);
-      await onGenerate(imageUrl);
+      await onGenerate(prompt.trim());
       
       onClose();
       
