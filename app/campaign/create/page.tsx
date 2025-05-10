@@ -29,6 +29,9 @@ import { useToast } from "@/hooks/use-toast"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
 import { ImagePromptDialog } from '@/components/ImagePromptDialog'
+import { ScheduleDialog } from "@/components/ScheduleDialog"
+import { format } from "date-fns"
+import { it } from "date-fns/locale"
 
 // Definizione dell'interfaccia Contact
 interface Contact {
@@ -111,6 +114,8 @@ export default function CreateCampaign() {
   const [isImagePromptDialogOpen, setIsImagePromptDialogOpen] = useState(false)
   const [showMenuUrl, setShowMenuUrl] = useState(false)
   const [showReviewCta, setShowReviewCta] = useState(false)
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
 
   // Recupera i contatti dal backend
   useEffect(() => {
@@ -472,6 +477,46 @@ export default function CreateCampaign() {
   const getExcitedMascotImage = () => {
     return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
   }
+
+  const handleSchedule = async (date: Date) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/twilio/schedule`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.token}`
+        },
+        body: JSON.stringify({
+          phoneNumber: selectedContact.phoneNumber,
+          templateId: selectedTemplate._id,
+          variables: {
+            1: selectedContact.name || 'Cliente'
+          },
+          scheduleDate: date.toISOString(),
+          restaurantId: session?.user?.restaurantId
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Messaggio programmato",
+          description: `Il messaggio verrà inviato il ${format(date, "dd/MM/yyyy 'alle' HH:mm", { locale: it })}`,
+        });
+        setIsScheduleDialogOpen(false);
+      } else {
+        throw new Error(data.message || 'Errore nella programmazione');
+      }
+    } catch (error) {
+      console.error('Errore nella programmazione:', error);
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile programmare il messaggio",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
@@ -1144,6 +1189,13 @@ export default function CreateCampaign() {
           messageText={messageText}
           campaignType={campaignType}
           objective={campaignObjective}
+        />
+
+        <ScheduleDialog
+          isOpen={isScheduleDialogOpen}
+          onClose={() => setIsScheduleDialogOpen(false)}
+          onSchedule={handleSchedule}
+          isTemplateApproved={selectedTemplate?.status === 'APPROVED'}
         />
       </div>
     </main>
