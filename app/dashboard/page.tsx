@@ -13,6 +13,7 @@ import {
   Calendar,
   ArrowUp,
   Megaphone,
+  ArrowDown,
 } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
@@ -22,6 +23,7 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import "react-circular-progressbar/dist/styles.css"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
@@ -32,10 +34,16 @@ export default function Dashboard() {
     menusSent: 0,
     reviewRequests: 0,
     reviewsCollected: 0,
-    weeklyGoalProgress: 0
+    weeklyGoalProgress: 0,
+    trends: {
+      menusSent: 0,
+      reviewRequests: 0,
+      reviewsCollected: 0
+    }
   })
   const [activities, setActivities] = useState([])
   const [greeting, setGreeting] = useState("Good day")
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all")
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -65,14 +73,19 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`/api/stats?restaurantId=${session?.user?.restaurantId}`)
+      const response = await fetch(`/api/stats?restaurantId=${session?.user?.restaurantId}&period=${selectedPeriod}`)
       const data = await response.json()
       if (data.success) {
         setMenuStats({
           menusSent: data.menusSent || 0,
           reviewRequests: data.reviewRequests || 0,
           reviewsCollected: data.reviewsCollected || 0,
-          weeklyGoalProgress: data.weeklyGoalProgress || 0
+          weeklyGoalProgress: data.weeklyGoalProgress || 0,
+          trends: data.trends || {
+            menusSent: 0,
+            reviewRequests: 0,
+            reviewsCollected: 0
+          }
         })
       }
     } catch (error) {
@@ -82,7 +95,7 @@ export default function Dashboard() {
 
   const fetchActivities = async () => {
     try {
-      const response = await fetch(`/api/activities?restaurantId=${session?.user?.restaurantId}`)
+      const response = await fetch(`/api/activities?restaurantId=${session?.user?.restaurantId}&period=${selectedPeriod}`)
       const data = await response.json()
       if (data.success) {
         setActivities(data.activities)
@@ -105,6 +118,14 @@ export default function Dashboard() {
       setGreeting("Good Evening")
     }
   }, [])
+
+  // Aggiorna i dati quando cambia il periodo
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.restaurantId) {
+      fetchStats()
+      fetchActivities()
+    }
+  }, [status, session, selectedPeriod])
 
   if (status === "loading" || loading) {
     return (
@@ -162,9 +183,23 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          <p className="text-lg text-gray-700 mb-4">
-            {greeting}, {restaurantData.name}! 🌞
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-lg text-gray-700">
+              {greeting}, {restaurantData.name}! 🌞
+            </p>
+
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Seleziona periodo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Ultimi 7 giorni</SelectItem>
+                <SelectItem value="1m">Ultimo mese</SelectItem>
+                <SelectItem value="1y">Ultimo anno</SelectItem>
+                <SelectItem value="all">Da sempre</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <motion.div
             className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
@@ -174,7 +209,7 @@ export default function Dashboard() {
           >
             <Calendar className="w-4 h-4 text-[#EF476F]" />
             <span className="text-xs font-medium text-gray-700">
-              {Math.ceil((Date.now() - new Date(restaurantData.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days active
+              {Math.ceil((Date.now() - new Date(restaurantData.createdAt).getTime()) / (1000 * 60 * 60 * 24))} giorni attivo
             </span>
           </motion.div>
         </div>
@@ -191,7 +226,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Menus Sent</h3>
+                <h3 className="text-lg font-bold text-gray-800">Menu Inviati</h3>
                 <p className="text-3xl font-extrabold text-[#1B9AAA]">{menuStats.menusSent}</p>
               </div>
               <div className="bg-[#1B9AAA]/10 p-3 rounded-full">
@@ -207,9 +242,18 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="flex items-center text-sm text-green-600">
-              <ArrowUp className="w-4 h-4 mr-1" />
-              <span>12% this week</span>
+            <div className="flex items-center text-sm">
+              {menuStats.trends?.menusSent > 0 ? (
+                <div className="text-green-600 flex items-center">
+                  <ArrowUp className="w-4 h-4 mr-1" />
+                  <span>+{menuStats.trends.menusSent.toFixed(1)}% rispetto al periodo precedente</span>
+                </div>
+              ) : (
+                <div className="text-red-600 flex items-center">
+                  <ArrowDown className="w-4 h-4 mr-1" />
+                  <span>{menuStats.trends?.menusSent.toFixed(1)}% rispetto al periodo precedente</span>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -223,7 +267,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Review Requests</h3>
+                <h3 className="text-lg font-bold text-gray-800">Richieste Recensioni</h3>
                 <p className="text-3xl font-extrabold text-[#EF476F]">{menuStats.reviewRequests}</p>
               </div>
               <div className="bg-[#EF476F]/10 p-3 rounded-full">
@@ -245,8 +289,12 @@ export default function Dashboard() {
                 />
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Conversion rate</p>
-                <p className="text-sm font-medium text-green-600">↑ 5% from last week</p>
+                <p className="text-sm text-gray-600">Tasso di conversione</p>
+                {menuStats.trends?.reviewRequests > 0 ? (
+                  <p className="text-sm font-medium text-green-600">↑ {menuStats.trends.reviewRequests.toFixed(1)}% dal periodo precedente</p>
+                ) : (
+                  <p className="text-sm font-medium text-red-600">↓ {Math.abs(menuStats.trends?.reviewRequests || 0).toFixed(1)}% dal periodo precedente</p>
+                )}
               </div>
             </div>
           </motion.div>
@@ -261,7 +309,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
+                <h3 className="text-lg font-bold text-gray-800">Recensioni Raccolte</h3>
                 <p className="text-3xl font-extrabold text-[#06D6A0]">{menuStats.reviewsCollected}</p>
               </div>
               <div className="bg-[#06D6A0]/10 p-3 rounded-full">
@@ -276,12 +324,12 @@ export default function Dashboard() {
                     <Star key={star} className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
                   ))}
                 </div>
-                <span className="ml-2 text-sm font-medium text-gray-700">{restaurantData.googleRating?.rating || 0} avg</span>
+                <span className="ml-2 text-sm font-medium text-gray-700">{restaurantData.googleRating?.rating || 0} media</span>
               </div>
 
-              {menuStats.reviewsCollected > 0 && (
+              {menuStats.trends?.reviewsCollected > 0 && (
                 <div className="bg-[#F8FFE5] px-3 py-1 rounded-full text-xs font-bold text-[#06D6A0] flex items-center">
-                  <Trophy className="w-3 h-3 mr-1" /> New record!
+                  <Trophy className="w-3 h-3 mr-1" /> +{menuStats.trends.reviewsCollected.toFixed(1)}%
                 </div>
               )}
             </div>
