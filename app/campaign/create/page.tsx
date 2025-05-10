@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
+import { ImagePromptDialog } from '@/components/ImagePromptDialog'
 
 // Definizione dell'interfaccia Contact
 interface Contact {
@@ -107,6 +108,7 @@ export default function CreateCampaign() {
   const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [primaryCtaValue, setPrimaryCtaValue] = useState("")
+  const [isImagePromptDialogOpen, setIsImagePromptDialogOpen] = useState(false)
 
   // Recupera i contatti dal backend
   useEffect(() => {
@@ -292,40 +294,26 @@ export default function CreateCampaign() {
     }, 1500)
   }
 
-  const generateImage = () => {
-    if (!messageText) {
+  const handleGenerateImage = async (prompt: string) => {
+    try {
+      setIsGeneratingImage(true);
+      
+      // Qui implementeremo la chiamata a DALL-E
+      // Per ora usiamo un placeholder
+      setGeneratedImageUrl('/placeholder-image.png');
+      setUseGeneratedImage(true);
+      
+    } catch (error) {
+      console.error('Errore nella generazione dell\'immagine:', error);
       toast({
-        title: "Message text required",
-        description: "Please generate or enter message text first",
+        title: "Errore",
+        description: "Errore nella generazione dell'immagine",
         variant: "destructive",
-      })
-      return
+      });
+    } finally {
+      setIsGeneratingImage(false);
     }
-
-    setIsGeneratingImage(true)
-
-    // Simulate AI image generation
-    setTimeout(() => {
-      // Use a placeholder image based on campaign type
-      let imageUrl = ""
-
-      if (campaignType === "promo") {
-        imageUrl = "/restaurant-special-offer.png"
-      } else if (campaignType === "event") {
-        imageUrl = "/restaurant-event-invitation.png"
-      } else if (campaignType === "update") {
-        imageUrl = "/restaurant-menu-items.png"
-      } else if (campaignType === "feedback") {
-        imageUrl = "/restaurant-feedback-survey.png"
-      } else {
-        imageUrl = "/delicious-restaurant-meal.png"
-      }
-
-      setGeneratedImageUrl(imageUrl)
-      setUseGeneratedImage(true)
-      setIsGeneratingImage(false)
-    }, 2000)
-  }
+  };
 
   // Update the handleNext function to validate the new step
   const handleNext = async () => {
@@ -828,21 +816,24 @@ export default function CreateCampaign() {
                           <Label className="text-sm font-medium text-gray-700">Campaign image</Label>
                           <CustomButton
                             size="sm"
-                            onClick={generateImage}
+                            onClick={() => setIsImagePromptDialogOpen(true)}
                             className="text-xs py-1 px-3 flex items-center"
                             disabled={isGeneratingImage || !messageText}
                           >
                             {isGeneratingImage ? (
                               <>
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Generating...
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" /> 
+                                Generazione...
                               </>
                             ) : generatedImageUrl ? (
                               <>
-                                <ImageIcon className="w-3 h-3 mr-1" /> Regenerate image
+                                <ImageIcon className="w-3 h-3 mr-1" /> 
+                                Rigenera immagine
                               </>
                             ) : (
                               <>
-                                <ImageIcon className="w-3 h-3 mr-1" /> Generate image
+                                <ImageIcon className="w-3 h-3 mr-1" /> 
+                                Genera immagine
                               </>
                             )}
                           </CustomButton>
@@ -1101,6 +1092,16 @@ export default function CreateCampaign() {
             )}
           </div>
         )}
+
+        {/* Aggiungi il dialog */}
+        <ImagePromptDialog
+          isOpen={isImagePromptDialogOpen}
+          onClose={() => setIsImagePromptDialogOpen(false)}
+          onGenerate={handleGenerateImage}
+          messageText={messageText}
+          campaignType={campaignType}
+          objective={campaignObjective}
+        />
       </div>
     </main>
   )
