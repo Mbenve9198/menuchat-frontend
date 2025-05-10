@@ -1,7 +1,8 @@
 @font-face {
-  font-family: 'Cooper BT';
-  src: url('/fonts/cooper-bt-medium.otf') format('opentype');
-  font-weight: 500;
+  font-family: 'Cooper';
+  src: url('../public/fonts/cooper-bt-medium.otf') format('opentype'),
+       url('/fonts/cooper-bt-medium.otf') format('opentype');
+  font-weight: normal;
   font-style: normal;
   font-display: swap;
 } 

@@ -12,7 +12,7 @@ const config = {
   prefix: "",
   theme: {
     fontFamily: {
-      sans: ['Cooper BT', 'sans-serif'],
+      sans: ['Cooper', 'system-ui', 'sans-serif'],
     },
     container: {
       center: true,
