@@ -823,20 +823,30 @@ export default function TemplatesPage() {
     try {
       setIsGenerating(true)
       
+      // Prima otteniamo i dettagli del ristorante
+      const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${template.restaurant}`);
+      const restaurantData = await restaurantResponse.json();
+      
+      if (!restaurantResponse.ok || !restaurantData.success) {
+        throw new Error('Impossibile recuperare i dettagli del ristorante');
+      }
+      
+      const restaurant = restaurantData.restaurant;
+      
       const endpoint = template.type === 'REVIEW' 
         ? '/api/review'
         : '/api/welcome'
 
-      // Prendi i dati del ristorante dalle informazioni del template
-      const restaurantData = {
+      // Ora usiamo i dati corretti del ristorante
+      const requestData = {
         restaurantId: template.restaurant,
-        restaurantName: template.name || '',
+        restaurantName: restaurant.name,
         restaurantDetails: {
-          name: template.name || '',
-          rating: 4.5, // Valore predefinito
-          ratingsTotal: 100, // Valore predefinito
-          cuisineTypes: ['Italian'], // Valore predefinito
-          reviews: [] // Nessuna recensione predefinita
+          name: restaurant.name,
+          rating: restaurant.googleRating?.rating || 4.5,
+          ratingsTotal: restaurant.googleRating?.reviewCount || 100,
+          cuisineTypes: restaurant.cuisineTypes || ['Italian'],
+          reviews: restaurant.reviews || []
         },
         type: template.type === 'MEDIA' ? 'pdf' : 'url',
         menuType: template.type === 'MEDIA' ? 'pdf' : 'url'
@@ -847,11 +857,11 @@ export default function TemplatesPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(restaurantData)
+        body: JSON.stringify(requestData)
       })
 
       if (!response.ok) {
-        throw new Error('Unable to generate message')
+        throw new Error('Impossibile generare il messaggio')
       }
 
       const data = await response.json()
@@ -865,8 +875,8 @@ export default function TemplatesPage() {
     } catch (error) {
       console.error('Error generating message:', error)
       toast({
-        title: "Error",
-        description: "Unable to generate message",
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Impossibile generare il messaggio",
         variant: "destructive",
       })
     } finally {
