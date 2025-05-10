@@ -64,8 +64,11 @@ export default function CampaignPage() {
   const fetchContacts = async () => {
     try {
       setLoading(true)
+      console.log("Fetching contacts for restaurant:", session?.user?.restaurantId)
       const response = await fetch(`/api/contacts?restaurantId=${session?.user?.restaurantId}`)
+      console.log("Response status:", response.status)
       const data = await response.json()
+      console.log("Data received:", data.success ? "success" : "failure", "contacts:", data.contacts?.length || 0)
       
       if (data.success) {
         // Aggiungiamo il campo selected a ogni contatto
@@ -90,12 +93,20 @@ export default function CampaignPage() {
         
         // Mostra un messaggio se la risposta contiene un messaggio
         if (data.message) {
+          console.log("Message from API:", data.message)
           toast({
             title: "Informazione",
             description: data.message,
             variant: "default",
           })
         }
+      } else if (data.error) {
+        console.error("API error:", data.error)
+        toast({
+          title: "Errore",
+          description: data.error || "Errore durante il caricamento dei contatti",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error fetching contacts:", error)

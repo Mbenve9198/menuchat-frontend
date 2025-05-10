@@ -8,6 +8,7 @@ async function fetchContactsFromBackend(restaurantId: string, token: string) {
     console.log("Connecting to API:", apiUrl)
     console.log("Restaurant ID:", restaurantId)
     console.log("Token available:", !!token)
+    console.log("Token first 20 chars:", token ? token.substring(0, 20) + "..." : "no token")
     
     const url = `${apiUrl}/contacts/restaurant/${restaurantId}`
     console.log("Fetching from URL:", url)
@@ -17,10 +18,13 @@ async function fetchContactsFromBackend(restaurantId: string, token: string) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      }
+      },
+      // Aggiunto per ottenere più informazioni sui problemi di rete
+      cache: 'no-store'
     })
     
     console.log("Response status:", response.status)
+    console.log("Response headers:", JSON.stringify(Object.fromEntries([...response.headers.entries()])))
     
     if (!response.ok) {
       const errorText = await response.text()
@@ -44,6 +48,10 @@ export async function GET(req: Request) {
     
     console.log("Session available:", !!session)
     console.log("User available:", !!session?.user)
+    if (session?.user) {
+      console.log("User restaurant ID:", session.user.restaurantId)
+      console.log("Access token available:", !!session.accessToken)
+    }
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -92,13 +100,24 @@ export async function GET(req: Request) {
         optIn: contact.optIn
       }))
       
+      console.log(`Transformed ${transformedContacts.length} contacts`)
+      
       return NextResponse.json({
         success: true,
         contacts: transformedContacts,
         pagination: result.pagination
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch contacts:", error)
+      
+      // Log dettagliato degli errori di rete per debug
+      if (error.cause?.code) {
+        console.error("Network error code:", error.cause.code)
+      }
+      
+      if (error.message) {
+        console.error("Error message:", error.message)
+      }
       
       // Restituisci un array vuoto invece di dati mock
       return NextResponse.json({

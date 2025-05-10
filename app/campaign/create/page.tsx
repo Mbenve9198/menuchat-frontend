@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
@@ -28,31 +29,29 @@ import { useToast } from "@/hooks/use-toast"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
 
-// Mock data for contacts
-const mockContacts = [
-  { id: 1, name: "John Smith", phone: "+1 555-123-4567", lastOrder: "2 days ago", selected: false },
-  { id: 2, name: "Maria Garcia", phone: "+34 612-345-678", lastOrder: "1 week ago", selected: false },
-  { id: 3, name: "Paolo Rossi", phone: "+39 333-789-0123", lastOrder: "3 days ago", selected: false },
-  { id: 4, name: "Emma Wilson", phone: "+44 7700-900123", lastOrder: "Yesterday", selected: false },
-  { id: 5, name: "Ahmed Hassan", phone: "+20 100-456-7890", lastOrder: "5 days ago", selected: false },
-  { id: 6, name: "Sophia Chen", phone: "+86 138-0123-4567", lastOrder: "2 weeks ago", selected: false },
-  { id: 7, name: "Carlos Mendez", phone: "+52 55-1234-5678", lastOrder: "4 days ago", selected: false },
-  { id: 8, name: "Aisha Patel", phone: "+91 98765-43210", lastOrder: "1 day ago", selected: false },
-  { id: 9, name: "Pierre Dubois", phone: "+33 6-12-34-56-78", lastOrder: "3 weeks ago", selected: false },
-  { id: 10, name: "Fatima Al-Sayed", phone: "+966 50-123-4567", lastOrder: "6 days ago", selected: false },
-]
+// Definizione dell'interfaccia Contact
+interface Contact {
+  _id: string;
+  name: string;
+  phoneNumber: string;
+  countryCode: string;
+  lastVisit?: string;
+  totalInteractions?: number;
+  optIn: boolean;
+  selected?: boolean;
+}
 
 // Country codes for filtering
 const countryCodes = [
+  { code: "+39", name: "Italy" },
   { code: "+1", name: "United States/Canada" },
   { code: "+34", name: "Spain" },
-  { code: "+39", name: "Italy" },
   { code: "+44", name: "United Kingdom" },
-  { code: "+20", name: "Egypt" },
+  { code: "+33", name: "France" },
+  { code: "+49", name: "Germany" },
   { code: "+86", name: "China" },
   { code: "+52", name: "Mexico" },
   { code: "+91", name: "India" },
-  { code: "+33", name: "France" },
   { code: "+966", name: "Saudi Arabia" },
 ]
 
@@ -80,10 +79,12 @@ const steps = ["Select Contacts", "Campaign Setup", "Content Creation", "Schedul
 
 export default function CreateCampaign() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
-  const [contacts, setContacts] = useState(mockContacts)
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null)
   const [allSelected, setAllSelected] = useState(false)
@@ -104,6 +105,86 @@ export default function CreateCampaign() {
   // Add a new state variable for campaign details/objective
   const [campaignObjective, setCampaignObjective] = useState("")
 
+  // Recupera i contatti dal backend
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/login")
+    }
+    
+    if (status === "authenticated" && session?.user?.restaurantId) {
+      fetchContacts()
+    }
+  }, [status, session, router])
+  
+  const fetchContacts = async () => {
+    try {
+      setIsLoadingContacts(true)
+      console.log("Fetching contacts for restaurant:", session?.user?.restaurantId)
+      const response = await fetch(`/api/contacts?restaurantId=${session?.user?.restaurantId}`)
+      console.log("Response status:", response.status)
+      const data = await response.json()
+      console.log("Data received:", data.success ? "success" : "failure", "contacts:", data.contacts?.length || 0)
+      
+      if (data.success) {
+        // Aggiungiamo il campo selected a ogni contatto
+        const contactsWithSelection = data.contacts.map((contact: any) => ({
+          ...contact,
+          selected: false,
+          // Format last visit date
+          lastVisit: contact.lastVisit ? formatDate(new Date(contact.lastVisit)) : 'N/A',
+        }))
+        
+        setContacts(contactsWithSelection)
+        
+        // Mostra un messaggio se la risposta contiene un messaggio
+        if (data.message) {
+          console.log("Message from API:", data.message)
+          toast({
+            title: "Informazione",
+            description: data.message,
+            variant: "default",
+          })
+        }
+      } else if (data.error) {
+        console.error("API error:", data.error)
+        toast({
+          title: "Errore",
+          description: data.error || "Errore durante il caricamento dei contatti",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error)
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare i contatti",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingContacts(false)
+    }
+  }
+  
+  // Helper per formattare la data
+  const formatDate = (date: Date): string => {
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) {
+      return "Oggi"
+    } else if (diffDays === 1) {
+      return "Ieri"
+    } else if (diffDays < 7) {
+      return `${diffDays} giorni fa`
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7)
+      return `${weeks} ${weeks === 1 ? 'settimana' : 'settimane'} fa`
+    } else {
+      return new Date(date).toLocaleDateString()
+    }
+  }
+
   useEffect(() => {
     // Update progress based on current step
     setProgress(Math.round(((currentStep + 1) / steps.length) * 100))
@@ -118,8 +199,26 @@ export default function CreateCampaign() {
 
   const filteredContacts = contacts.filter((contact) => {
     const matchesSearch =
-      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
-    const matchesCountry = !selectedCountryCode || contact.phone.startsWith(selectedCountryCode)
+      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      contact.phoneNumber.includes(searchQuery)
+    
+    // Ottieni il prefisso del paese dal numero di telefono
+    const getPrefix = (phone: string) => {
+      if (phone.startsWith('+')) {
+        // Trova il primo spazio o trattino dopo il +
+        const match = phone.match(/^\+(\d+)[\s-]/)
+        if (match) {
+          return '+' + match[1]
+        }
+        // Se non c'è uno spazio, prendi i primi 2-3 caratteri
+        return phone.substring(0, Math.min(phone.length, 3))
+      }
+      return ''
+    }
+    
+    const phonePrefix = getPrefix(contact.phoneNumber)
+    const matchesCountry = !selectedCountryCode || phonePrefix === selectedCountryCode
+    
     return matchesSearch && matchesCountry
   })
 
@@ -134,8 +233,8 @@ export default function CreateCampaign() {
     )
   }
 
-  const toggleContactSelection = (id: number) => {
-    setContacts(contacts.map((contact) => (contact.id === id ? { ...contact, selected: !contact.selected } : contact)))
+  const toggleContactSelection = (id: string) => {
+    setContacts(contacts.map((contact) => (contact._id === id ? { ...contact, selected: !contact.selected } : contact)))
   }
 
   const filterByCountry = (code: string) => {
@@ -436,24 +535,29 @@ export default function CreateCampaign() {
 
                     {/* Contact list */}
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                      {filteredContacts.length > 0 ? (
+                      {isLoadingContacts ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-6 h-6 text-[#EF476F] animate-spin" />
+                          <span className="ml-2 text-gray-500">Loading contacts...</span>
+                        </div>
+                      ) : filteredContacts.length > 0 ? (
                         filteredContacts.map((contact) => (
                           <motion.div
-                            key={contact.id}
+                            key={contact._id}
                             className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-[#EF476F]/30 transition-colors"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
-                            <div className="flex-1" onClick={() => toggleContactSelection(contact.id)}>
+                            <div className="flex-1" onClick={() => toggleContactSelection(contact._id)}>
                               <p className="font-medium text-gray-800">{contact.name}</p>
                               <div className="flex items-center justify-between">
-                                <p className="text-sm text-gray-500">{contact.phone}</p>
-                                <p className="text-xs text-gray-400">Last order: {contact.lastOrder}</p>
+                                <p className="text-sm text-gray-500">{contact.phoneNumber}</p>
+                                <p className="text-xs text-gray-400">Last interaction: {contact.lastVisit}</p>
                               </div>
                             </div>
                             <Checkbox
                               checked={contact.selected}
-                              onCheckedChange={() => toggleContactSelection(contact.id)}
+                              onCheckedChange={() => toggleContactSelection(contact._id)}
                               className="ml-4 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
                             />
                           </motion.div>
@@ -461,6 +565,16 @@ export default function CreateCampaign() {
                       ) : (
                         <div className="text-center py-8">
                           <p className="text-gray-500">No contacts found</p>
+                          {!searchQuery && contacts.length === 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm text-gray-500 mb-2">
+                                No contacts in database yet.
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                Contacts will be added automatically when customers message your restaurant via WhatsApp.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
