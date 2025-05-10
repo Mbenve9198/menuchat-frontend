@@ -12,8 +12,10 @@ import {
   Share2,
   Calendar,
   ArrowUp,
-  Megaphone,
   ArrowDown,
+  Megaphone,
+  RefreshCw,
+  Clock
 } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
@@ -24,16 +26,52 @@ import "react-circular-progressbar/dist/styles.css"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "@/components/ui/use-toast"
+
+interface Activity {
+  _id: string;
+  type: string;
+  emoji: string;
+  message: string;
+  details: string;
+  createdAt: string;
+  expanded: boolean;
+}
+
+interface RestaurantData {
+  _id: string;
+  name: string;
+  createdAt: string;
+  level?: number;
+  googleRating?: {
+    rating: number;
+    reviewCount: number;
+  };
+}
+
+interface MenuStats {
+  menusSent: number;
+  reviewRequests: number;
+  reviewsCollected: number;
+  totalReviewsCollected: number;
+  weeklyGoalProgress: number;
+  trends: {
+    menusSent: number;
+    reviewRequests: number;
+    reviewsCollected: number;
+  };
+}
 
 export default function Dashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [restaurantData, setRestaurantData] = useState<any>(null)
-  const [menuStats, setMenuStats] = useState({
+  const [restaurantData, setRestaurantData] = useState<RestaurantData | null>(null)
+  const [menuStats, setMenuStats] = useState<MenuStats>({
     menusSent: 0,
     reviewRequests: 0,
     reviewsCollected: 0,
+    totalReviewsCollected: 0,
     weeklyGoalProgress: 0,
     trends: {
       menusSent: 0,
@@ -41,13 +79,13 @@ export default function Dashboard() {
       reviewsCollected: 0
     }
   })
-  const [activities, setActivities] = useState([])
+  const [activities, setActivities] = useState<Activity[]>([])
   const [greeting, setGreeting] = useState("Good day")
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all")
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login")
+      router.push("/auth/login")
     }
   }, [status, router])
 
@@ -80,6 +118,7 @@ export default function Dashboard() {
           menusSent: data.menusSent || 0,
           reviewRequests: data.reviewRequests || 0,
           reviewsCollected: data.reviewsCollected || 0,
+          totalReviewsCollected: data.totalReviewsCollected || 0,
           weeklyGoalProgress: data.weeklyGoalProgress || 0,
           trends: data.trends || {
             menusSent: 0,
@@ -139,9 +178,13 @@ export default function Dashboard() {
     return null
   }
 
-  const toggleActivityExpand = (id: number) => {
+  const toggleActivityExpand = (id: string) => {
     setActivities(
-      activities.map((activity) => (activity.id === id ? { ...activity, expanded: !activity.expanded } : activity)),
+      activities.map((activity) => 
+        activity._id === id 
+          ? { ...activity, expanded: !activity.expanded } 
+          : activity
+      )
     )
   }
 
@@ -160,58 +203,52 @@ export default function Dashboard() {
       <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
         {/* Header Section */}
         <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
+          <div className="flex items-center justify-between mb-4">
+            <div>
               <h1 className="text-2xl font-extrabold text-[#1B9AAA]">{restaurantData.name}</h1>
-              <div className="relative w-8 h-8 ml-2">
-                <Image
-                  src={getMascotImage() || "/placeholder.svg"}
-                  alt="Mascot"
-                  width={32}
-                  height={32}
-                  className="absolute -top-1 -right-1"
-                />
-              </div>
+              <p className="text-lg text-gray-700">
+                {greeting}, {restaurantData.name}! 🌞
+              </p>
             </div>
-
-            <motion.div
-              className="bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md border-2 border-[#EF476F]"
-              whileHover={{ scale: 1.05 }}
-            >
-              <Star className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
-              <span className="text-sm font-bold text-[#EF476F]">Level {restaurantData.level || 1}</span>
-            </motion.div>
+            <div className="relative w-8 h-8">
+              <Image
+                src={getMascotImage() || "/placeholder.svg"}
+                alt="Mascot"
+                width={32}
+                height={32}
+                className="absolute -top-1 -right-1"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between mb-4">
-            <p className="text-lg text-gray-700">
-              {greeting}, {restaurantData.name}! 🌞
-            </p>
+            <motion.div
+              className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Calendar className="w-4 h-4 text-[#EF476F]" />
+              <span className="text-xs font-medium text-gray-700">
+                {Math.ceil((Date.now() - new Date(restaurantData.createdAt).getTime()) / (1000 * 60 * 60 * 24))} giorni attivo
+              </span>
+            </motion.div>
 
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Seleziona periodo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Ultimi 7 giorni</SelectItem>
-                <SelectItem value="1m">Ultimo mese</SelectItem>
-                <SelectItem value="1y">Ultimo anno</SelectItem>
-                <SelectItem value="all">Da sempre</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-gray-500" />
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="w-[140px] h-8 text-sm">
+                  <SelectValue placeholder="Periodo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">Ultimi 7 giorni</SelectItem>
+                  <SelectItem value="1m">Ultimo mese</SelectItem>
+                  <SelectItem value="1y">Ultimo anno</SelectItem>
+                  <SelectItem value="all">Da sempre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <motion.div
-            className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Calendar className="w-4 h-4 text-[#EF476F]" />
-            <span className="text-xs font-medium text-gray-700">
-              {Math.ceil((Date.now() - new Date(restaurantData.createdAt).getTime()) / (1000 * 60 * 60 * 24))} giorni attivo
-            </span>
-          </motion.div>
         </div>
 
         {/* Key Metrics Cards */}
@@ -309,8 +346,50 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Recensioni Raccolte</h3>
-                <p className="text-3xl font-extrabold text-[#06D6A0]">{menuStats.reviewsCollected}</p>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-gray-800">Recensioni Raccolte</h3>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/restaurants/${session?.user?.restaurantId}/sync-reviews`, {
+                          method: 'POST'
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          toast({
+                            title: "Sincronizzazione completata",
+                            description: "Le recensioni sono state aggiornate con successo",
+                          });
+                          // Ricarica i dati
+                          fetchRestaurantData();
+                          fetchStats();
+                        } else {
+                          throw new Error(data.error);
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Errore",
+                          description: "Impossibile sincronizzare le recensioni",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Sincronizza recensioni da Google Places"
+                  >
+                    <RefreshCw className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-3xl font-extrabold text-[#06D6A0]">
+                    {selectedPeriod === 'all' ? menuStats.totalReviewsCollected : menuStats.reviewsCollected}
+                  </p>
+                  {selectedPeriod !== 'all' && (
+                    <p className="text-sm text-gray-500">
+                      (totale: {menuStats.totalReviewsCollected})
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="bg-[#06D6A0]/10 p-3 rounded-full">
                 <Award className="w-6 h-6 text-[#06D6A0]" />
@@ -387,7 +466,7 @@ export default function Dashboard() {
           <h3 className="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
 
           <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-            {activities.map((activity: any) => (
+            {activities.map((activity: Activity) => (
               <motion.div
                 key={activity._id}
                 className={`bg-gray-50 rounded-xl p-3 cursor-pointer ${activity.expanded ? "bg-gray-100" : ""}`}
