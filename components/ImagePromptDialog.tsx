@@ -31,7 +31,7 @@ export function ImagePromptDialog({
 
   // Genera il prompt automaticamente all'apertura del dialog
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prompt) {
       generatePrompt();
     }
   }, [isOpen]);
@@ -106,8 +106,11 @@ export function ImagePromptDialog({
         throw new Error('URL immagine non trovato nella risposta');
       }
 
-      setGeneratedImageUrl(data.data.imageUrl);
-      await onGenerate(data.data.imageUrl);
+      const imageUrl = data.data.imageUrl;
+      
+      setGeneratedImageUrl(imageUrl);
+      await onGenerate(imageUrl);
+      
       onClose();
       
       toast({
