@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, ImageIcon } from 'lucide-react';
 import { toast } from './ui/use-toast';
+import { CustomButton } from './ui/custom-button';
 
 interface ImagePromptDialogProps {
   isOpen: boolean;
@@ -26,10 +26,17 @@ export function ImagePromptDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Genera il prompt automaticamente all'apertura del dialog
+  useEffect(() => {
+    if (isOpen) {
+      generatePrompt();
+    }
+  }, [isOpen]);
+
   const generatePrompt = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/ai/generate-image-prompt', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image-prompt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,6 +48,11 @@ export function ImagePromptDialog({
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella generazione del prompt');
+      }
+
       const data = await response.json();
       if (data.success) {
         setPrompt(data.data.prompt);
@@ -49,42 +61,30 @@ export function ImagePromptDialog({
       }
     } catch (error) {
       console.error('Errore nella generazione del prompt:', error);
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Errore nella generazione del prompt",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      toast({
+        title: "Prompt richiesto",
+        description: "Inserisci un prompt per generare l'immagine",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsGenerating(true);
-
-      // Prima generiamo il prompt con Claude
-      if (!prompt) {
-        const promptResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-image-prompt`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messageText,
-            campaignType,
-            objective,
-          }),
-        });
-
-        if (!promptResponse.ok) {
-          const errorData = await promptResponse.json();
-          throw new Error(errorData.error || 'Errore nella generazione del prompt');
-        }
-
-        const promptData = await promptResponse.json();
-        setPrompt(promptData.data.prompt);
-      }
-
-      // Poi generiamo l'immagine con il prompt
       await onGenerate(prompt);
       onClose();
-
     } catch (error) {
       console.error('Errore nella generazione:', error);
       toast({
@@ -99,57 +99,69 @@ export function ImagePromptDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-white rounded-3xl shadow-xl">
         <DialogHeader>
-          <DialogTitle>Genera Immagine per la Campagna</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-gray-800">Genera Immagine per la Campagna</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Prompt per DALL-E</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">Prompt per DALL-E</label>
+              <CustomButton
+                size="sm"
+                onClick={generatePrompt}
+                className="text-xs py-1 px-3 flex items-center"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Rigenerazione...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Rigenera Prompt
+                  </>
+                )}
+              </CustomButton>
+            </div>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Il prompt verrà generato automaticamente..."
+              placeholder={isLoading ? "Generazione prompt in corso..." : "Modifica il prompt per personalizzare l'immagine..."}
               rows={6}
-              className="resize-none"
+              className="rounded-xl border-gray-200 resize-none"
             />
           </div>
-
-          <Button
-            onClick={generatePrompt}
-            variant="outline"
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generazione prompt...
-              </>
-            ) : (
-              'Genera Prompt'
-            )}
-          </Button>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="space-x-2">
+          <CustomButton
+            variant="outline"
+            onClick={onClose}
+            className="text-gray-800"
+          >
             Annulla
-          </Button>
-          <Button 
+          </CustomButton>
+          <CustomButton 
             onClick={handleGenerate}
-            disabled={!prompt || isGenerating}
+            disabled={!prompt.trim() || isGenerating}
+            className="flex items-center"
           >
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generazione immagine...
+                Generazione...
               </>
             ) : (
-              'Genera Immagine'
+              <>
+                <ImageIcon className="w-4 h-4 mr-2" />
+                Genera Immagine
+              </>
             )}
-          </Button>
+          </CustomButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
