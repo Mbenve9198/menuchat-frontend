@@ -106,6 +106,7 @@ export default function CreateCampaign() {
   const [campaignObjective, setCampaignObjective] = useState("")
   const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
+  const [primaryCtaValue, setPrimaryCtaValue] = useState("")
 
   // Recupera i contatti dal backend
   useEffect(() => {
@@ -352,10 +353,11 @@ export default function CreateCampaign() {
         setIsGeneratingTemplate(true);
         setGenerationError(null);
 
-        const response = await fetch('/api/ai/generate-template', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/generate-template`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.user?.accessToken}` // Se usi autenticazione
           },
           body: JSON.stringify({
             campaignType,
@@ -364,27 +366,40 @@ export default function CreateCampaign() {
           }),
         });
 
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Errore nella generazione del template');
         }
+
+        const data = await response.json();
 
         // Aggiorna gli stati con i dati generati
         setMessageText(data.data.messageText);
         setPrimaryCta(data.data.cta.text);
         setPrimaryCtaType(data.data.cta.type);
+        setPrimaryCtaValue(data.data.cta.value); // Aggiungi questo stato se non esiste
 
         // Procedi allo step successivo
         setCurrentStep(currentStep + 1);
         window.scrollTo(0, 0);
-      } catch (error) {
-        setGenerationError(error.message);
+
+        // Mostra un toast di successo
+        toast({
+          title: "Template generato",
+          description: "Il template è stato generato con successo",
+        });
+
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+        setGenerationError(errorMessage);
         toast({
           title: "Errore nella generazione",
-          description: "Si è verificato un errore. Riprova.",
+          description: errorMessage,
           variant: "destructive",
         });
+
+        // Log dell'errore per debugging
+        console.error('Errore nella generazione del template:', error);
       } finally {
         setIsGeneratingTemplate(false);
       }
