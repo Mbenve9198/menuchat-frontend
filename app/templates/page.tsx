@@ -219,6 +219,27 @@ function getTriggerWord(restaurantName: string, botConfig: {triggerWord: string}
   return "Menu";
 }
 
+// Funzione per pulire il nome del ristorante da suffissi o nomi di file
+function cleanRestaurantName(name: string): string {
+  if (!name) return "Restaurant";
+  
+  // Rimuovi eventuali suffissi come "_menu_pdf_123"
+  const cleanName = name.replace(/_(menu|pdf).*$/i, '');
+  
+  // Rimuovi eventuali estensioni di file
+  const withoutExtension = cleanName.replace(/\.(pdf|docx?|jpe?g|png)$/i, '');
+  
+  // Converti underscore in spazi
+  const withSpaces = withoutExtension.replace(/_/g, ' ');
+  
+  // Capitalizziamo ogni parola
+  const capitalized = withSpaces.split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  return capitalized;
+}
+
 // Componente per una singola template card
 function TemplateCard({ 
   template, 
@@ -346,7 +367,7 @@ function TemplateCard({
       <WhatsAppMockup 
         message={displayMessage} 
         userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(template.name || "Restaurant", botConfig)}`}
-        restaurantName={template.name || "Restaurant"}
+        restaurantName={cleanRestaurantName(template.name)} 
         restaurantPhoto={restaurantPhoto}
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
@@ -517,6 +538,38 @@ export default function TemplatesPage() {
       const menuTypes = ['MEDIA', 'CALL_TO_ACTION'];
       const menuTemplates = data.templates.filter((t: Template) => menuTypes.includes(t.type));
       const reviewTemplates = data.templates.filter((t: Template) => t.type === 'REVIEW');
+
+      // Debug dei dati dei template
+      console.log('Menu Templates:', menuTemplates);
+      console.log('Review Templates:', reviewTemplates);
+      
+      // Carica le informazioni sul ristorante se non presenti nel template
+      const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${restaurantId}&basicInfo=true`);
+      const restaurantData = await restaurantResponse.json();
+      
+      if (restaurantResponse.ok && restaurantData.success && restaurantData.restaurant) {
+        const restaurantName = restaurantData.restaurant.name;
+        
+        // Aggiungi il nome del ristorante ai template se mancante
+        // e pulisci eventuali nomi di file errati
+        menuTemplates.forEach((t: Template) => {
+          if (!t.name) {
+            t.name = restaurantName;
+          } else if (t.name.includes('_menu_') || t.name.includes('.pdf')) {
+            // Se il nome sembra essere un nome di file (contiene "_menu_" o ".pdf")
+            // lo sostituiamo con il nome del ristorante
+            t.name = restaurantName;
+          }
+        });
+        
+        reviewTemplates.forEach((t: Template) => {
+          if (!t.name) {
+            t.name = restaurantName;
+          } else if (t.name.includes('_menu_') || t.name.includes('.pdf')) {
+            t.name = restaurantName;
+          }
+        });
+      }
 
       setMenuTemplates(menuTemplates);
       setReviewTemplates(reviewTemplates);
@@ -853,7 +906,8 @@ export default function TemplatesPage() {
           reviews: restaurant.reviews || []
         },
         type: template.type === 'MEDIA' ? 'pdf' : 'url',
-        menuType: template.type === 'MEDIA' ? 'pdf' : 'url'
+        menuType: template.type === 'MEDIA' ? 'pdf' : 'url',
+        language: currentLanguage
       }
 
       const response = await fetch(endpoint, {
