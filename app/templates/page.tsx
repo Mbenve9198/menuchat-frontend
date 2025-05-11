@@ -880,6 +880,10 @@ export default function TemplatesPage() {
     try {
       setIsGenerating(true)
       
+      // Debug info
+      console.log("Regenerating with language:", currentLanguage);
+      console.log("Template original language:", template.language);
+      
       // Prima otteniamo i dettagli del ristorante
       const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${template.restaurant}`);
       const restaurantData = await restaurantResponse.json();
@@ -907,8 +911,11 @@ export default function TemplatesPage() {
         },
         type: template.type === 'MEDIA' ? 'pdf' : 'url',
         menuType: template.type === 'MEDIA' ? 'pdf' : 'url',
-        language: currentLanguage
+        language: currentLanguage,
+        forceLanguage: true // Aggiungiamo questo flag per forzare l'uso della lingua corrente
       }
+
+      console.log("Request data:", requestData);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -923,6 +930,7 @@ export default function TemplatesPage() {
       }
 
       const data = await response.json()
+      console.log("Response from API:", data);
       
       // Gestisce sia i template di menu che quelli di recensione
       if (template.type === 'REVIEW') {
