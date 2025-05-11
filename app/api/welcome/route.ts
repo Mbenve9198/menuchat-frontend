@@ -15,6 +15,14 @@ export async function POST(request: Request) {
       );
     }
     
+    // Log per debug
+    console.log("Welcome request body:", {
+      restaurantId: body.restaurantId,
+      language: body.language,
+      forceLanguage: body.forceLanguage,
+      menuType: body.menuType
+    });
+    
     // Inoltra la richiesta al backend
     const response = await fetch(`${process.env.BACKEND_URL}/api/setup/generate-welcome-message`, {
       method: 'POST',
@@ -29,6 +37,12 @@ export async function POST(request: Request) {
     if (!response.ok) {
       throw new Error(data.error || 'Errore nella generazione del messaggio');
     }
+    
+    // Log per debug
+    console.log("Welcome response:", {
+      success: data.success,
+      message: data.message ? data.message.substring(0, 30) + '...' : undefined
+    });
 
     return NextResponse.json(data);
   } catch (error) {
