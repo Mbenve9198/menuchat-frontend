@@ -11,9 +11,11 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
+import { useSession } from "next-auth/react"
 
 export default function Dashboard() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -43,34 +45,22 @@ export default function Dashboard() {
   // Stato per attività
   const [activities, setActivities] = useState<any[]>([])
 
-  // Primi la dichiarazione di stato per il session
-  const [session, setSession] = useState<any>(null);
-
-  // Aggiungi un useEffect per recuperare la sessione
+  // Recupera i dati dal backend solo quando la sessione è pronta
   useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const response = await fetch('/api/auth/session');
-        const data = await response.json();
-        setSession(data);
-      } catch (err) {
-        console.error("Error fetching session:", err);
-      }
-    };
-    
-    fetchSession();
-  }, []);
+    if (status === "authenticated" && session?.user?.restaurantId) {
+      fetchStats()
+      fetchActivities()
+      fetchRestaurantInfo()
+    } else if (status === "unauthenticated") {
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
+    }
+  }, [status, session, timeFilter, startDate, endDate])
 
   // Recupera i dati dal backend
   const fetchStats = async () => {
     setIsLoading(true)
     try {
-      // Ottieni l'ID ristorante dalla sessione
-      if (!session || !session.user?.restaurantId) {
-        throw new Error("No restaurant ID found in session");
-      }
-      
-      const restaurantId = session.user.restaurantId;
+      const restaurantId = session?.user?.restaurantId
       
       // Costruisci i parametri di query
       let queryParams = `period=${timeFilter}`
@@ -120,12 +110,7 @@ export default function Dashboard() {
   // Recupera le attività
   const fetchActivities = async () => {
     try {
-      // Ottieni l'ID ristorante dalla sessione
-      if (!session || !session.user?.restaurantId) {
-        throw new Error("No restaurant ID found in session");
-      }
-      
-      const restaurantId = session.user.restaurantId;
+      const restaurantId = session?.user?.restaurantId
       
       const response = await fetch(`/api/activities?restaurantId=${restaurantId}`)
       if (!response.ok) {
@@ -159,12 +144,7 @@ export default function Dashboard() {
   // Recupera le informazioni del ristorante
   const fetchRestaurantInfo = async () => {
     try {
-      // Ottieni l'ID ristorante dalla sessione
-      if (!session || !session.user?.restaurantId) {
-        throw new Error("No restaurant ID found in session");
-      }
-      
-      const restaurantId = session.user.restaurantId;
+      const restaurantId = session?.user?.restaurantId
       
       const response = await fetch(`/api/restaurants/${restaurantId}`)
       if (!response.ok) {
@@ -206,13 +186,6 @@ export default function Dashboard() {
       setGreeting("Good Evening")
     }
   }, [])
-
-  // Carica i dati all'inizio e quando cambia il filtro temporale
-  useEffect(() => {
-    fetchStats()
-    fetchActivities()
-    fetchRestaurantInfo()
-  }, [timeFilter, startDate, endDate])
 
   const toggleActivityExpand = (id: number) => {
     setActivities(
