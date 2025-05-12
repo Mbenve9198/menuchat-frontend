@@ -94,7 +94,7 @@ function WhatsAppMockup({
   const buttonText = showMenuUrl ? menuButtonText : reviewButtonText;
   
   return (
-    <div className="flex flex-col gap-3 py-2">
+    <div className="flex flex-col gap-3 py-4">
       {/* Data */}
       <div className="flex justify-center mb-1">
         <div className="bg-white/80 px-2 py-1 rounded-lg text-[10px] md:text-xs text-gray-500">
@@ -103,7 +103,15 @@ function WhatsAppMockup({
       </div>
       
       {/* Messaggio dell'utente */}
-      <div className="self-end max-w-[90%]">
+      <motion.div 
+        className="self-end max-w-[90%]"
+        animate={{ y: [0, -4, 0] }}
+        transition={{ 
+          repeat: Infinity, 
+          duration: 3,
+          ease: "easeInOut" 
+        }}
+      >
         <div className="bg-[#DCF8C6] p-3 md:p-4 rounded-xl shadow-sm relative">
           <p className="text-sm md:text-base">{userMessage}</p>
           <div className="text-right mt-1">
@@ -111,10 +119,19 @@ function WhatsAppMockup({
             <span className="text-[10px] md:text-xs text-[#4FC3F7] ml-1">✓✓</span>
           </div>
         </div>
-      </div>
+      </motion.div>
       
       {/* Messaggio del ristorante */}
-      <div className="self-start max-w-[90%]">
+      <motion.div 
+        className="self-start max-w-[90%]"
+        animate={{ y: [0, -4, 0] }}
+        transition={{ 
+          repeat: Infinity, 
+          duration: 3.5,
+          ease: "easeInOut",
+          delay: 0.5 
+        }}
+      >
         <div className="bg-white p-3 md:p-4 rounded-xl shadow-md relative">
           {/* Intestazione con nome ristorante e foto */}
           <div className="flex items-center mb-2">
@@ -167,7 +184,7 @@ function WhatsAppMockup({
             <span className="text-[10px] md:text-xs text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -284,8 +301,9 @@ function TemplateCard({
   };
   
   return (
-    <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
-      <div className="mb-3 text-center">
+    <div className="mb-8 sm:mb-10">
+      {/* Status container */}
+      <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-4 sm:mb-5">
         <div className="flex flex-col items-center justify-center">
           <div 
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(template.status)} bg-opacity-10 mb-1`}
@@ -310,19 +328,20 @@ function TemplateCard({
           </div>
           <div className="text-xs text-gray-500">
             Last update: {new Date(template.updatedAt).toLocaleDateString()}
+          </div>
         </div>
-        </div>
+
+        {template.status === 'REJECTED' && template.rejectionReason && (
+          <div className="mt-3 p-2 bg-red-50 rounded-lg border border-red-100">
+            <p className="text-[10px] sm:text-xs text-red-700">
+              <XCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 inline mr-1" />
+              Rejection reason: {template.rejectionReason}
+            </p>
+          </div>
+        )}
       </div>
 
-      {template.status === 'REJECTED' && template.rejectionReason && (
-        <div className="mb-3 p-2 bg-red-50 rounded-lg border border-red-100">
-          <p className="text-[10px] sm:text-xs text-red-700">
-            <XCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 inline mr-1" />
-            Rejection reason: {template.rejectionReason}
-          </p>
-        </div>
-      )}
-
+      {/* WhatsApp messages - now without container */}
       <WhatsAppMockup 
         message={displayMessage} 
         userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(template.name || "Restaurant", botConfig)}`}
