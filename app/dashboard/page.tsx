@@ -390,7 +390,15 @@ export default function Dashboard() {
         {/* Level Progress */}
         <div className="w-full max-w-md mb-6">
           <motion.div
-            className="bg-white rounded-3xl p-5 shadow-xl"
+            className={`rounded-3xl p-5 shadow-xl ${
+              getLevelInfo().level === "Newbie"
+                ? "bg-gradient-to-br from-blue-100 to-purple-100 text-gray-800"
+                : getLevelInfo().level === "Rising Star"
+                ? "bg-gradient-to-br from-purple-100 to-pink-100 text-gray-800"
+                : getLevelInfo().level === "MasterChef"
+                ? "bg-gradient-to-br from-amber-100 to-orange-100 text-gray-800"
+                : "bg-gradient-to-br from-emerald-100 to-teal-100 text-gray-800"
+            }`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
@@ -399,7 +407,15 @@ export default function Dashboard() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Restaurant Level</h3>
-                <p className="text-2xl font-extrabold text-[#EF476F]">{getLevelInfo().level}</p>
+                <p className={`text-2xl font-extrabold ${
+                  getLevelInfo().level === "Newbie"
+                    ? "text-blue-600"
+                    : getLevelInfo().level === "Rising Star"
+                    ? "text-purple-600"
+                    : getLevelInfo().level === "MasterChef"
+                    ? "text-amber-600"
+                    : "text-emerald-600"
+                }`}>{getLevelInfo().level}</p>
               </div>
               <div className="text-3xl">👨‍🍳</div>
             </div>
@@ -413,8 +429,16 @@ export default function Dashboard() {
                   </div>
                   <Progress
                     value={getLevelInfo().progress}
-                    className="h-2 bg-gray-100"
-                    indicatorClassName="bg-gradient-to-r from-[#EF476F] to-[#FF8BA7] transition-all duration-700 ease-in-out"
+                    className="h-2 bg-white/50"
+                    indicatorClassName={`transition-all duration-700 ease-in-out ${
+                      getLevelInfo().level === "Newbie"
+                        ? "bg-gradient-to-r from-blue-400 to-purple-400"
+                        : getLevelInfo().level === "Rising Star"
+                        ? "bg-gradient-to-r from-purple-400 to-pink-400"
+                        : getLevelInfo().level === "MasterChef"
+                        ? "bg-gradient-to-r from-amber-400 to-orange-400"
+                        : "bg-gradient-to-r from-emerald-400 to-teal-400"
+                    }`}
                   />
                 </div>
                 <p className="text-sm text-gray-700">
