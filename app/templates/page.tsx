@@ -94,15 +94,31 @@ function WhatsAppMockup({
   const buttonText = showMenuUrl ? menuButtonText : reviewButtonText;
   
   return (
-    <div className="flex justify-center mt-3 mb-4">
-      <div className="w-full max-w-xs border-[6px] md:border-[8px] border-gray-800 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl bg-white relative">
-        {/* Notch superiore */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/4 h-4 bg-gray-800 rounded-b-lg z-10"></div>
-        
-        {/* Barra superiore */}
-        <div className="bg-[#075E54] text-white p-2 md:p-3 pt-5 md:pt-6">
-          <div className="flex items-center">
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+    <div className="flex flex-col gap-3 py-2">
+      {/* Data */}
+      <div className="flex justify-center mb-1">
+        <div className="bg-white/80 px-2 py-1 rounded-lg text-[10px] md:text-xs text-gray-500">
+          {new Date().toLocaleDateString()}
+        </div>
+      </div>
+      
+      {/* Messaggio dell'utente */}
+      <div className="self-end max-w-[90%]">
+        <div className="bg-[#DCF8C6] p-3 md:p-4 rounded-xl shadow-sm relative">
+          <p className="text-sm md:text-base">{userMessage}</p>
+          <div className="text-right mt-1">
+            <span className="text-[10px] md:text-xs text-gray-500">{new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</span>
+            <span className="text-[10px] md:text-xs text-[#4FC3F7] ml-1">✓✓</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Messaggio del ristorante */}
+      <div className="self-start max-w-[90%]">
+        <div className="bg-white p-3 md:p-4 rounded-xl shadow-md relative">
+          {/* Intestazione con nome ristorante e foto */}
+          <div className="flex items-center mb-2">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0 mr-2">
               {restaurantPhoto ? (
                 <img 
                   src={restaurantPhoto} 
@@ -118,94 +134,37 @@ function WhatsAppMockup({
                 </div>
               )}
             </div>
-            <div className="ml-2 md:ml-3">
-              <div className="text-sm md:text-base font-semibold truncate max-w-[120px] md:max-w-[180px]">{restaurantName}</div>
-              <div className="text-[10px] md:text-xs opacity-80">online</div>
-            </div>
-            <div className="ml-auto flex gap-2 md:gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-              </svg>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-              </svg>
-            </div>
+            <span className="font-medium text-sm md:text-base">{restaurantName}</span>
           </div>
-        </div>
-        
-        {/* Corpo chat */}
-        <div className="bg-[#E5DDD5] h-[280px] md:h-[350px] p-2 md:p-3 overflow-y-auto" style={{ 
-          backgroundImage: "url('https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png')",
-          backgroundRepeat: "repeat"
-        }}>
-          <div className="flex flex-col gap-2 md:gap-3">
-            {/* Data */}
-            <div className="flex justify-center mb-1">
-              <div className="bg-white bg-opacity-80 px-2 py-1 rounded-lg text-[8px] md:text-[10px] text-gray-500">
-                {new Date().toLocaleDateString()}
+          
+          {/* Se il menu è un PDF, mostra l'anteprima del file */}
+          {showMenuPdf && (
+            <div className="mb-3 flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-red-500 rounded flex items-center justify-center text-white text-xs md:text-sm font-bold">
+                PDF
+              </div>
+              <div className="flex-1">
+                <p className="text-xs md:text-sm font-medium text-gray-900">Menu.pdf</p>
+                <p className="text-[10px] md:text-xs text-gray-500">PDF Document</p>
               </div>
             </div>
-            
-            {/* Messaggio dell'utente */}
-            <div className="self-end max-w-[85%]">
-              <div className="bg-[#DCF8C6] p-1.5 md:p-2 rounded-lg shadow-sm relative">
-                <p className="text-xs md:text-sm">{userMessage}</p>
-                <div className="text-right mt-1">
-                  <span className="text-[8px] md:text-[10px] text-gray-500">{new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</span>
-                  <span className="text-[8px] md:text-[10px] text-[#4FC3F7] ml-1">✓✓</span>
-                </div>
+          )}
+          
+          <p className="text-sm md:text-base whitespace-pre-wrap">{message.replace('{customerName}', 'Marco')}</p>
+          
+          {/* Se il menu è un URL o è una recensione con CTA, mostra il pulsante appropriato */}
+          {(showMenuUrl || showReviewCta) && (
+            <div className="mt-3 border-t pt-2 border-gray-200">
+              <div className="flex justify-center w-full">
+                <button className="bg-[#e9f2fd] text-[#127def] text-xs sm:text-sm py-2 px-4 rounded-3xl font-medium">
+                  {buttonText}
+                </button>
               </div>
             </div>
-            
-            {/* Messaggio del ristorante */}
-            <div className="self-start max-w-[85%]">
-              <div className="bg-white p-1.5 md:p-2 rounded-lg shadow-sm relative">
-                {/* Se il menu è un PDF, mostra l'anteprima del file */}
-                {showMenuPdf && (
-                  <div className="mb-2 flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-gray-50 rounded border border-gray-200">
-                    <div className="w-6 h-6 md:w-8 md:h-8 bg-red-500 rounded flex items-center justify-center text-white text-[8px] md:text-xs font-bold">
-                      PDF
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] md:text-xs font-medium text-gray-900">Menu.pdf</p>
-                      <p className="text-[8px] md:text-[10px] text-gray-500">PDF Document</p>
-                    </div>
-                  </div>
-                )}
-                
-                <p className="text-xs md:text-sm whitespace-pre-wrap">{message.replace('{customerName}', 'Marco')}</p>
-                
-                {/* Se il menu è un URL o è una recensione con CTA, mostra il pulsante appropriato */}
-                {(showMenuUrl || showReviewCta) && (
-                  <div className="mt-2 border-t pt-1.5 border-gray-200">
-                    <div className="flex justify-center w-full">
-                      <button className="bg-[#e9f2fd] text-[#127def] text-[10px] sm:text-xs py-1 px-3 rounded-3xl font-medium">
-                        {buttonText}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="text-right mt-1">
-                  <span className="text-[8px] md:text-[10px] text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Barra inferiore */}
-        <div className="bg-[#F0F0F0] p-1.5 md:p-2">
-          <div className="flex items-center">
-            <div className="flex-grow bg-white rounded-full px-3 py-1.5 md:py-2 flex items-center">
-              <span className="text-gray-400 text-xs md:text-sm">Type a message</span>
-            </div>
-            <div className="ml-2 w-6 h-6 md:w-8 md:h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-              </svg>
-            </div>
+          )}
+          
+          <div className="text-right mt-2">
+            <span className="text-[10px] md:text-xs text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
           </div>
         </div>
       </div>
