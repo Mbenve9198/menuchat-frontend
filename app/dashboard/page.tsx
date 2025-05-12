@@ -449,14 +449,6 @@ export default function Dashboard() {
               <div className="text-3xl">📋</div>
             </div>
 
-            <div className="mb-2">
-              <Progress
-                value={75}
-                className="h-2 bg-gray-100"
-                indicatorClassName="bg-gradient-to-r from-[#1B9AAA] to-[#26C6D9] transition-all duration-700 ease-in-out"
-              />
-            </div>
-
             <div className="flex items-center text-sm text-green-600">
               <ArrowUp className="w-4 h-4 mr-1" />
               <span>12% this week</span>
@@ -479,14 +471,9 @@ export default function Dashboard() {
               <div className="text-3xl">📢</div>
             </div>
 
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-sm text-gray-600">Conversion rate</p>
-                <p className="text-sm font-medium text-green-600">↑ 5% from last week</p>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-[#EF476F] rounded-full" style={{ width: "65%" }}></div>
-              </div>
+            <div className="flex items-center text-sm text-green-600">
+              <ArrowUp className="w-4 h-4 mr-1" />
+              <span>5% conversion rate</span>
             </div>
           </motion.div>
 
@@ -640,7 +627,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Quick Actions */}
-        <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-white rounded-t-3xl p-4 shadow-xl z-20">
+        <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-white/85 backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-20">
           <div className="grid grid-cols-3 gap-2">
             <CustomButton
               className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
