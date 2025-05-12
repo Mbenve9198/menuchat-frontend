@@ -497,6 +497,40 @@ export default function Dashboard() {
               </div>
               <div className="text-3xl">📢</div>
             </div>
+          </motion.div>
+
+          {/* Reviews Collected Card */}
+          <motion.div
+            className="bg-white rounded-3xl p-5 shadow-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            whileHover={{ y: -5 }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
+                <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected}</p>
+              </div>
+              <div className="text-3xl">🏆</div>
+            </div>
+
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
+                  ))}
+                </div>
+                <span className="ml-2 text-sm font-medium text-gray-700">4.8 avg</span>
+              </div>
+
+              {isNewRecord && (
+                <div className="bg-[#F8FFE5] px-3 py-1 rounded-full text-xs font-bold text-[#06D6A0] flex items-center">
+                  <Trophy className="w-3 h-3 mr-1" /> New record!
+                </div>
+              )}
+            </div>
             
             <div className="flex justify-end">
               <button 
@@ -530,40 +564,6 @@ export default function Dashboard() {
                 <RefreshCw className={`w-3 h-3 ${isSyncingReviews ? 'animate-spin' : ''}`} /> 
                 {isSyncingReviews ? 'Syncing from Google...' : 'Sync Google reviews'}
               </button>
-            </div>
-          </motion.div>
-
-          {/* Reviews Collected Card */}
-          <motion.div
-            className="bg-white rounded-3xl p-5 shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            whileHover={{ y: -5 }}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
-                <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected}</p>
-              </div>
-              <div className="text-3xl">🏆</div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
-                  ))}
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-700">4.8 avg</span>
-              </div>
-
-              {isNewRecord && (
-                <div className="bg-[#F8FFE5] px-3 py-1 rounded-full text-xs font-bold text-[#06D6A0] flex items-center">
-                  <Trophy className="w-3 h-3 mr-1" /> New record!
-                </div>
-              )}
             </div>
           </motion.div>
         </div>
@@ -695,7 +695,7 @@ export default function Dashboard() {
 
             <CustomButton
               className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
-              onClick={() => {}}
+              onClick={() => router.push("/templates")}
             >
               <Edit3 className="w-6 h-6 mb-1" />
               Edit Messages
