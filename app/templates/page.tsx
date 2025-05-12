@@ -227,7 +227,8 @@ function TemplateCard({
   botConfig,
   restaurantPhoto,
   onCheckStatus,
-  isCheckingStatus
+  isCheckingStatus,
+  restaurantName
 }: { 
   template: Template, 
   onRegenerate: () => void,
@@ -238,7 +239,8 @@ function TemplateCard({
   botConfig: {triggerWord: string} | null,
   restaurantPhoto: string,
   onCheckStatus: (templateId: string) => void,
-  isCheckingStatus: string | null
+  isCheckingStatus: string | null,
+  restaurantName?: string
 }) {
   const { toast } = useToast()
 
@@ -344,8 +346,8 @@ function TemplateCard({
       {/* WhatsApp messages - now without container */}
       <WhatsAppMockup 
         message={displayMessage} 
-        userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(template.name || "Restaurant", botConfig)}`}
-        restaurantName={cleanRestaurantName(template.name)} 
+        userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(restaurantName || "Restaurant", botConfig)}`}
+        restaurantName={restaurantName || cleanRestaurantName(template.name)}
         restaurantPhoto={restaurantPhoto}
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
@@ -373,6 +375,7 @@ export default function TemplatesPage() {
   const [activeTab, setActiveTab] = useState("menu") // menu o review
   const [botConfig, setBotConfig] = useState<{triggerWord: string} | null>(null) // Configurazione bot
   const [restaurantProfileImage, setRestaurantProfileImage] = useState<string>("")
+  const [restaurantName, setRestaurantName] = useState<string>("Restaurant") // Nome effettivo del ristorante
   const [reviewSettings, setReviewSettings] = useState<{
     reviewLink: string;
     reviewPlatform: 'google' | 'yelp' | 'tripadvisor' | 'custom';
@@ -526,25 +529,26 @@ export default function TemplatesPage() {
       const restaurantData = await restaurantResponse.json();
       
       if (restaurantResponse.ok && restaurantData.success && restaurantData.restaurant) {
-        const restaurantName = restaurantData.restaurant.name;
+        const realRestaurantName = restaurantData.restaurant.name;
+        // Salva il nome reale del ristorante nello stato
+        setRestaurantName(realRestaurantName);
         
         // Aggiungi il nome del ristorante ai template se mancante
-        // e pulisci eventuali nomi di file errati
         menuTemplates.forEach((t: Template) => {
           if (!t.name) {
-            t.name = restaurantName;
+            t.name = realRestaurantName;
           } else if (t.name.includes('_menu_') || t.name.includes('.pdf')) {
             // Se il nome sembra essere un nome di file (contiene "_menu_" o ".pdf")
             // lo sostituiamo con il nome del ristorante
-            t.name = restaurantName;
+            t.name = realRestaurantName;
           }
         });
         
         reviewTemplates.forEach((t: Template) => {
           if (!t.name) {
-            t.name = restaurantName;
+            t.name = realRestaurantName;
           } else if (t.name.includes('_menu_') || t.name.includes('.pdf')) {
-            t.name = restaurantName;
+            t.name = realRestaurantName;
           }
         });
       }
@@ -1101,6 +1105,16 @@ export default function TemplatesPage() {
     return menuType === "file" ? 'Menu PDF' : 'Menu URL';
   }
 
+  // Modifica la TemplateCard per usare il nome del ristorante dallo stato
+  const TemplateCardWithRestaurantName = (props: any) => {
+    return (
+      <TemplateCard 
+        {...props}
+        restaurantName={restaurantName} // Passa il nome del ristorante come prop separata
+      />
+    );
+  };
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200 pb-24">
       <BubbleBackground />
@@ -1335,7 +1349,7 @@ export default function TemplatesPage() {
                         onClick={() => !isEditorOpen && handleEdit(template)}
                         className="cursor-pointer"
                       >
-                        <TemplateCard
+                        <TemplateCardWithRestaurantName
                         template={template}
                         onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
@@ -1477,7 +1491,7 @@ export default function TemplatesPage() {
                         onClick={() => !isEditorOpen && handleEdit(template)}
                         className="cursor-pointer"
                       >
-                        <TemplateCard
+                        <TemplateCardWithRestaurantName
                         template={template}
                         onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
