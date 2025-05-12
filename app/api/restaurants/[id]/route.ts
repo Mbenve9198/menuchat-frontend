@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Ottieni la sessione e verifica l'autenticazione
+    const session = await auth();
+    
     const { id } = params;
 
     // URL dell'API backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     
+    // Aggiungi l'authorization header se abbiamo una sessione con token
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (session?.accessToken) {
+      headers['Authorization'] = `Bearer ${session.accessToken}`;
+    }
+    
     const response = await fetch(`${backendUrl}/api/restaurants/${id}`, {
-      cache: 'no-store'
+      cache: 'no-store',
+      headers
     });
 
     if (!response.ok) {

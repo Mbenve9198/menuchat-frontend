@@ -43,18 +43,40 @@ export default function Dashboard() {
   // Stato per attività
   const [activities, setActivities] = useState<any[]>([])
 
+  // Primi la dichiarazione di stato per il session
+  const [session, setSession] = useState<any>(null);
+
+  // Aggiungi un useEffect per recuperare la sessione
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        const data = await response.json();
+        setSession(data);
+      } catch (err) {
+        console.error("Error fetching session:", err);
+      }
+    };
+    
+    fetchSession();
+  }, []);
+
   // Recupera i dati dal backend
   const fetchStats = async () => {
     setIsLoading(true)
     try {
+      // Ottieni l'ID ristorante dalla sessione
+      if (!session || !session.user?.restaurantId) {
+        throw new Error("No restaurant ID found in session");
+      }
+      
+      const restaurantId = session.user.restaurantId;
+      
       // Costruisci i parametri di query
       let queryParams = `period=${timeFilter}`
       if (timeFilter === "custom") {
         queryParams += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
       }
-      
-      // Sostituisci con l'ID effettivo del ristorante (potrebbe venire da un context o sessione)
-      const restaurantId = "your-restaurant-id"
       
       const response = await fetch(`/api/stats?restaurantId=${restaurantId}&${queryParams}`)
       if (!response.ok) {
@@ -98,8 +120,12 @@ export default function Dashboard() {
   // Recupera le attività
   const fetchActivities = async () => {
     try {
-      // Sostituisci con l'ID effettivo del ristorante
-      const restaurantId = "your-restaurant-id"
+      // Ottieni l'ID ristorante dalla sessione
+      if (!session || !session.user?.restaurantId) {
+        throw new Error("No restaurant ID found in session");
+      }
+      
+      const restaurantId = session.user.restaurantId;
       
       const response = await fetch(`/api/activities?restaurantId=${restaurantId}`)
       if (!response.ok) {
@@ -133,8 +159,12 @@ export default function Dashboard() {
   // Recupera le informazioni del ristorante
   const fetchRestaurantInfo = async () => {
     try {
-      // Sostituisci con l'ID effettivo del ristorante
-      const restaurantId = "your-restaurant-id"
+      // Ottieni l'ID ristorante dalla sessione
+      if (!session || !session.user?.restaurantId) {
+        throw new Error("No restaurant ID found in session");
+      }
+      
+      const restaurantId = session.user.restaurantId;
       
       const response = await fetch(`/api/restaurants/${restaurantId}`)
       if (!response.ok) {
@@ -148,8 +178,11 @@ export default function Dashboard() {
       
       setRestaurantName(data.restaurant.name)
       
-      // Calcola giorni attivi
-      if (data.restaurant.createdAt) {
+      // Usa i giorni attivi restituiti dall'API
+      if (data.restaurant.daysActive) {
+        setDaysActive(data.restaurant.daysActive)
+      } else if (data.restaurant.createdAt) {
+        // Fallback: calcola manualmente i giorni attivi
         const createdDate = new Date(data.restaurant.createdAt)
         const now = new Date()
         const diffTime = Math.abs(now.getTime() - createdDate.getTime())
