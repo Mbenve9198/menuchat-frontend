@@ -4,6 +4,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
+    const period = searchParams.get('period') || '7days';
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     if (!restaurantId) {
       return NextResponse.json(
@@ -15,7 +18,15 @@ export async function GET(request: NextRequest) {
     // URL dell'API backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     
-    const response = await fetch(`${backendUrl}/api/stats?restaurantId=${restaurantId}`, {
+    // Costruisci l'URL con i parametri di query
+    let url = `${backendUrl}/api/stats?restaurantId=${restaurantId}&period=${period}`;
+    
+    // Aggiungi date personalizzate se presenti
+    if (period === 'custom' && startDate && endDate) {
+      url += `&startDate=${startDate}&endDate=${endDate}`;
+    }
+    
+    const response = await fetch(url, {
       cache: 'no-store'
     });
 
