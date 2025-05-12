@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Star, ChevronRight, MessageSquare, Edit3, Share2, Calendar, ArrowUp, ChevronDown } from "lucide-react"
+import { Star, ChevronRight, MessageSquare, Edit3, Share2, Calendar, ArrowUp, ChevronDown, RefreshCw } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -44,6 +44,9 @@ export default function Dashboard() {
   
   // Stato per attività
   const [activities, setActivities] = useState<any[]>([])
+  
+  // Stato per la sincronizzazione delle recensioni
+  const [isSyncingReviews, setIsSyncingReviews] = useState(false)
 
   // Recupera i dati dal backend solo quando la sessione è pronta
   useEffect(() => {
@@ -493,6 +496,40 @@ export default function Dashboard() {
                 <p className="text-3xl font-extrabold text-[#EF476F]">{reviewRequests}</p>
               </div>
               <div className="text-3xl">📢</div>
+            </div>
+            
+            <div className="flex justify-end">
+              <button 
+                className={`flex items-center gap-1 text-xs font-medium ${isSyncingReviews ? 'text-blue-600 bg-blue-50' : 'text-gray-600 bg-gray-100 hover:bg-gray-200'} transition-colors rounded-full px-3 py-1`}
+                onClick={async () => {
+                  if (isSyncingReviews) return;
+                  
+                  try {
+                    setIsSyncingReviews(true);
+                    const restaurantId = session?.user?.restaurantId;
+                    const response = await fetch(`/api/restaurants/${restaurantId}/sync-reviews`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      }
+                    });
+                    
+                    if (response.ok) {
+                      // Ricarica i dati dopo la sincronizzazione
+                      await fetchStats();
+                      await fetchRestaurantInfo();
+                    }
+                  } catch (error) {
+                    console.error("Error syncing reviews:", error);
+                  } finally {
+                    setIsSyncingReviews(false);
+                  }
+                }}
+                disabled={isSyncingReviews}
+              >
+                <RefreshCw className={`w-3 h-3 ${isSyncingReviews ? 'animate-spin' : ''}`} /> 
+                {isSyncingReviews ? 'Syncing from Google...' : 'Sync Google reviews'}
+              </button>
             </div>
           </motion.div>
 
