@@ -1106,7 +1106,18 @@ export default function TemplatesPage() {
   }
 
   // Modifica la TemplateCard per usare il nome del ristorante dallo stato
-  const TemplateCardWithRestaurantName = (props: any) => {
+  const TemplateCardWithRestaurantName = (props: {
+    template: Template, 
+    onRegenerate: () => void,
+    editMode: boolean,
+    editedMessage: string,
+    editedButtonText: string,
+    isGenerating: boolean,
+    botConfig: {triggerWord: string} | null,
+    restaurantPhoto: string,
+    onCheckStatus: (id: string) => void,
+    isCheckingStatus: string | null
+  }) => {
     return (
       <TemplateCard 
         {...props}
@@ -1350,12 +1361,12 @@ export default function TemplatesPage() {
                         className="cursor-pointer"
                       >
                         <TemplateCardWithRestaurantName
-                        template={template}
-                        onRegenerate={() => regenerateWithAI(template)}
+                          template={template}
+                          onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
-                        editedMessage={editedMessage}
+                          editedMessage={editedMessage}
                           editedButtonText={editedButtonText}
-                        isGenerating={isGenerating}
+                          isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
                           onCheckStatus={(id: string) => {
@@ -1492,12 +1503,12 @@ export default function TemplatesPage() {
                         className="cursor-pointer"
                       >
                         <TemplateCardWithRestaurantName
-                        template={template}
-                        onRegenerate={() => regenerateWithAI(template)}
+                          template={template}
+                          onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
-                        editedMessage={editedMessage}
+                          editedMessage={editedMessage}
                           editedButtonText={editedButtonText}
-                        isGenerating={isGenerating}
+                          isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
                           onCheckStatus={(id: string) => {
@@ -1518,31 +1529,49 @@ export default function TemplatesPage() {
 
       {/* Banner fisso in basso per modificare il template */}
       <div 
-        className={`fixed inset-0 z-20 bg-white shadow-lg transition-all duration-300 ${
+        className={`fixed inset-0 z-20 transition-all duration-300 ${
           isEditorOpen 
-            ? 'visible' 
-            : 'h-16 bottom-0 top-auto rounded-t-2xl invisible'
+            ? 'bg-white/95 backdrop-blur-sm' 
+            : 'h-16 bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-2xl'
         }`}
       >
-        <div className="container mx-auto max-w-md p-4 h-full flex flex-col">
+        <div className={`container mx-auto max-w-md p-4 h-full flex flex-col ${
+          isEditorOpen ? 'pt-6 md:pt-8 pb-8' : ''
+        }`}>
           {isEditorOpen && selectedTemplate ? (
             <>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm md:text-base font-medium">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-lg md:text-xl font-medium">
                   Modifica {getSelectedTemplateType()} Template ({currentLanguage})
                 </h3>
                 <button 
                   onClick={cancelEdit}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <XCircle className="w-5 h-5" />
+                  <XCircle className="w-6 h-6" />
                 </button>
               </div>
               
-              <div className="flex-grow overflow-y-auto mb-4 px-1">
+              <div className="flex-grow overflow-y-auto mb-6 space-y-4">
+                {/* Anteprima del messaggio */}
+                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-gray-700 mb-3 font-medium">Anteprima messaggio:</p>
+                  <WhatsAppMockup 
+                    message={editedMessage}
+                    userMessage={selectedTemplate.type === 'REVIEW' ? "Order completed! 🎉" : "Menu"}
+                    restaurantName={restaurantName}
+                    restaurantPhoto={restaurantProfileImage}
+                    showMenuPdf={selectedTemplate.type === 'MEDIA' && menuType === "file"}
+                    showMenuUrl={selectedTemplate.type === 'CALL_TO_ACTION' || (selectedTemplate.type === 'MEDIA' && menuType === "url")}
+                    showReviewCta={selectedTemplate.type === 'REVIEW'}
+                    menuButtonText={editedButtonText}
+                    reviewButtonText={editedButtonText}
+                  />
+                </div>
+                
                 {/* Avviso cambio tipo template */}
                 {showTypeChangeAlert && (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                     <div className="flex items-start">
                       <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0" />
                       <div>
@@ -1571,16 +1600,25 @@ export default function TemplatesPage() {
                 )}
                 
                 {/* Input per modificare il messaggio */}
-                <Textarea
-                  value={editedMessage}
-                  onChange={(e) => setEditedMessage(e.target.value)}
-                  className="w-full mb-3 min-h-[120px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                  placeholder="Write your message..."
-                />
+                <div>
+                  <Label htmlFor="message-edit" className="text-sm font-medium mb-2 block">
+                    Messaggio
+                  </Label>
+                  <Textarea
+                    id="message-edit"
+                    value={editedMessage}
+                    onChange={(e) => setEditedMessage(e.target.value)}
+                    className="w-full min-h-[120px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                    placeholder="Scrivi il tuo messaggio..."
+                  />
+                </div>
                 
                 {/* Opzioni per il tipo di menu (solo per i template di tipo menu) */}
                 {selectedTemplate.type !== 'REVIEW' && (
-                  <div className="mb-3">
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">
+                      Tipo di menu
+                    </Label>
                     <Tabs
                       value={menuType}
                       onValueChange={(value) => handleMenuTypeChange(value as "url" | "file")}
@@ -1650,8 +1688,8 @@ export default function TemplatesPage() {
                 
                 {/* Campo per modificare il testo del pulsante, solo per i template di recensione */}
                 {selectedTemplate.type === 'REVIEW' && (
-                  <div className="mb-3">
-                    <Label htmlFor="buttonText" className="text-sm md:text-base mb-1 block">
+                  <div>
+                    <Label htmlFor="buttonText" className="text-sm font-medium mb-2 block">
                       Testo del pulsante
                     </Label>
                     <div className="flex items-center gap-2">
@@ -1668,7 +1706,7 @@ export default function TemplatesPage() {
                 )}
               </div>
               
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3 mt-auto">
                 <CustomButton
                   variant="outline"
                   className="text-sm py-3 justify-center"
