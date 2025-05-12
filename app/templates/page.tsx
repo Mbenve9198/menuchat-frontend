@@ -1358,7 +1358,7 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id) => {
+                          onCheckStatus={(id: string) => {
                             // Solo aggiorna lo stato senza aprire il pannello di editing
                             checkTemplateStatus(id);
                           }}
@@ -1500,7 +1500,7 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id) => {
+                          onCheckStatus={(id: string) => {
                             // Solo aggiorna lo stato senza aprire il pannello di editing
                             checkTemplateStatus(id);
                           }}
@@ -1518,10 +1518,10 @@ export default function TemplatesPage() {
 
       {/* Banner fisso in basso per modificare il template */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-20 bg-white shadow-lg transition-all duration-300 rounded-t-2xl ${
+        className={`fixed inset-0 z-20 bg-white shadow-lg transition-all duration-300 ${
           isEditorOpen 
-            ? 'h-[60vh] max-h-[600px]' 
-            : 'h-16'
+            ? 'visible' 
+            : 'h-16 bottom-0 top-auto rounded-t-2xl invisible'
         }`}
       >
         <div className="container mx-auto max-w-md p-4 h-full flex flex-col">
@@ -1539,7 +1539,7 @@ export default function TemplatesPage() {
                 </button>
               </div>
               
-              <div className="flex-grow overflow-y-auto mb-4">
+              <div className="flex-grow overflow-y-auto mb-4 px-1">
                 {/* Avviso cambio tipo template */}
                 {showTypeChangeAlert && (
                   <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
@@ -1574,7 +1574,7 @@ export default function TemplatesPage() {
                 <Textarea
                   value={editedMessage}
                   onChange={(e) => setEditedMessage(e.target.value)}
-                  className="w-full mb-3 min-h-[80px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                  className="w-full mb-3 min-h-[120px] text-sm md:text-base rounded-xl border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                   placeholder="Write your message..."
                 />
                 
