@@ -272,7 +272,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         photos: selectedRestaurant?.photos || [],
         googleRating: {
           rating: selectedRestaurant?.rating,
-          reviewCount: selectedRestaurant?.ratingsTotal
+          reviewCount: selectedRestaurant?.ratingsTotal,
+          initialReviewCount: selectedRestaurant?.ratingsTotal
         },
         reviews: selectedRestaurant?.reviews?.map(review => ({
           authorName: review.author_name,
