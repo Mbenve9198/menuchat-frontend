@@ -27,6 +27,8 @@ export default function Dashboard() {
   const [reviewRequests, setReviewRequests] = useState(0)
   const [reviewsCollected, setReviewsCollected] = useState(0)
   const [totalReviewsCollected, setTotalReviewsCollected] = useState(0)
+  const [initialReviewCount, setInitialReviewCount] = useState(0)
+  const [newReviewsCollected, setNewReviewsCollected] = useState(0)
   const [weeklyGoalProgress, setWeeklyGoalProgress] = useState(0)
   const [weeklyGoalTarget, setWeeklyGoalTarget] = useState(0)
   const [weeklyGoalCurrent, setWeeklyGoalCurrent] = useState(0)
@@ -86,6 +88,8 @@ export default function Dashboard() {
       setReviewRequests(data.reviewRequests)
       setReviewsCollected(data.reviewsCollected)
       setTotalReviewsCollected(data.totalReviewsCollected)
+      setInitialReviewCount(data.initialReviewCount || 0)
+      setNewReviewsCollected(data.totalReviewsCollected - (data.initialReviewCount || 0))
       
       // Aggiorna dati weekly goal
       setWeeklyGoalProgress(data.weeklyGoal.progress)
@@ -510,7 +514,17 @@ export default function Dashboard() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
-                <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected}</p>
+                <div className="flex items-center">
+                  <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected}</p>
+                  {newReviewsCollected > 0 && (
+                    <div className="ml-2 px-2 py-1 bg-green-100 rounded-md flex items-center">
+                      <span className="text-xs font-bold text-green-700">+{newReviewsCollected}</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {newReviewsCollected} nuove recensioni dal lancio
+                </p>
               </div>
               <div className="text-3xl">🏆</div>
             </div>
@@ -530,6 +544,12 @@ export default function Dashboard() {
                   <Trophy className="w-3 h-3 mr-1" /> New record!
                 </div>
               )}
+            </div>
+
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-xs text-gray-600">
+                Recensioni su Google: <span className="font-medium">{totalReviewsCollected}</span>
+              </div>
             </div>
             
             <div className="flex justify-end">
