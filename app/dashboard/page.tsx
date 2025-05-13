@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [reviewsCollected, setReviewsCollected] = useState(0)
   const [totalReviewsCollected, setTotalReviewsCollected] = useState(0)
   const [initialReviewCount, setInitialReviewCount] = useState(0)
+  const [currentReviewCount, setCurrentReviewCount] = useState(0)
   const [newReviewsCollected, setNewReviewsCollected] = useState(0)
   const [weeklyGoalProgress, setWeeklyGoalProgress] = useState(0)
   const [weeklyGoalTarget, setWeeklyGoalTarget] = useState(0)
@@ -89,7 +90,10 @@ export default function Dashboard() {
       setReviewsCollected(data.reviewsCollected)
       setTotalReviewsCollected(data.totalReviewsCollected)
       setInitialReviewCount(data.initialReviewCount || 0)
-      setNewReviewsCollected(data.totalReviewsCollected - (data.initialReviewCount || 0))
+      setCurrentReviewCount(data.currentReviewCount || 0)
+      
+      // Assicura che il valore delle nuove recensioni sia sempre non negativo
+      setNewReviewsCollected(Math.max(0, data.totalReviewsCollected))
       
       // Aggiorna dati weekly goal
       setWeeklyGoalProgress(data.weeklyGoal.progress)
@@ -515,7 +519,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
                 <div className="flex items-center">
-                  <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected}</p>
+                  <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected || totalReviewsCollected}</p>
                   {newReviewsCollected > 0 && (
                     <div className="ml-2 px-2 py-1 bg-green-100 rounded-md flex items-center">
                       <span className="text-xs font-bold text-green-700">+{newReviewsCollected}</span>
@@ -523,7 +527,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {newReviewsCollected} nuove recensioni dal lancio
+                  {newReviewsCollected} recensioni raccolte con MenuChat
                 </p>
               </div>
               <div className="text-3xl">🏆</div>
@@ -548,7 +552,7 @@ export default function Dashboard() {
 
             <div className="flex justify-between items-center mb-2">
               <div className="text-xs text-gray-600">
-                Recensioni su Google: <span className="font-medium">{totalReviewsCollected}</span>
+                Recensioni su Google: <span className="font-medium">{currentReviewCount}</span>
               </div>
             </div>
             
