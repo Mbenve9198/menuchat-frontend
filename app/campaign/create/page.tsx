@@ -1,0 +1,1367 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import {
+  ChevronLeft,
+  Search,
+  Check,
+  Users,
+  Globe,
+  Sparkles,
+  MessageSquare,
+  ImageIcon,
+  Calendar,
+  ArrowRight,
+  Loader2,
+} from "lucide-react"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
+import { Progress } from "@/components/ui/progress"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import BubbleBackground from "@/components/bubble-background"
+import { CustomButton } from "@/components/ui/custom-button"
+// Rimuoviamo l'import del servizio
+// import { campaignService } from "@/lib/campaign-service"
+
+// Add this import for the dialog components
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
+// Tipo di dato per un contatto
+interface Contact {
+  id: string | number
+  name: string
+  phone: string
+  lastOrder: string
+  selected: boolean
+  countryCode: string
+  language?: string
+  interactionCount?: number
+  isOptedIn?: boolean
+}
+
+// Tipo di dato per un country code
+interface CountryCode {
+  code: string
+  name: string
+  flag: string
+}
+
+// Campaign types
+const campaignTypes = [
+  { id: "promo", name: "Promotional Offer", description: "Special discounts and limited-time offers" },
+  { id: "event", name: "Event Invitation", description: "Invite customers to special events" },
+  { id: "update", name: "Menu Update", description: "Announce new items or menu changes" },
+  { id: "feedback", name: "Feedback Request", description: "Ask for customer opinions" },
+]
+
+// Languages
+const languages = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "it", name: "Italian" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "zh", name: "Chinese" },
+  { code: "ar", name: "Arabic" },
+]
+
+// Update the steps array to include the new step
+const steps = ["Select Contacts", "Campaign Setup", "Content Creation", "Schedule & Approve"]
+
+export default function CreateCampaign() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [currentStep, setCurrentStep] = useState(0)
+  const [progress, setProgress] = useState(0)
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true)
+  const [countryCodes, setCountryCodes] = useState<CountryCode[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null)
+  const [allSelected, setAllSelected] = useState(false)
+  const [selectedCount, setSelectedCount] = useState(0)
+  const [campaignType, setCampaignType] = useState("")
+  const [language, setLanguage] = useState("en")
+  const [messageText, setMessageText] = useState("")
+  const [isGeneratingText, setIsGeneratingText] = useState(false)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [generatedImageUrl, setGeneratedImageUrl] = useState("")
+  const [useGeneratedImage, setUseGeneratedImage] = useState(false)
+  const [primaryCta, setPrimaryCta] = useState("")
+  const [primaryCtaType, setPrimaryCtaType] = useState("url")
+  const [scheduleDate, setScheduleDate] = useState("")
+  const [scheduleTime, setScheduleTime] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isApproved, setIsApproved] = useState(false)
+  // Add a new state variable for campaign details/objective
+  const [campaignObjective, setCampaignObjective] = useState("")
+  // Add a new state variable for the CTA URL/phone
+  const [primaryCtaValue, setPrimaryCtaValue] = useState("")
+  // Add these new state variables after the existing state declarations
+  const [imageGenerationMethod, setImageGenerationMethod] = useState<"automatic" | "custom" | "upload" | null>(null)
+  const [customImagePrompt, setCustomImagePrompt] = useState("")
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
+  const [uploadedFileType, setUploadedFileType] = useState<"image" | "video" | null>(null)
+  const [uploadedFileUrl, setUploadedFileUrl] = useState("")
+  // Add these state variables after the other state declarations
+  const [showAIDialog, setShowAIDialog] = useState(false)
+  const [aiImageMethod, setAiImageMethod] = useState<"automatic" | "custom" | null>(null)
+  const [customPromptDialogOpen, setCustomPromptDialogOpen] = useState(false)
+  // Add this state variable after the other state declarations
+  const [scheduleOption, setScheduleOption] = useState<"now" | "later">("now")
+
+  // Fetch contacts from API
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        setIsLoadingContacts(true);
+        
+        // Utilizzare le API Routes di Next.js
+        const response = await fetch('/api/campaign/contacts');
+        if (!response.ok) {
+          throw new Error("Failed to fetch contacts");
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Map contacts to include selected property
+          const contactsWithSelection = data.contacts.map((contact: any) => ({
+            ...contact,
+            selected: false
+          }));
+          
+          setContacts(contactsWithSelection);
+          setCountryCodes(data.countryCodes || []);
+        } else {
+          toast({
+            title: "Errore",
+            description: data.error || "Impossibile caricare i contatti",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        toast({
+          title: "Errore",
+          description: "Errore durante il caricamento dei contatti",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    };
+
+    if (currentStep === 0) {
+      fetchContacts();
+    }
+  }, [currentStep, toast]);
+
+  useEffect(() => {
+    // Update progress based on current step
+    setProgress(Math.round(((currentStep + 1) / steps.length) * 100))
+  }, [currentStep])
+
+  useEffect(() => {
+    // Update selected count
+    const count = contacts.filter((contact) => contact.selected).length
+    setSelectedCount(count)
+    setAllSelected(count === contacts.length && contacts.length > 0)
+  }, [contacts])
+
+  // Generate content when moving to step 3
+  useEffect(() => {
+    if (currentStep === 2 && !messageText) {
+      generateMessageText(false)
+    }
+  }, [currentStep])
+
+  const filteredContacts = contacts.filter((contact) => {
+    const matchesSearch =
+      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
+    const matchesCountry = !selectedCountryCode || contact.countryCode === selectedCountryCode
+    return matchesSearch && matchesCountry
+  })
+
+  const toggleSelectAll = () => {
+    const newAllSelected = !allSelected
+    setAllSelected(newAllSelected)
+    setContacts(
+      contacts.map((contact) => ({
+        ...contact,
+        selected: newAllSelected,
+      })),
+    )
+  }
+
+  const toggleContactSelection = (id: string | number) => {
+    setContacts(contacts.map((contact) => (contact.id === id ? { ...contact, selected: !contact.selected } : contact)))
+  }
+
+  const filterByCountry = (code: string) => {
+    setSelectedCountryCode(code === selectedCountryCode ? null : code)
+  }
+
+  // Update the generateMessageText function to use the campaign objective
+  const generateMessageText = (showLoading = true) => {
+    if (showLoading) {
+      setIsGeneratingText(true)
+    }
+
+    // Simulate AI text generation with the campaign objective as context
+    setTimeout(
+      () => {
+        let generatedText = ""
+
+        // Use the campaign objective to personalize the message if provided
+        const objective = campaignObjective.trim()
+        const hasObjective = objective.length > 0
+
+        if (campaignType === "promo") {
+          generatedText = hasObjective
+            ? `🌟 Special Offer! ${objective.includes("discount") ? objective : "Enjoy 20% off your next order this weekend."} Use code TASTY20 at checkout. Limited time only!`
+            : "🌟 Special Offer! Enjoy 20% off your next order this weekend. Use code TASTY20 at checkout. Limited time only!"
+        } else if (campaignType === "event") {
+          generatedText = hasObjective
+            ? `🎉 You're invited! ${objective.includes("event") ? objective : "Join us for our special tasting event this Friday at 7PM."} Reserve your spot now!`
+            : "🎉 You're invited! Join us for our special tasting event this Friday at 7PM. Reserve your spot now!"
+        } else if (campaignType === "update") {
+          generatedText = hasObjective
+            ? `🍽️ ${objective.includes("menu") ? objective : "Our menu just got better! Check out our 5 new seasonal dishes, available now."} Which one will be your favorite?`
+            : "🍽️ Our menu just got better! Check out our 5 new seasonal dishes, available now. Which one will be your favorite?"
+        } else if (campaignType === "feedback") {
+          generatedText = hasObjective
+            ? `👋 ${objective.includes("feedback") ? objective : "We value your opinion! How was your recent experience with us?"} Take our quick 1-minute survey and get a free dessert on your next visit!`
+            : "👋 We value your opinion! How was your recent experience with us? Take our quick 1-minute survey and get a free dessert on your next visit!"
+        } else {
+          generatedText = hasObjective
+            ? `Hello from Pizza Palace! ${objective}`
+            : "Hello from Pizza Palace! We miss you and would love to see you again soon. Check out what's new on our menu!"
+        }
+
+        setMessageText(generatedText)
+        setPrimaryCta(
+          campaignType === "promo"
+            ? "Order Now"
+            : campaignType === "event"
+              ? "Reserve a Spot"
+              : campaignType === "update"
+                ? "View Menu"
+                : "Take Survey",
+        )
+        setIsGeneratingText(false)
+      },
+      showLoading ? 1500 : 0,
+    )
+  }
+
+  // Replace the existing generateImage function with this enhanced version
+  const generateImage = (method: "automatic" | "custom") => {
+    if (!messageText) {
+      toast({
+        title: "Message text required",
+        description: "Please generate or enter message text first",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setImageGenerationMethod(method)
+    setIsGeneratingImage(true)
+
+    // Simulate AI image generation
+    setTimeout(() => {
+      // Use a placeholder image based on campaign type or custom prompt
+      let imageUrl = ""
+
+      if (method === "automatic") {
+        if (campaignType === "promo") {
+          imageUrl = "/restaurant-special-offer.png"
+        } else if (campaignType === "event") {
+          imageUrl = "/restaurant-event-invitation.png"
+        } else if (campaignType === "update") {
+          imageUrl = "/restaurant-menu-items.png"
+        } else if (campaignType === "feedback") {
+          imageUrl = "/restaurant-feedback-survey.png"
+        } else {
+          imageUrl = "/delicious-restaurant-meal.png"
+        }
+      } else if (method === "custom") {
+        // For demo purposes, we'll use the same images but pretend they're based on the custom prompt
+        if (customImagePrompt.toLowerCase().includes("offer") || customImagePrompt.toLowerCase().includes("discount")) {
+          imageUrl = "/restaurant-special-offer.png"
+        } else if (
+          customImagePrompt.toLowerCase().includes("event") ||
+          customImagePrompt.toLowerCase().includes("invitation")
+        ) {
+          imageUrl = "/restaurant-event-invitation.png"
+        } else if (
+          customImagePrompt.toLowerCase().includes("menu") ||
+          customImagePrompt.toLowerCase().includes("food")
+        ) {
+          imageUrl = "/restaurant-menu-items.png"
+        } else if (
+          customImagePrompt.toLowerCase().includes("feedback") ||
+          customImagePrompt.toLowerCase().includes("survey")
+        ) {
+          imageUrl = "/restaurant-feedback-survey.png"
+        } else {
+          imageUrl = "/delicious-restaurant-meal.png"
+        }
+      }
+
+      setGeneratedImageUrl(imageUrl)
+      setUseGeneratedImage(true)
+      setIsGeneratingImage(false)
+    }, 2000)
+  }
+
+  // Add this new function for file uploads
+  const simulateFileUpload = (fileType: "image" | "video") => {
+    setImageGenerationMethod("upload")
+    setUploadedFileType(fileType)
+    setIsUploadingFile(true)
+
+    // Simulate file upload
+    setTimeout(() => {
+      let fileUrl = ""
+
+      if (fileType === "image") {
+        fileUrl = "/delicious-restaurant-meal.png" // Placeholder for uploaded image
+      } else if (fileType === "video") {
+        fileUrl = "#" // Placeholder for uploaded video
+      }
+
+      setUploadedFileUrl(fileUrl)
+      setUseGeneratedImage(true)
+      setIsUploadingFile(false)
+    }, 1500)
+  }
+
+  // Update the handleNext function to validate the new step
+  const handleNext = () => {
+    if (currentStep === 0 && selectedCount === 0) {
+      toast({
+        title: "No contacts selected",
+        description: "Please select at least one contact to continue",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (currentStep === 1 && !campaignType) {
+      toast({
+        title: "Campaign type required",
+        description: "Please select a campaign type to continue",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (currentStep === 2 && !messageText) {
+      toast({
+        title: "Message text required",
+        description: "Please generate or enter message text",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1)
+      window.scrollTo(0, 0)
+    }
+  }
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1)
+      window.scrollTo(0, 0)
+    } else {
+      router.push("/dashboard")
+    }
+  }
+
+  // Update the handleSubmit function to use fetch directly
+  const handleSubmit = async () => {
+    // Validate date and time if scheduling for later
+    if (scheduleOption === "later") {
+      const now = new Date()
+      const scheduledTime = new Date(`${scheduleDate}T${scheduleTime}`)
+
+      // Check if scheduled time is at least 10 minutes from now
+      const minTime = new Date(now.getTime() + 10 * 60 * 1000)
+
+      if (scheduledTime < minTime) {
+        toast({
+          title: "Invalid schedule time",
+          description: "Schedule time must be at least 10 minutes from now",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // Get selected contact IDs
+      const selectedContactIds = contacts
+        .filter(contact => contact.selected)
+        .map(contact => contact.id);
+
+      // Create campaign object
+      const campaignData = {
+        name: campaignType ? campaignTypes.find(t => t.id === campaignType)?.name || "Campaign" : "Campaign",
+        description: campaignObjective,
+        templateId: "TEMPLATE_ID", // Questo dovrebbe essere selezionato o creato prima
+        scheduledDate: scheduleOption === "now" ? "now" : `${scheduleDate}T${scheduleTime}`,
+        targetAudience: {
+          selectionMethod: "manual",
+          manualContacts: selectedContactIds,
+          onlyWithConsent: true
+        },
+        templateParameters: {
+          message: messageText,
+          cta: primaryCta,
+          ctaType: primaryCtaType,
+          ctaValue: primaryCtaValue,
+          useImage: useGeneratedImage,
+          imageUrl: generatedImageUrl || uploadedFileUrl
+        }
+      };
+
+      // Uncomment for production use - utilizzare le API Routes di Next.js
+      /*
+      const response = await fetch('/api/campaign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(campaignData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error creating campaign');
+      }
+
+      const result = await response.json();
+      */
+      
+      // Per la simulazione, usiamo un timeout
+      setTimeout(() => {
+        setIsApproved(true);
+        setIsSubmitting(false);
+
+        toast({
+          title: "Campaign scheduled!",
+          description: `Your campaign will be sent to ${selectedCount} contacts ${
+            scheduleOption === "now" ? "in approximately 10 minutes" : "at the scheduled time"
+          }`,
+        });
+
+        // Redirect to dashboard after a delay
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 3000);
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error creating campaign:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create campaign. Please try again.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  const getMascotImage = () => {
+    return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
+  }
+
+  const getExcitedMascotImage = () => {
+    return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
+  }
+
+  return (
+    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+      <BubbleBackground />
+
+      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
+        {/* Header */}
+        <div className="w-full max-w-md mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <button onClick={handlePrevious} className="mr-2">
+                <ChevronLeft className="w-6 h-6 text-gray-700" />
+              </button>
+              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">Create Campaign</h1>
+            </div>
+            <div className="relative w-10 h-10">
+              <Image
+                src={getMascotImage() || "/placeholder.svg"}
+                alt="Mascot"
+                width={40}
+                height={40}
+                className="drop-shadow-lg"
+              />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <Progress
+              value={progress}
+              className="h-3 bg-gray-100"
+              indicatorClassName="bg-gradient-to-r from-[#EF476F] to-[#FF8A9A] transition-all duration-700 ease-in-out"
+            />
+            <div className="mt-2 flex justify-between">
+              {steps.map((step, index) => (
+                <div
+                  key={index}
+                  className={`text-xs font-medium ${
+                    index === currentStep ? "text-[#EF476F]" : index < currentStep ? "text-gray-700" : "text-gray-400"
+                  }`}
+                >
+                  {step}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-md"
+          >
+            {/* Step 1: Select Contacts */}
+            {currentStep === 0 && (
+              <div className="space-y-4 pb-24">
+                <div className="bg-white rounded-3xl p-6 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-[#EF476F]" />
+                    <span className="text-sm font-medium text-[#EF476F]">Select your audience</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Search and filter */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search contacts..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 rounded-xl border-gray-200"
+                      />
+                    </div>
+
+                    {/* Country filter with emoji flags */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-gray-700 flex items-center">
+                          <Globe className="w-4 h-4 mr-1" /> Filter by country
+                        </Label>
+                        {selectedCountryCode && (
+                          <button
+                            onClick={() => setSelectedCountryCode(null)}
+                            className="text-xs text-[#EF476F] font-medium"
+                          >
+                            Clear filter
+                          </button>
+                        )}
+                      </div>
+                      <div className="overflow-x-auto pb-2">
+                        <div className="flex flex-nowrap gap-2 min-w-max">
+                          {countryCodes.map((country) => (
+                            <button
+                              key={country.code}
+                              onClick={() => filterByCountry(country.code)}
+                              className={`text-xl px-3 py-2 rounded-full ${
+                                selectedCountryCode === country.code
+                                  ? "bg-[#EF476F] text-white"
+                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              }`}
+                              title={country.name}
+                            >
+                              {country.flag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Select all */}
+                    <div className="flex items-center py-2 border-b border-gray-100">
+                      <Checkbox
+                        id="select-all"
+                        checked={allSelected}
+                        onCheckedChange={toggleSelectAll}
+                        className="mr-3 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
+                      />
+                      <Label htmlFor="select-all" className="text-sm font-medium text-gray-700 flex items-center">
+                        Select all contacts
+                      </Label>
+                    </div>
+
+                    {/* Contact list - with loading state */}
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                      {isLoadingContacts ? (
+                        <div className="text-center py-8 flex flex-col items-center">
+                          <Loader2 className="w-8 h-8 animate-spin text-[#EF476F] mb-2" />
+                          <p className="text-gray-500">Loading contacts...</p>
+                        </div>
+                      ) : filteredContacts.length > 0 ? (
+                        filteredContacts.map((contact) => (
+                          <motion.div
+                            key={contact.id}
+                            className="flex items-center p-3 bg-white rounded-xl border border-gray-100 hover:border-[#EF476F]/30 transition-colors"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Checkbox
+                              checked={contact.selected}
+                              onCheckedChange={() => toggleContactSelection(contact.id)}
+                              className="mr-3 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
+                            />
+                            <div className="flex-1" onClick={() => toggleContactSelection(contact.id)}>
+                              <p className="font-medium text-gray-800">{contact.name}</p>
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm text-gray-500">{contact.phone}</p>
+                                <p className="text-xs text-gray-400">Last contact: {contact.lastOrder}</p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">No contacts found</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selected count */}
+                <motion.div
+                  className="bg-white rounded-3xl p-4 shadow-xl flex items-center justify-between"
+                  animate={{
+                    scale: selectedCount > 0 ? [1, 1.05, 1] : 1,
+                    transition: { duration: 0.5 },
+                  }}
+                >
+                  <div>
+                    <p className="text-sm text-gray-700">Selected contacts</p>
+                    <p className="text-2xl font-extrabold text-[#EF476F]">{selectedCount}</p>
+                  </div>
+                  {selectedCount > 0 && (
+                    <div className="relative">
+                      <Image
+                        src={getExcitedMascotImage() || "/placeholder.svg"}
+                        alt="Excited Mascot"
+                        width={50}
+                        height={50}
+                        className="drop-shadow-lg"
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            )}
+
+            {/* Step 2: Create Template */}
+            {currentStep === 1 && (
+              <div className="space-y-4 pb-24">
+                <div className="bg-white rounded-3xl p-6 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MessageSquare className="w-5 h-5 text-[#EF476F]" />
+                    <span className="text-sm font-medium text-[#EF476F]">Campaign setup</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Campaign type */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">Campaign type</Label>
+                      <RadioGroup value={campaignType} onValueChange={setCampaignType} className="space-y-2">
+                        {campaignTypes.map((type) => (
+                          <Label
+                            key={type.id}
+                            htmlFor={type.id}
+                            className="flex items-center p-3 rounded-xl border border-gray-200 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+                          >
+                            <RadioGroupItem value={type.id} id={type.id} className="mr-3 text-[#EF476F]" />
+                            <div>
+                              <p className="font-medium text-gray-800">{type.name}</p>
+                              <p className="text-xs text-gray-500">{type.description}</p>
+                            </div>
+                          </Label>
+                        ))}
+                      </RadioGroup>
+                    </div>
+
+                    {/* Language */}
+                    <div className="space-y-2">
+                      <Label htmlFor="language" className="text-sm font-medium text-gray-700">
+                        Message language
+                      </Label>
+                      <Select value={language} onValueChange={setLanguage}>
+                        <SelectTrigger id="language" className="rounded-xl border-gray-200">
+                          <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {languages.map((lang) => (
+                            <SelectItem key={lang.code} value={lang.code}>
+                              {lang.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Campaign objective/details */}
+                    <div className="space-y-2">
+                      <Label htmlFor="campaign-objective" className="text-sm font-medium text-gray-700">
+                        Campaign details & objective
+                      </Label>
+                      <Textarea
+                        id="campaign-objective"
+                        placeholder="Describe what you want to achieve with this campaign and any specific details to include..."
+                        value={campaignObjective}
+                        onChange={(e) => setCampaignObjective(e.target.value)}
+                        className="rounded-xl min-h-[120px] border-gray-200"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Provide as much detail as possible to help our AI generate better content for your campaign.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Content Creation with pre-generated content */}
+            {currentStep === 2 && (
+              <div className="space-y-4 pb-24">
+                <div className="bg-white rounded-3xl p-6 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-[#EF476F]" />
+                    <span className="text-sm font-medium text-[#EF476F]">Content creation</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Message text - already generated */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="message-text" className="text-sm font-medium text-gray-700">
+                          Message text
+                        </Label>
+                        <CustomButton
+                          size="sm"
+                          onClick={() => generateMessageText(true)}
+                          className="text-xs py-1 px-3 flex items-center"
+                          disabled={isGeneratingText}
+                        >
+                          {isGeneratingText ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Regenerating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3 h-3 mr-1" /> Regenerate
+                            </>
+                          )}
+                        </CustomButton>
+                      </div>
+                      <Textarea
+                        id="message-text"
+                        placeholder="Your AI-generated message will appear here..."
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        className="rounded-xl min-h-[120px] border-gray-200"
+                      />
+                    </div>
+
+                    {/* Image generation */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium text-gray-700">Campaign media</Label>
+                      </div>
+
+                      {/* Image generation methods */}
+                      {!generatedImageUrl && !uploadedFileUrl && !isGeneratingImage && !isUploadingFile && (
+                        <div className="bg-gray-50 rounded-xl p-4">
+                          <p className="text-sm text-gray-700 mb-3">Choose how to add media to your campaign:</p>
+
+                          <div className="grid grid-cols-1 gap-3">
+                            {/* AI Generation option */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-3">
+                              <p className="font-medium text-gray-800 mb-2">AI-generated media</p>
+                              <CustomButton
+                                size="sm"
+                                onClick={() => setShowAIDialog(true)}
+                                className="w-full text-xs py-2 px-3 flex items-center justify-center"
+                              >
+                                <Sparkles className="w-3 h-3 mr-1" /> Create image with AI
+                              </CustomButton>
+                            </div>
+
+                            {/* Upload options */}
+                            <div className="bg-white rounded-xl border border-gray-200 p-3">
+                              <p className="font-medium text-gray-800 mb-2">Upload your own</p>
+                              <div className="flex gap-2">
+                                <CustomButton
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => simulateFileUpload("image")}
+                                  className="flex-1 text-xs py-2 flex items-center justify-center"
+                                >
+                                  <ImageIcon className="w-3 h-3 mr-1" /> Image
+                                </CustomButton>
+                                <CustomButton
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => simulateFileUpload("video")}
+                                  className="flex-1 text-xs py-2 flex items-center justify-center"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-3 h-3 mr-1"
+                                  >
+                                    <polygon points="23 7 16 12 23 17 23 7" />
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                  </svg>
+                                  Video
+                                </CustomButton>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Loading states */}
+                      {isGeneratingImage && (
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                          <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-[#EF476F]" />
+                          <p className="text-sm text-gray-700">
+                            {imageGenerationMethod === "automatic"
+                              ? "Generating image based on your campaign..."
+                              : "Generating image based on your description..."}
+                          </p>
+                        </div>
+                      )}
+
+                      {isUploadingFile && (
+                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                          <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-[#EF476F]" />
+                          <p className="text-sm text-gray-700">Uploading your {uploadedFileType}...</p>
+                        </div>
+                      )}
+
+                      {/* Generated or uploaded content preview */}
+                      {(generatedImageUrl || uploadedFileUrl) && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-700">
+                              {imageGenerationMethod === "automatic"
+                                ? "AI-generated image"
+                                : imageGenerationMethod === "custom"
+                                  ? "Custom AI-generated image"
+                                  : uploadedFileType === "image"
+                                    ? "Uploaded image"
+                                    : "Uploaded video"}
+                            </p>
+                            <div className="flex gap-2">
+                              {imageGenerationMethod !== "upload" && (
+                                <CustomButton
+                                  size="sm"
+                                  onClick={() => generateImage(imageGenerationMethod as "automatic" | "custom")}
+                                  className="text-xs py-1 px-2 flex items-center"
+                                >
+                                  <Sparkles className="w-3 h-3 mr-1" /> Regenerate
+                                </CustomButton>
+                              )}
+                              <CustomButton
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setGeneratedImageUrl("")
+                                  setUploadedFileUrl("")
+                                  setImageGenerationMethod(null)
+                                  setUseGeneratedImage(false)
+                                }}
+                                className="text-xs py-1 px-2"
+                              >
+                                Change
+                              </CustomButton>
+                            </div>
+                          </div>
+
+                          {(generatedImageUrl || (uploadedFileUrl && uploadedFileType === "image")) && (
+                            <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                              <Image
+                                src={generatedImageUrl || uploadedFileUrl}
+                                alt="Campaign media"
+                                width={400}
+                                height={300}
+                                className="w-full h-auto"
+                              />
+                            </div>
+                          )}
+
+                          {uploadedFileType === "video" && uploadedFileUrl && (
+                            <div className="bg-gray-50 rounded-xl p-3 flex items-center">
+                              <div className="w-10 h-10 bg-[#EF476F]/10 rounded-full flex items-center justify-center mr-3">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="w-5 h-5 text-[#EF476F]"
+                                >
+                                  <polygon points="23 7 16 12 23 17 23 7" />
+                                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                </svg>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-800">Video file</p>
+                                <p className="text-xs text-gray-500">campaign_video.mp4</p>
+                              </div>
+                              <button className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="w-4 h-4 text-[#EF476F]"
+                                >
+                                  <polygon points="5 3 19 12 5 21 5 3" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+
+                          <div className="flex items-center">
+                            <Checkbox
+                              id="use-media"
+                              checked={useGeneratedImage}
+                              onCheckedChange={(checked) => setUseGeneratedImage(checked === true)}
+                              className="mr-2 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
+                            />
+                            <Label htmlFor="use-media" className="text-sm text-gray-700">
+                              Include this {uploadedFileType === "video" ? "video" : "image"} in the campaign
+                            </Label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* AI Image Generation Dialog */}
+                  <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
+                    <DialogContent className="sm:max-w-md rounded-xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-center">Create AI Image</DialogTitle>
+                        <DialogDescription className="text-center">
+                          How would you like to generate your image?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <CustomButton
+                          onClick={() => {
+                            setShowAIDialog(false)
+                            generateImage("automatic")
+                          }}
+                          className="w-full py-3 flex items-center justify-center"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" /> Generate automatically
+                        </CustomButton>
+                        <p className="text-xs text-center text-gray-500">
+                          We'll create an image based on your campaign type and message
+                        </p>
+
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-gray-300" />
+                          </div>
+                          <div className="relative flex justify-center text-xs">
+                            <span className="bg-white px-2 text-gray-500">OR</span>
+                          </div>
+                        </div>
+
+                        <CustomButton
+                          variant="outline"
+                          onClick={() => {
+                            setShowAIDialog(false)
+                            setCustomPromptDialogOpen(true)
+                          }}
+                          className="w-full py-3 flex items-center justify-center"
+                        >
+                          Write custom prompt
+                        </CustomButton>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Custom Prompt Dialog */}
+                  <Dialog open={customPromptDialogOpen} onOpenChange={setCustomPromptDialogOpen}>
+                    <DialogContent className="sm:max-w-md rounded-xl">
+                      <DialogHeader>
+                        <DialogTitle>Custom Image Prompt</DialogTitle>
+                        <DialogDescription>Describe the image you want to generate</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <Textarea
+                          placeholder="E.g., A delicious pizza with melted cheese and fresh toppings"
+                          value={customImagePrompt}
+                          onChange={(e) => setCustomImagePrompt(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <CustomButton
+                          onClick={() => {
+                            setCustomPromptDialogOpen(false)
+                            if (customImagePrompt.trim()) {
+                              generateImage("custom")
+                            }
+                          }}
+                          className="w-full"
+                          disabled={!customImagePrompt.trim()}
+                        >
+                          Generate Image
+                        </CustomButton>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Call to action */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Primary call to action</Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="CTA text (e.g., Order Now)"
+                          value={primaryCta}
+                          onChange={(e) => setPrimaryCta(e.target.value)}
+                          className="rounded-xl border-gray-200"
+                        />
+                      </div>
+                      <Select value={primaryCtaType} onValueChange={setPrimaryCtaType}>
+                        <SelectTrigger className="w-24 rounded-xl border-gray-200">
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="url">URL</SelectItem>
+                          <SelectItem value="phone">Phone</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      placeholder={primaryCtaType === "url" ? "https://example.com" : "+1 555-123-4567"}
+                      value={primaryCtaValue}
+                      onChange={(e) => setPrimaryCtaValue(e.target.value)}
+                      className="rounded-xl border-gray-200"
+                    />
+                    <p className="text-xs text-gray-500">
+                      A secondary "Opt-out" CTA will be automatically added to comply with regulations.
+                    </p>
+                    <div className="mt-4 space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">Secondary call to action (required)</Label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <Input
+                            value="Unsubscribe"
+                            disabled
+                            className="rounded-xl border-gray-200 bg-gray-50 text-gray-500"
+                          />
+                        </div>
+                        <Select disabled defaultValue="url">
+                          <SelectTrigger className="w-24 rounded-xl border-gray-200 bg-gray-50 text-gray-500">
+                            <SelectValue placeholder="Type">URL</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="url">URL</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        This unsubscribe option is automatically added to comply with messaging regulations and cannot
+                        be modified.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Message preview */}
+                <div className="bg-white rounded-3xl p-6 shadow-xl">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Message Preview</h3>
+                  <div className="bg-gray-100 rounded-xl p-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[280px]">
+                        {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) && (
+                          <div className="mb-2 rounded-md overflow-hidden">
+                            <Image
+                              src={generatedImageUrl || uploadedFileUrl || "/placeholder.svg"}
+                              alt="Campaign image"
+                              width={260}
+                              height={180}
+                              className="w-full h-auto"
+                            />
+                          </div>
+                        )}
+                        <p className="text-sm">{messageText || "Your message will appear here..."}</p>
+                        {primaryCta && (
+                          <div className="mt-2 bg-[#EF476F] text-white text-sm font-medium py-1 px-3 rounded-md inline-block">
+                            {primaryCta}
+                          </div>
+                        )}
+                        <div className="mt-1 bg-gray-200 text-gray-700 text-xs py-1 px-2 rounded-md inline-block">
+                          Unsubscribe
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Schedule & Approve */}
+            {currentStep === 3 && (
+              <div className="space-y-4 pb-24">
+                <div className="bg-white rounded-3xl p-6 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="w-5 h-5 text-[#EF476F]" />
+                    <span className="text-sm font-medium text-[#EF476F]">Schedule your campaign</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Schedule options */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">When to send</Label>
+                      <RadioGroup 
+                        value={scheduleOption} 
+                        onValueChange={(value: any) => setScheduleOption(value as "now" | "later")} 
+                        className="space-y-2"
+                      >
+                        <Label
+                          htmlFor="schedule-now"
+                          className="flex items-center p-3 rounded-xl border border-gray-200 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          <RadioGroupItem value="now" id="schedule-now" className="mr-3 text-[#EF476F]" />
+                          <div>
+                            <p className="font-medium text-gray-800">Send now</p>
+                            <p className="text-xs text-gray-500">Campaign will be sent in approximately 10 minutes</p>
+                          </div>
+                        </Label>
+                        <Label
+                          htmlFor="schedule-later"
+                          className="flex items-center p-3 rounded-xl border border-gray-200 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          <RadioGroupItem value="later" id="schedule-later" className="mr-3 text-[#EF476F]" />
+                          <div>
+                            <p className="font-medium text-gray-800">Schedule for later</p>
+                            <p className="text-xs text-gray-500">Choose a specific date and time</p>
+                          </div>
+                        </Label>
+                      </RadioGroup>
+                    </div>
+
+                    {/* Date and time - conditionally shown */}
+                    {scheduleOption === "later" && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="schedule-date" className="text-sm font-medium text-gray-700">
+                              Date
+                            </Label>
+                            <Input
+                              id="schedule-date"
+                              type="date"
+                              value={scheduleDate}
+                              onChange={(e) => setScheduleDate(e.target.value)}
+                              className="rounded-xl border-gray-200"
+                              min={new Date().toISOString().split("T")[0]}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="schedule-time" className="text-sm font-medium text-gray-700">
+                              Time
+                            </Label>
+                            <Input
+                              id="schedule-time"
+                              type="time"
+                              value={scheduleTime}
+                              onChange={(e) => setScheduleTime(e.target.value)}
+                              className="rounded-xl border-gray-200"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Note: Campaign must be scheduled at least 10 minutes from now.
+                        </p>
+                      </>
+                    )}
+
+                    {/* Campaign summary */}
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                      <h4 className="font-medium text-gray-800">Campaign Summary</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="text-gray-600">Recipients:</div>
+                        <div className="font-medium text-gray-800">{selectedCount} contacts</div>
+
+                        <div className="text-gray-600">Campaign type:</div>
+                        <div className="font-medium text-gray-800">
+                          {campaignTypes.find((t) => t.id === campaignType)?.name || "Not selected"}
+                        </div>
+
+                        <div className="text-gray-600">Language:</div>
+                        <div className="font-medium text-gray-800">
+                          {languages.find((l) => l.code === language)?.name || "English"}
+                        </div>
+
+                        <div className="text-gray-600">Includes media:</div>
+                        <div className="font-medium text-gray-800">
+                          {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) ? "Yes" : "No"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Final approval */}
+                    <div className="bg-[#FFE14D]/20 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="relative flex-shrink-0">
+                          <Image
+                            src={getExcitedMascotImage() || "/placeholder.svg"}
+                            alt="Excited Mascot"
+                            width={50}
+                            height={50}
+                            className="drop-shadow-lg"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">Ready to send your campaign?</p>
+                          <p className="text-sm text-gray-600">
+                            Your campaign will be sent to {selectedCount} contacts at the scheduled time after approval.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Success message (shown after approval) */}
+                {isApproved && (
+                  <motion.div
+                    className="bg-white rounded-3xl p-6 shadow-xl"
+                    animate={{ scale: [1, 1.05, 1], transition: { duration: 0.5 } }}
+                  >
+                    <div className="text-center space-y-3">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
+                        <Check className="w-6 h-6 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-800">Campaign Scheduled!</h3>
+                      <p className="text-sm text-gray-600">
+                        Your campaign has been approved and will be sent at the scheduled time.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Fixed Continue Button for Step 1 */}
+        {currentStep === 0 && (
+          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
+            <CustomButton
+              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+              onClick={handleNext}
+              disabled={selectedCount === 0}
+            >
+              Continue <ArrowRight className="ml-2 w-5 h-5" />
+            </CustomButton>
+          </div>
+        )}
+
+        {/* Fixed Continue Button for Step 2 */}
+        {currentStep === 1 && (
+          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
+            <CustomButton
+              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+              onClick={handleNext}
+              disabled={!campaignType}
+            >
+              Continue <ArrowRight className="ml-2 w-5 h-5" />
+            </CustomButton>
+          </div>
+        )}
+
+        {/* Fixed Continue Button for Step 3 */}
+        {currentStep === 2 && (
+          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
+            <CustomButton
+              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+              onClick={handleNext}
+              disabled={!messageText || !primaryCta || !primaryCtaValue}
+            >
+              Continue <ArrowRight className="ml-2 w-5 h-5" />
+            </CustomButton>
+          </div>
+        )}
+
+        {/* Fixed Schedule Campaign Button for Step 4 */}
+        {!isApproved && currentStep === 3 && (
+          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
+            <CustomButton
+              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+              onClick={handleSubmit}
+              disabled={isSubmitting || (scheduleOption === "later" && (!scheduleDate || !scheduleTime))}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...
+                </>
+              ) : (
+                <>
+                  Schedule Campaign <ArrowRight className="ml-2 w-5 h-5" />
+                </>
+              )}
+            </CustomButton>
+          </div>
+        )}
+      </div>
+    </main>
+  )
+}
