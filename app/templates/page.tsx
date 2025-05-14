@@ -1017,45 +1017,32 @@ export default function TemplatesPage() {
         throw new Error(data.error || 'Errore nel controllo dello stato');
       }
       
-      // Aggiorna lo stato del template nella lista mantenendo la lingua corrente
-      const updateTemplates = (templates: Template[]) => {
+      // Aggiorna lo stato di TUTTI i template in tutte le categorie e lingue
+      const updateAllTemplates = (templates: Template[]) => {
         return templates.map(t => {
-          if (t._id === templateId) {
-            return {
-              ...t,
-              status: data.template.status,
-              rejectionReason: data.template.rejectionReason
-            };
-          }
-          return t;
+          // Aggiorniamo tutti i template indipendentemente dal tipo
+          return {
+            ...t,
+            status: data.template.status,
+            rejectionReason: data.template.rejectionReason
+          };
         });
       };
       
-      if (activeTab === "menu") {
-        setMenuTemplates(prev => {
-          const updated = updateTemplates(prev);
-          // Mantiene la lingua corrente invece di resettarla
-          const languages = Array.from(new Set(updated.map(t => t.language)));
-          if (!languages.includes(currentLanguage)) {
-            setCurrentLanguage(languages[0]);
-          }
-          return updated;
-        });
-      } else {
-        setReviewTemplates(prev => {
-          const updated = updateTemplates(prev);
-          // Mantiene la lingua corrente invece di resettarla
-          const languages = Array.from(new Set(updated.map(t => t.language)));
-          if (!languages.includes(currentLanguage)) {
-            setCurrentLanguage(languages[0]);
-          }
-          return updated;
-        });
-      }
+      // Aggiorna sia i template di menu che quelli di review
+      setMenuTemplates(prev => {
+        const updated = updateAllTemplates(prev);
+        return updated;
+      });
+      
+      setReviewTemplates(prev => {
+        const updated = updateAllTemplates(prev);
+        return updated;
+      });
       
       toast({
         title: "Successo",
-        description: "Stato del template aggiornato",
+        description: "Stato di tutti i template aggiornato",
       });
     } catch (error) {
       console.error('Error checking template status:', error);
@@ -1358,7 +1345,7 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id) => {
+                          onCheckStatus={(id: string) => {
                             // Solo aggiorna lo stato senza aprire il pannello di editing
                             checkTemplateStatus(id);
                           }}
@@ -1500,7 +1487,7 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id) => {
+                          onCheckStatus={(id: string) => {
                             // Solo aggiorna lo stato senza aprire il pannello di editing
                             checkTemplateStatus(id);
                           }}
