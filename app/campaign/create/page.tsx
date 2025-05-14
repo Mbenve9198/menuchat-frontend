@@ -360,7 +360,7 @@ export default function CreateCampaign() {
       })
       
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.error || 'Error generating image')
       }
       
@@ -376,27 +376,13 @@ export default function CreateCampaign() {
     } catch (error) {
       console.error('Error generating AI image:', error)
       toast({
-        title: "Error generating image",
-        description: "Failed to generate image. Using placeholder image.",
-        variant: "destructive",
+        title: "Using placeholder image",
+        description: "We couldn't generate a custom image, so we're using a default one.",
+        variant: "default",
       })
       
       // Fallback a immagine predefinita
-      let fallbackImageUrl = ""
-      if (campaignType === "promo") {
-        fallbackImageUrl = "/restaurant-special-offer.png"
-      } else if (campaignType === "event") {
-        fallbackImageUrl = "/restaurant-event-invitation.png"
-      } else if (campaignType === "update") {
-        fallbackImageUrl = "/restaurant-menu-items.png"
-      } else if (campaignType === "feedback") {
-        fallbackImageUrl = "/restaurant-feedback-survey.png"
-      } else {
-        fallbackImageUrl = "/delicious-restaurant-meal.png"
-      }
-      
-      setGeneratedImageUrl(fallbackImageUrl)
-      setUseGeneratedImage(true)
+      useDefaultImage()
     } finally {
       setIsGeneratingImage(false)
       setIsGeneratingPrompt(false)
@@ -404,6 +390,25 @@ export default function CreateCampaign() {
       setShowAIDialog(false)
       setCustomPromptDialogOpen(false)
     }
+  }
+  
+  // Funzione separata per usare un'immagine predefinita
+  const useDefaultImage = () => {
+    let fallbackImageUrl = ""
+    if (campaignType === "promo") {
+      fallbackImageUrl = "/restaurant-special-offer.png"
+    } else if (campaignType === "event") {
+      fallbackImageUrl = "/restaurant-event-invitation.png"
+    } else if (campaignType === "update") {
+      fallbackImageUrl = "/restaurant-menu-items.png"
+    } else if (campaignType === "feedback") {
+      fallbackImageUrl = "/restaurant-feedback-survey.png"
+    } else {
+      fallbackImageUrl = "/delicious-restaurant-meal.png"
+    }
+    
+    setGeneratedImageUrl(fallbackImageUrl)
+    setUseGeneratedImage(true)
   }
 
   // Add this new function for file uploads
