@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import OpenAI from 'openai'
-
-// Inizializza OpenAI API client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     // Estrai i dati dalla richiesta
     const data = await request.json()
-    const { prompt, messageText, campaignType, restaurantName, model = 'dall-e-3' } = data
+    const { prompt, messageText, campaignType, restaurantName, modelType = 'gpt-image-1' } = data
     
     if (!prompt) {
       return NextResponse.json(
@@ -30,44 +24,38 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Generazione immagine con prompt:', prompt)
-    console.log('Modello utilizzato:', model)
 
-    try {
-      // Genera l'immagine usando OpenAI DALL-E
-      const response = await openai.images.generate({
-        model: model,
-        prompt: prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'vivid',
-      });
-
-      // Estrai l'URL dell'immagine
-      const imageUrl = response.data[0]?.url
-      
-      if (!imageUrl) {
-        throw new Error('Nessuna immagine generata')
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          imageUrl,
-          prompt
-        }
+    // URL dell'API backend
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+    
+    // Chiamata al backend per generare l'immagine
+    const response = await fetch(`${backendUrl}/api/campaign/generate-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
+      },
+      body: JSON.stringify({
+        prompt,
+        messageText,
+        campaignType,
+        restaurantName: restaurantName || 'Restaurant',
+        modelType,
+        restaurantId: session.user.restaurantId
       })
-    } catch (openaiError) {
-      console.error('Errore OpenAI:', openaiError)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Errore del server' }))
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Errore nella generazione dell\'immagine',
-          details: openaiError instanceof Error ? openaiError.message : String(openaiError)
-        },
-        { status: 500 }
+        { success: false, error: errorData.error || 'Errore nella generazione dell\'immagine' },
+        { status: response.status }
       )
     }
+
+    const imageData = await response.json()
+    return NextResponse.json(imageData)
+    
   } catch (error: any) {
     console.error('Errore nella generazione dell\'immagine:', error)
     return NextResponse.json(

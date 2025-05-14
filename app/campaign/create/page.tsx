@@ -355,7 +355,7 @@ export default function CreateCampaign() {
           campaignType,
           messageText,
           restaurantName: "Your Restaurant", // Personalizzabile
-          model: 'dall-e-3' // Usiamo DALL-E 3 per la migliore qualità
+          modelType: 'gpt-image-1' // Usiamo GPT Image 1 per immagini di alta qualità
         })
       })
       
