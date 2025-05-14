@@ -67,11 +67,27 @@ export default function Dashboard() {
       fetchStats()
       fetchActivities()
       fetchRestaurantInfo()
-      fetchTwilioStatus()
+      // Carica lo stato Twilio solo all'avvio, non quando cambiano i filtri
+      if (!twilioStatus) {
+        fetchTwilioStatus()
+      }
     } else if (status === "unauthenticated") {
       router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
     }
   }, [status, session, timeFilter, startDate, endDate])
+
+  // Gestisce l'apertura e chiusura del dialog Twilio
+  useEffect(() => {
+    if (showWhatsappDialog) {
+      // Quando il dialog è aperto, non fare nulla
+      // Questo consente di modificare i dati senza che vengano sovrascritti
+    } else {
+      // Quando il dialog viene chiuso, aggiorna lo stato se necessario
+      if (twilioSuccess) {
+        fetchTwilioStatus()
+      }
+    }
+  }, [showWhatsappDialog])
 
   // Recupera i dati dal backend
   const fetchStats = async () => {
@@ -191,9 +207,6 @@ export default function Dashboard() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
         setDaysActive(diffDays)
       }
-      
-      // Recupera lo stato di Twilio
-      await fetchTwilioStatus()
       
     } catch (err) {
       console.error("Error fetching restaurant info:", err)
