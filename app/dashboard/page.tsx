@@ -274,6 +274,38 @@ export default function Dashboard() {
     }
   }
 
+  // Ripristina il numero WhatsApp predefinito
+  const restoreDefaultWhatsapp = async () => {
+    setIsSavingTwilio(true)
+    setTwilioSuccess(false)
+    setTwilioError(null)
+    
+    try {
+      const response = await fetch('/api/twilio/reset-to-default', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.message || "Failed to reset WhatsApp settings")
+      }
+      
+      setTwilioSuccess(true)
+      setShowWhatsappDialog(false)
+      fetchTwilioStatus() // Ricarica i dati aggiornati
+      
+    } catch (err: any) {
+      console.error("Error resetting WhatsApp settings:", err)
+      setTwilioError(err.message || "Si è verificato un errore durante il ripristino delle impostazioni predefinite")
+    } finally {
+      setIsSavingTwilio(false)
+    }
+  }
+
   // Imposta il saluto in base all'orario
   useEffect(() => {
     const hour = new Date().getHours()
@@ -888,6 +920,23 @@ export default function Dashboard() {
                   />
                 </div>
                 
+                {/* Aggiungi separatore e spiegazione */}
+                {isCustomNumber && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Stai utilizzando un numero WhatsApp personalizzato. Puoi tornare al numero predefinito di MenuChat:
+                    </p>
+                    <CustomButton
+                      className="w-full h-10"
+                      variant="secondary"
+                      onClick={restoreDefaultWhatsapp}
+                      disabled={isSavingTwilio}
+                    >
+                      Ripristina Numero Predefinito
+                    </CustomButton>
+                  </div>
+                )}
+
                 <div className="flex gap-3 pt-2">
                   <CustomButton
                     className="flex-1 h-12"
