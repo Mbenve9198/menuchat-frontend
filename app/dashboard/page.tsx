@@ -227,10 +227,22 @@ export default function Dashboard() {
       }
       
       setTwilioStatus(data.data)
-      setIsCustomNumber(data.data.phoneNumber && data.data.configured)
+      
+      // Controlla se l'utente sta utilizzando un numero personalizzato
+      // Verifica sia il flag 'configured' che il campo 'phoneNumber'
+      const isUsingCustomNumber = data.data.phoneNumber && 
+                                (data.data.configured || 
+                                 (data.data.status && data.data.status.whatsappNumberType === 'custom'))
+      
+      setIsCustomNumber(isUsingCustomNumber)
       
       if (data.data.phoneNumber) {
         setWhatsappNumber(data.data.phoneNumber.replace('whatsapp:', ''))
+      }
+      
+      // Imposta il messaging service ID se disponibile
+      if (data.data.status && data.data.status.messagingServiceSid) {
+        setMessagingServiceId(data.data.status.messagingServiceSid)
       }
       
     } catch (err) {
