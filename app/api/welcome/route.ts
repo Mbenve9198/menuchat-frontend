@@ -14,13 +14,52 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Verifica che i dettagli del ristorante siano completi
+    if (!body.restaurantDetails || !body.restaurantDetails.name) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Restaurant details are required' 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Assicura che i campi necessari siano presenti nei dettagli del ristorante
+    if (!body.restaurantDetails.reviews) {
+      console.warn("Missing reviews in restaurant details, adding placeholder data");
+      body.restaurantDetails.reviews = [];
+    }
+
+    if (!body.restaurantDetails.rating) {
+      console.warn("Missing rating in restaurant details, adding default value");
+      body.restaurantDetails.rating = 4.5; // Valore di default 
+    }
+
+    if (!body.restaurantDetails.ratingsTotal) {
+      console.warn("Missing ratingsTotal in restaurant details, adding default value");
+      body.restaurantDetails.ratingsTotal = 0;
+    }
+
+    if (!body.restaurantDetails.cuisineTypes) {
+      console.warn("Missing cuisineTypes in restaurant details, adding placeholder");
+      body.restaurantDetails.cuisineTypes = ["restaurant"];
+    }
+    
+    // Imposta una lingua predefinita se non specificata
+    if (!body.language) {
+      body.language = "en";
+    }
     
     // Log per debug
     console.log("Welcome request body:", {
       restaurantId: body.restaurantId,
       language: body.language,
       forceLanguage: body.forceLanguage,
-      menuType: body.menuType
+      menuType: body.menuType,
+      restaurantDetailsComplete: !!body.restaurantDetails,
+      hasReviews: Array.isArray(body.restaurantDetails?.reviews) && body.restaurantDetails?.reviews.length > 0
     });
     
     // Inoltra la richiesta al backend
