@@ -816,7 +816,12 @@ export default function Dashboard() {
         {/* Modal di modifica WhatsApp */}
         {showWhatsappDialog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <motion.div 
+              className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold text-gray-800">Impostazioni WhatsApp</h3>
                 <button 
@@ -850,7 +855,7 @@ export default function Dashboard() {
                   </label>
                   <input
                     type="text"
-                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-xl text-sm focus:border-[#1B9AAA] focus:ring-1 focus:ring-[#1B9AAA] outline-none transition"
                     placeholder="+39123456789"
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
@@ -863,26 +868,32 @@ export default function Dashboard() {
                   </label>
                   <input
                     type="text"
-                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    className="w-full p-2 border border-gray-300 rounded-xl text-sm focus:border-[#1B9AAA] focus:ring-1 focus:ring-[#1B9AAA] outline-none transition"
                     placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxx"
                     value={messagingServiceId}
                     onChange={(e) => setMessagingServiceId(e.target.value)}
                   />
                 </div>
                 
-                <button
-                  className={`w-full p-3 rounded-lg text-white font-medium ${
-                    isSavingTwilio 
-                      ? "bg-gray-400 cursor-not-allowed" 
-                      : "bg-[#1B9AAA] hover:bg-[#158a99]"
-                  }`}
-                  onClick={saveCustomTwilioSettings}
-                  disabled={isSavingTwilio}
-                >
-                  {isSavingTwilio ? "Salvataggio..." : "Salva Impostazioni"}
-                </button>
+                <div className="flex gap-3 pt-2">
+                  <CustomButton
+                    className="flex-1 h-12"
+                    onClick={() => setShowWhatsappDialog(false)}
+                    variant="outline"
+                  >
+                    Annulla
+                  </CustomButton>
+                  
+                  <CustomButton
+                    className="flex-1 h-12"
+                    disabled={isSavingTwilio}
+                    onClick={saveCustomTwilioSettings}
+                  >
+                    {isSavingTwilio ? "Salvataggio..." : "Salva Impostazioni"}
+                  </CustomButton>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>
