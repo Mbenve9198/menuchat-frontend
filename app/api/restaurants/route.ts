@@ -9,6 +9,18 @@ export async function POST(request: NextRequest) {
     const formData = await request.json();
     console.log("Received restaurant setup data:", formData);
 
+    // Prepara i dati: assicurarsi che menuPdfUrl sia dentro menuLanguages
+    if (formData.menuPdfUrl && formData.menuLanguages && formData.menuLanguages.length > 0) {
+      // Aggiungi il menuPdfUrl all'interno di ogni oggetto lingua in menuLanguages
+      formData.menuLanguages = formData.menuLanguages.map((lang: any) => ({
+        ...lang,
+        menuPdfUrl: formData.menuPdfUrl,
+        menuPdfName: formData.menuPdfName || ''
+      }));
+      
+      // Mantieni i campi anche a livello principale per compatibilità
+    }
+
     // Invia i dati al backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     console.log("Using backend URL:", backendUrl);
