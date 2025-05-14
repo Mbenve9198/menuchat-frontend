@@ -371,6 +371,15 @@ export default function CreateCampaign() {
       })
       return
     }
+    
+    if (currentStep === 1 && !campaignObjective.trim()) {
+      toast({
+        title: "Campaign details required",
+        description: "Please enter campaign details and objective to continue",
+        variant: "destructive",
+      })
+      return
+    }
 
     if (currentStep === 2 && !messageText) {
       toast({
@@ -381,7 +390,61 @@ export default function CreateCampaign() {
       return
     }
 
-    if (currentStep < steps.length - 1) {
+    // Se passiamo dallo step 2 allo step 3, generiamo contenuti con AI
+    if (currentStep === 1) {
+      // Imposto loading state
+      setIsGeneratingText(true)
+      
+      // Chiamata API per generare contenuti
+      const generateAIContent = async () => {
+        try {
+          const response = await fetch('/api/campaign/content', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              campaignType,
+              language,
+              campaignObjective
+            })
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Error generating content')
+          }
+          
+          const data = await response.json()
+          
+          if (data.success && data.data) {
+            // Imposto i dati generati da Claude
+            setMessageText(data.data.messageText)
+            setPrimaryCta(data.data.cta.text)
+            setPrimaryCtaType(data.data.cta.type)
+            setIsGeneratingText(false)
+          } else {
+            throw new Error('Invalid response format')
+          }
+        } catch (error) {
+          console.error('Error generating AI content:', error)
+          toast({
+            title: "Error generating content",
+            description: "Failed to generate content. Using default template.",
+            variant: "destructive",
+          })
+          
+          // Fallback alla generazione locale
+          generateMessageText(false)
+        }
+      }
+      
+      // Eseguo la generazione e vado al prossimo step
+      generateAIContent().then(() => {
+        setCurrentStep(currentStep + 1)
+        window.scrollTo(0, 0)
+      })
+    } else if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
       window.scrollTo(0, 0)
     }
@@ -1321,7 +1384,7 @@ export default function CreateCampaign() {
             <CustomButton
               className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
               onClick={handleNext}
-              disabled={!campaignType}
+              disabled={!campaignType || !campaignObjective.trim()}
             >
               Continue <ArrowRight className="ml-2 w-5 h-5" />
             </CustomButton>
