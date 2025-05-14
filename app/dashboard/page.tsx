@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Star, ChevronRight, MessageSquare, Edit3, Share2, Calendar, ArrowUp, ChevronDown, RefreshCw } from "lucide-react"
+import { Star, ChevronRight, MessageSquare, Edit3, Share2, Calendar, ArrowUp, ChevronDown, RefreshCw, Phone, XCircle } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -50,6 +50,16 @@ export default function Dashboard() {
   
   // Stato per la sincronizzazione delle recensioni
   const [isSyncingReviews, setIsSyncingReviews] = useState(false)
+  
+  // Stato per le impostazioni Twilio
+  const [twilioStatus, setTwilioStatus] = useState<any>(null)
+  const [showWhatsappDialog, setShowWhatsappDialog] = useState(false)
+  const [whatsappNumber, setWhatsappNumber] = useState("")
+  const [messagingServiceId, setMessagingServiceId] = useState("")
+  const [isSavingTwilio, setIsSavingTwilio] = useState(false)
+  const [twilioSuccess, setTwilioSuccess] = useState(false)
+  const [twilioError, setTwilioError] = useState<string | null>(null)
+  const [isCustomNumber, setIsCustomNumber] = useState(false)
 
   // Recupera i dati dal backend solo quando la sessione è pronta
   useEffect(() => {
@@ -57,6 +67,7 @@ export default function Dashboard() {
       fetchStats()
       fetchActivities()
       fetchRestaurantInfo()
+      fetchTwilioStatus()
     } else if (status === "unauthenticated") {
       router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
     }
@@ -181,8 +192,72 @@ export default function Dashboard() {
         setDaysActive(diffDays)
       }
       
+      // Recupera lo stato di Twilio
+      await fetchTwilioStatus()
+      
     } catch (err) {
       console.error("Error fetching restaurant info:", err)
+    }
+  }
+
+  // Recupera lo stato di Twilio
+  const fetchTwilioStatus = async () => {
+    try {
+      const response = await fetch('/api/twilio/status')
+      if (!response.ok) {
+        throw new Error("Failed to fetch Twilio status")
+      }
+      
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || "Unknown error")
+      }
+      
+      setTwilioStatus(data.data)
+      setIsCustomNumber(data.data.phoneNumber && data.data.configured)
+      
+      if (data.data.phoneNumber) {
+        setWhatsappNumber(data.data.phoneNumber.replace('whatsapp:', ''))
+      }
+      
+    } catch (err) {
+      console.error("Error fetching Twilio status:", err)
+    }
+  }
+  
+  // Salva le impostazioni personalizzate di Twilio
+  const saveCustomTwilioSettings = async () => {
+    setIsSavingTwilio(true)
+    setTwilioSuccess(false)
+    setTwilioError(null)
+    
+    try {
+      const response = await fetch('/api/twilio/custom-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          whatsappNumber,
+          messagingServiceSid: messagingServiceId
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.message || "Failed to update Twilio settings")
+      }
+      
+      setTwilioSuccess(true)
+      setShowWhatsappDialog(false)
+      fetchTwilioStatus() // Ricarica i dati aggiornati
+      
+    } catch (err: any) {
+      console.error("Error saving Twilio settings:", err)
+      setTwilioError(err.message || "Si è verificato un errore durante il salvataggio delle impostazioni Twilio")
+    } finally {
+      setIsSavingTwilio(false)
     }
   }
 
@@ -307,11 +382,14 @@ export default function Dashboard() {
             </div>
 
             <motion.div
-              className="bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md border-2 border-[#EF476F]"
+              className={`bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md border-2 ${isCustomNumber ? "border-green-500" : "border-[#1B9AAA]"} cursor-pointer`}
               whileHover={{ scale: 1.05 }}
+              onClick={() => setShowWhatsappDialog(true)}
             >
-              <Star className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
-              <span className="text-sm font-bold text-[#EF476F]">{getLevelInfo().level}</span>
+              <Phone className={`w-4 h-4 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
+              <span className={`text-sm font-bold ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`}>
+                {isCustomNumber ? "Custom WhatsApp" : "Default WhatsApp"}
+              </span>
             </motion.div>
           </div>
 
@@ -734,6 +812,79 @@ export default function Dashboard() {
             </CustomButton>
           </div>
         </div>
+
+        {/* Modal di modifica WhatsApp */}
+        {showWhatsappDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-gray-800">Impostazioni WhatsApp</h3>
+                <button 
+                  className="text-gray-500 hover:text-gray-700" 
+                  onClick={() => setShowWhatsappDialog(false)}
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="mb-6 text-sm text-gray-600">
+                <p>Per impostazione predefinita, MenuChat utilizza il nostro numero WhatsApp. Puoi configurare il tuo numero personalizzato inserendo le informazioni richieste.</p>
+              </div>
+              
+              {twilioError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+                  {twilioError}
+                </div>
+              )}
+              
+              {twilioSuccess && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">
+                  Impostazioni aggiornate con successo!
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Numero WhatsApp (con prefisso)
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    placeholder="+39123456789"
+                    value={whatsappNumber}
+                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Messaging Service ID
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                    placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={messagingServiceId}
+                    onChange={(e) => setMessagingServiceId(e.target.value)}
+                  />
+                </div>
+                
+                <button
+                  className={`w-full p-3 rounded-lg text-white font-medium ${
+                    isSavingTwilio 
+                      ? "bg-gray-400 cursor-not-allowed" 
+                      : "bg-[#1B9AAA] hover:bg-[#158a99]"
+                  }`}
+                  onClick={saveCustomTwilioSettings}
+                  disabled={isSavingTwilio}
+                >
+                  {isSavingTwilio ? "Salvataggio..." : "Salva Impostazioni"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   )
