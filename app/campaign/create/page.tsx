@@ -123,6 +123,12 @@ export default function CreateCampaign() {
   const [customPromptDialogOpen, setCustomPromptDialogOpen] = useState(false)
   // Add this state variable after the other state declarations
   const [scheduleOption, setScheduleOption] = useState<"now" | "later">("now")
+  // Add a new state for AI content generation loading
+  const [isGeneratingAIContent, setIsGeneratingAIContent] = useState(false)
+  // Add these state variables after the other state declarations
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
+  const [aiGeneratedPrompt, setAiGeneratedPrompt] = useState("")
+  const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false)
 
   // Fetch contacts from API
   useEffect(() => {
@@ -269,9 +275,9 @@ export default function CreateCampaign() {
     )
   }
 
-  // Replace the existing generateImage function with this enhanced version
-  const generateImage = (method: "automatic" | "custom") => {
-    if (!messageText) {
+  // Replace the existing generateImage function with this enhanced version using AI
+  const generateImage = async (method: "automatic" | "custom") => {
+    if (method === "automatic" && !messageText) {
       toast({
         title: "Message text required",
         description: "Please generate or enter message text first",
@@ -281,53 +287,123 @@ export default function CreateCampaign() {
     }
 
     setImageGenerationMethod(method)
-    setIsGeneratingImage(true)
-
-    // Simulate AI image generation
-    setTimeout(() => {
-      // Use a placeholder image based on campaign type or custom prompt
-      let imageUrl = ""
-
-      if (method === "automatic") {
-        if (campaignType === "promo") {
-          imageUrl = "/restaurant-special-offer.png"
-        } else if (campaignType === "event") {
-          imageUrl = "/restaurant-event-invitation.png"
-        } else if (campaignType === "update") {
-          imageUrl = "/restaurant-menu-items.png"
-        } else if (campaignType === "feedback") {
-          imageUrl = "/restaurant-feedback-survey.png"
-        } else {
-          imageUrl = "/delicious-restaurant-meal.png"
+    
+    // Per il metodo automatico, prima generiamo il prompt con Claude
+    if (method === "automatic") {
+      // Prima otteniamo un prompt tramite Claude
+      setIsGeneratingPrompt(true)
+      
+      try {
+        const promptResponse = await fetch('/api/campaign/prompt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            campaignType,
+            messageText,
+            restaurantName: "Your Restaurant", // Questo potrebbe essere personalizzato
+            language
+          })
+        })
+        
+        if (!promptResponse.ok) {
+          const errorData = await promptResponse.json()
+          throw new Error(errorData.error || 'Error generating prompt')
         }
-      } else if (method === "custom") {
-        // For demo purposes, we'll use the same images but pretend they're based on the custom prompt
-        if (customImagePrompt.toLowerCase().includes("offer") || customImagePrompt.toLowerCase().includes("discount")) {
-          imageUrl = "/restaurant-special-offer.png"
-        } else if (
-          customImagePrompt.toLowerCase().includes("event") ||
-          customImagePrompt.toLowerCase().includes("invitation")
-        ) {
-          imageUrl = "/restaurant-event-invitation.png"
-        } else if (
-          customImagePrompt.toLowerCase().includes("menu") ||
-          customImagePrompt.toLowerCase().includes("food")
-        ) {
-          imageUrl = "/restaurant-menu-items.png"
-        } else if (
-          customImagePrompt.toLowerCase().includes("feedback") ||
-          customImagePrompt.toLowerCase().includes("survey")
-        ) {
-          imageUrl = "/restaurant-feedback-survey.png"
+        
+        const promptData = await promptResponse.json()
+        
+        if (promptData.success && promptData.data && promptData.data.prompt) {
+          // Salviamo il prompt generato
+          const generatedPrompt = promptData.data.prompt
+          setAiGeneratedPrompt(generatedPrompt)
+          
+          // Ora generiamo l'immagine con DALL-E
+          await generateImageWithDallE(generatedPrompt)
         } else {
-          imageUrl = "/delicious-restaurant-meal.png"
+          throw new Error('Invalid prompt response format')
         }
+      } catch (error) {
+        console.error('Error generating AI prompt:', error)
+        toast({
+          title: "Error generating prompt",
+          description: "Failed to generate image prompt. Please try manual input.",
+          variant: "destructive",
+        })
+        setIsGeneratingPrompt(false)
+        setCustomPromptDialogOpen(true) // Fallback al prompt manuale
       }
-
-      setGeneratedImageUrl(imageUrl)
+    } else if (method === "custom" && customImagePrompt) {
+      // Per il metodo custom, usiamo direttamente il prompt inserito dall'utente
+      await generateImageWithDallE(customImagePrompt)
+    }
+  }
+  
+  // Funzione per generare l'immagine con DALL-E
+  const generateImageWithDallE = async (prompt: string) => {
+    setIsGeneratingImage(true)
+    
+    try {
+      const response = await fetch('/api/campaign/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt,
+          campaignType,
+          messageText,
+          restaurantName: "Your Restaurant", // Personalizzabile
+          model: 'dall-e-3' // Usiamo DALL-E 3 per la migliore qualità
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error generating image')
+      }
+      
+      const imageData = await response.json()
+      
+      if (imageData.success && imageData.data && imageData.data.imageUrl) {
+        // Impostiamo l'URL dell'immagine generata
+        setGeneratedImageUrl(imageData.data.imageUrl)
+        setUseGeneratedImage(true)
+      } else {
+        throw new Error('Invalid image response format')
+      }
+    } catch (error) {
+      console.error('Error generating AI image:', error)
+      toast({
+        title: "Error generating image",
+        description: "Failed to generate image. Using placeholder image.",
+        variant: "destructive",
+      })
+      
+      // Fallback a immagine predefinita
+      let fallbackImageUrl = ""
+      if (campaignType === "promo") {
+        fallbackImageUrl = "/restaurant-special-offer.png"
+      } else if (campaignType === "event") {
+        fallbackImageUrl = "/restaurant-event-invitation.png"
+      } else if (campaignType === "update") {
+        fallbackImageUrl = "/restaurant-menu-items.png"
+      } else if (campaignType === "feedback") {
+        fallbackImageUrl = "/restaurant-feedback-survey.png"
+      } else {
+        fallbackImageUrl = "/delicious-restaurant-meal.png"
+      }
+      
+      setGeneratedImageUrl(fallbackImageUrl)
       setUseGeneratedImage(true)
+    } finally {
       setIsGeneratingImage(false)
-    }, 2000)
+      setIsGeneratingPrompt(false)
+      // Chiudi i dialogs
+      setShowAIDialog(false)
+      setCustomPromptDialogOpen(false)
+    }
   }
 
   // Add this new function for file uploads
@@ -352,7 +428,7 @@ export default function CreateCampaign() {
     }, 1500)
   }
 
-  // Update the handleNext function to validate the new step
+  // Update the handleNext function
   const handleNext = () => {
     if (currentStep === 0 && selectedCount === 0) {
       toast({
@@ -393,7 +469,7 @@ export default function CreateCampaign() {
     // Se passiamo dallo step 2 allo step 3, generiamo contenuti con AI
     if (currentStep === 1) {
       // Imposto loading state
-      setIsGeneratingText(true)
+      setIsGeneratingAIContent(true)
       
       // Chiamata API per generare contenuti
       const generateAIContent = async () => {
@@ -436,6 +512,8 @@ export default function CreateCampaign() {
           
           // Fallback alla generazione locale
           generateMessageText(false)
+        } finally {
+          setIsGeneratingAIContent(false)
         }
       }
       
@@ -565,6 +643,42 @@ export default function CreateCampaign() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
+
+      {/* AI Content Generation Loading Overlay */}
+      {isGeneratingAIContent && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-white/70 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center max-w-md mx-4">
+            <Loader2 className="w-16 h-16 text-[#EF476F] animate-spin mb-4" />
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              Creating your campaign content...
+            </h3>
+            <p className="text-gray-600 text-center mb-4">
+              Our AI is crafting a personalized message based on your campaign details. This may take a few moments.
+            </p>
+            <div className="relative w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <motion.div 
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#EF476F] to-[#FF8A9A]"
+                initial={{ width: "0%" }}
+                animate={{ width: "100%" }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity,
+                  ease: "linear" 
+                }}
+              />
+            </div>
+            <div className="mt-6 relative">
+              <Image
+                src={getExcitedMascotImage() || "/placeholder.svg"}
+                alt="AI Working"
+                width={80}
+                height={80}
+                className="drop-shadow-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
         {/* Header */}
@@ -1061,16 +1175,26 @@ export default function CreateCampaign() {
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <CustomButton
-                          onClick={() => {
-                            setShowAIDialog(false)
-                            generateImage("automatic")
-                          }}
+                          onClick={() => generateImage("automatic")}
                           className="w-full py-3 flex items-center justify-center"
+                          disabled={isGeneratingPrompt || isGeneratingImage}
                         >
-                          <Sparkles className="w-4 h-4 mr-2" /> Generate automatically
+                          {isGeneratingPrompt ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating prompt...
+                            </>
+                          ) : isGeneratingImage ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating image...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" /> Generate automatically
+                            </>
+                          )}
                         </CustomButton>
                         <p className="text-xs text-center text-gray-500">
-                          We'll create an image based on your campaign type and message
+                          We'll create an image based on your campaign type and message using AI
                         </p>
 
                         <div className="relative">
@@ -1089,6 +1213,7 @@ export default function CreateCampaign() {
                             setCustomPromptDialogOpen(true)
                           }}
                           className="w-full py-3 flex items-center justify-center"
+                          disabled={isGeneratingPrompt || isGeneratingImage}
                         >
                           Write custom prompt
                         </CustomButton>
@@ -1101,28 +1226,34 @@ export default function CreateCampaign() {
                     <DialogContent className="sm:max-w-md rounded-xl">
                       <DialogHeader>
                         <DialogTitle>Custom Image Prompt</DialogTitle>
-                        <DialogDescription>Describe the image you want to generate</DialogDescription>
+                        <DialogDescription>
+                          Describe the image you want to generate with AI
+                        </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <Textarea
-                          placeholder="E.g., A delicious pizza with melted cheese and fresh toppings"
+                          placeholder="E.g., A delicious pizza with melted cheese and fresh toppings on a wooden table with soft restaurant lighting"
                           value={customImagePrompt}
                           onChange={(e) => setCustomImagePrompt(e.target.value)}
                           className="min-h-[100px]"
                         />
+                        <p className="text-xs text-gray-500">
+                          Be specific and detailed for better results. Avoid text in the image and use high-quality descriptors.
+                        </p>
                       </div>
                       <DialogFooter>
                         <CustomButton
-                          onClick={() => {
-                            setCustomPromptDialogOpen(false)
-                            if (customImagePrompt.trim()) {
-                              generateImage("custom")
-                            }
-                          }}
+                          onClick={() => generateImage("custom")}
                           className="w-full"
-                          disabled={!customImagePrompt.trim()}
+                          disabled={!customImagePrompt.trim() || isGeneratingImage}
                         >
-                          Generate Image
+                          {isGeneratingImage ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating image...
+                            </>
+                          ) : (
+                            <>Generate Image</>
+                          )}
                         </CustomButton>
                       </DialogFooter>
                     </DialogContent>
