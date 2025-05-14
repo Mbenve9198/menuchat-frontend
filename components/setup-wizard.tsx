@@ -307,23 +307,69 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       console.log("Form data being sent:", formData);
 
-      const response = await fetch('/api/restaurants', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+      // Impostiamo un timeout per rilevare se la risposta demora troppo
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Request timeout")), 8000)
+      );
+      
+      // Creazione di un AbortController per gestire il timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Server response error:", errorData);
-        throw new Error(`Failed to save restaurant data: ${errorData.error || 'Unknown error'}`);
+      try {
+        // Race tra la richiesta effettiva e il timeout
+        const response = await Promise.race([
+          fetch('/api/restaurants', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData),
+            signal: controller.signal
+          }),
+          timeoutPromise
+        ]) as Response; // Cast esplicito a Response
+        
+        // Pulisci il timeout una volta ottenuta la risposta
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Server response error:", errorData);
+          throw new Error(`Failed to save restaurant data: ${errorData.error || 'Unknown error'}`);
+        }
+
+        const responseData = await response.json();
+        console.log("Setup success response:", responseData);
+        
+        // Dopo un breve ritardo per permettere all'animazione di completarsi
+        setTimeout(() => {
+          onComplete();
+          // Reindirizza alla dashboard
+          window.location.href = "/dashboard";
+        }, 3000);
+      } catch (fetchError: any) {
+        console.error("Fetch error or timeout:", fetchError);
+        
+        // Se è un timeout o un errore di abort, assumiamo che il setup possa essere stato completato comunque
+        if (fetchError.name === 'AbortError' || fetchError.message === 'Request timeout') {
+          toast({
+            title: "Setup in corso",
+            description: "Il setup potrebbe richiedere più tempo del previsto. Sarai reindirizzato alla dashboard automaticamente.",
+            variant: "default",
+          });
+          
+          // Anche in caso di timeout, dopo un breve ritardo
+          setTimeout(() => {
+            onComplete();
+            // Reindirizza comunque alla dashboard dopo un timeout
+            window.location.href = "/dashboard";
+          }, 5000);
+        } else {
+          // Gestione di altri errori
+          throw fetchError;
+        }
       }
-
-      setTimeout(() => {
-        onComplete();
-      }, 3000);
     } catch (error: any) {
       console.error("Setup error:", error);
       toast({
