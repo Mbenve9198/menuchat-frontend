@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     // Estrai i dati dalla richiesta
     const data = await request.json()
-    const { prompt, messageText, campaignType, restaurantName, modelType = 'gpt-image-1' } = data
+    const { prompt, messageText, campaignType, restaurantName, modelType = 'dall-e-3' } = data
     
     if (!prompt) {
       return NextResponse.json(
