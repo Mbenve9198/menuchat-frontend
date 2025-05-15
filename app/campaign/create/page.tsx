@@ -706,7 +706,8 @@ export default function CreateCampaign() {
           ctaType: primaryCtaType,
           ctaValue: primaryCtaValue,
           useImage: useGeneratedImage,
-          imageUrl: generatedImageUrl || uploadedFileUrl
+          imageUrl: generatedImageUrl || uploadedFileUrl,
+          language: language // Aggiungi la lingua selezionata
         }
       };
 
