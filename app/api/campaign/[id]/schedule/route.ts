@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 
-// POST: Schedula l'invio di una campagna per una data futura
+// POST: Programma l'invio di una campagna
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,7 +19,7 @@ export async function POST(
     // Ottieni l'ID della campagna
     const campaignId = params.id
 
-    // Ottieni dati dalla richiesta
+    // Ottieni i dati dalla richiesta
     const { scheduledDate } = await request.json()
 
     if (!campaignId) {
@@ -36,10 +36,28 @@ export async function POST(
       )
     }
 
+    // Verifica che la data sia nel futuro (almeno 5 minuti dopo)
+    const scheduledTime = new Date(scheduledDate)
+    const minScheduleTime = new Date(Date.now() + 5 * 60 * 1000)
+    
+    if (isNaN(scheduledTime.getTime())) {
+      return NextResponse.json(
+        { success: false, error: 'Formato data non valido' },
+        { status: 400 }
+      )
+    }
+    
+    if (scheduledTime < minScheduleTime) {
+      return NextResponse.json(
+        { success: false, error: 'La data di invio deve essere almeno 5 minuti nel futuro' },
+        { status: 400 }
+      )
+    }
+
     // URL dell'API backend
     const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
     
-    // Invia la richiesta di scheduling al backend
+    // Invia la richiesta di programmazione al backend
     const response = await fetch(`${backendUrl}/api/campaign/${campaignId}/schedule`, {
       method: 'POST',
       headers: {
