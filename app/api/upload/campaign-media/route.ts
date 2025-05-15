@@ -33,21 +33,35 @@ export async function POST(request: NextRequest) {
     
     // Determina il tipo di risorsa basato sul MIME type
     let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image';
+    let fileType = 'image';
+    
     if (file.type.startsWith('video/')) {
       resourceType = 'video';
+      fileType = 'video';
+    } else if (file.type === 'application/pdf') {
+      resourceType = 'raw'; // I PDF vanno caricati come raw in Cloudinary
+      fileType = 'pdf';
     } else if (!file.type.startsWith('image/')) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Il file deve essere un\'immagine o un video' 
+        error: 'Il file deve essere un\'immagine, un video o un PDF' 
       }, { status: 400 });
     }
     
-    // Verifica dimensione massima: 10MB per immagini, 30MB per video
-    const maxSize = resourceType === 'image' ? 10 * 1024 * 1024 : 30 * 1024 * 1024;
+    // Verifica dimensione massima in base al tipo di file
+    let maxSize = 10 * 1024 * 1024; // Default 10MB per immagini
+    
+    if (resourceType === 'video') {
+      maxSize = 30 * 1024 * 1024; // 30MB per video
+    } else if (resourceType === 'raw') { 
+      maxSize = 15 * 1024 * 1024; // 15MB per PDF
+    }
+    
     if (file.size > maxSize) {
+      const sizeInMB = Math.round(maxSize / (1024 * 1024));
       return NextResponse.json({ 
         success: false, 
-        error: `Il file è troppo grande. La dimensione massima è ${resourceType === 'image' ? '10MB' : '30MB'}` 
+        error: `Il file è troppo grande. La dimensione massima è ${sizeInMB}MB` 
       }, { status: 400 });
     }
     
@@ -67,7 +81,7 @@ export async function POST(request: NextRequest) {
     const safeFileName = `campaign-${campaignType}-${Date.now()}.${fileExtension}`;
     
     // Carica il file su Cloudinary
-    console.log('Inizio upload su Cloudinary', { tempFilePath, safeFileName, resourceType });
+    console.log('Inizio upload su Cloudinary', { tempFilePath, safeFileName, resourceType, fileType });
     const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, {
       public_id: safeFileName.replace(`.${fileExtension}`, ''),
       folder: 'campaign-media',
@@ -91,7 +105,7 @@ export async function POST(request: NextRequest) {
         url: mediaUrl,
         originalName: file.name,
         size: file.size,
-        mediaType: resourceType,
+        mediaType: fileType, // Usiamo fileType invece di resourceType per la risposta
         fileName: cloudinaryResponse.public_id,
         publicId: cloudinaryResponse.public_id
       }

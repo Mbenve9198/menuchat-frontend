@@ -46,7 +46,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       contacts: data.contacts || [],
-      countryCodes: data.countryCodes || []
+      countryCodes: data.countryCodes || [],
+      restaurant: data.restaurant || {
+        name: session.user.name || 'Your Business'
+      }
     })
   } catch (error: any) {
     console.error('Errore nel recupero dei contatti:', error)

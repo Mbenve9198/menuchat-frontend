@@ -2,13 +2,13 @@
 
 import React, { useState, useRef, ChangeEvent } from "react"
 import { cn } from "@/lib/utils"
-import { Upload, Image as ImageIcon, Video, X, Loader2 } from "lucide-react"
+import { Upload, Image as ImageIcon, Video, FileText, X, Loader2 } from "lucide-react"
 import { CustomButton } from "./custom-button"
 
 interface MediaUploadProps extends React.HTMLAttributes<HTMLDivElement> {
-  onFileSelect: (fileUrl: string, fileType: "image" | "video") => void
+  onFileSelect: (fileUrl: string, fileType: "image" | "video" | "pdf") => void
   selectedFile: string | null
-  mediaType?: "image" | "video" | "both"
+  mediaType?: "image" | "video" | "pdf" | "both" | "all"
   maxSize?: number // in MB
   campaignType?: string
   label?: string
@@ -18,7 +18,7 @@ interface MediaUploadProps extends React.HTMLAttributes<HTMLDivElement> {
 export function MediaUpload({
   onFileSelect,
   selectedFile,
-  mediaType = "both",
+  mediaType = "all",
   maxSize = 10, // Default 10MB
   campaignType = "",
   label = "Aggiungi media",
@@ -34,7 +34,9 @@ export function MediaUpload({
   const getAcceptString = () => {
     if (mediaType === "image") return "image/*";
     if (mediaType === "video") return "video/*";
-    return "image/*,video/*";
+    if (mediaType === "pdf") return "application/pdf";
+    if (mediaType === "both") return "image/*,video/*";
+    return "image/*,video/*,application/pdf";
   }
 
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +56,7 @@ export function MediaUpload({
     // Check file type
     const isImage = file.type.startsWith('image/')
     const isVideo = file.type.startsWith('video/')
+    const isPdf = file.type === 'application/pdf'
     
     if (mediaType === "image" && !isImage) {
       setError(`Per favore carica solo immagini.`)
@@ -65,13 +68,29 @@ export function MediaUpload({
       return
     }
     
+    if (mediaType === "pdf" && !isPdf) {
+      setError(`Per favore carica solo documenti PDF.`)
+      return
+    }
+    
     if (mediaType === "both" && !isImage && !isVideo) {
       setError(`Per favore carica un'immagine o un video.`)
       return
     }
     
+    if (mediaType === "all" && !isImage && !isVideo && !isPdf) {
+      setError(`Per favore carica un'immagine, un video o un documento PDF.`)
+      return
+    }
+    
     // Check file size - video può essere più grande
-    const actualMaxSize = isVideo ? 30 : maxSize // 30MB per video, maxSize per immagini
+    let actualMaxSize = maxSize
+    if (isVideo) {
+      actualMaxSize = 30 // 30MB per video
+    } else if (isPdf) {
+      actualMaxSize = 15 // 15MB per PDF
+    }
+    
     if (file.size > actualMaxSize * 1024 * 1024) {
       setError(`File troppo grande. La dimensione massima è ${actualMaxSize}MB.`)
       return
@@ -122,7 +141,11 @@ export function MediaUpload({
           setIsUploading(false)
           
           // Call the callback with the uploaded file URL
-          onFileSelect(data.file.url, isImage ? "image" : "video")
+          let fileType: "image" | "video" | "pdf" = "image"
+          if (isVideo) fileType = "video"
+          if (isPdf) fileType = "pdf"
+          
+          onFileSelect(data.file.url, fileType)
         }, 500)
       } else {
         throw new Error('Risposta non valida dal server')
@@ -161,11 +184,21 @@ export function MediaUpload({
   }
 
   const handleRemoveFile = () => {
-    onFileSelect("", mediaType === "both" ? "image" : mediaType)
+    onFileSelect("", mediaType === "all" ? "image" : mediaType === "both" ? "image" : mediaType === "pdf" ? "pdf" : mediaType === "video" ? "video" : "image")
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
+
+  // Helper per determinare che tipo di file è stato caricato
+  const getFileType = (): "image" | "video" | "pdf" => {
+    if (!selectedFile) return "image"
+    if (selectedFile.includes("video")) return "video"
+    if (selectedFile.endsWith(".pdf")) return "pdf"
+    return "image"
+  }
+
+  const fileType = getFileType()
 
   return (
     <div className={cn("w-full", className)} {...props}>
@@ -206,8 +239,10 @@ export function MediaUpload({
         ) : selectedFile ? (
           <div className="flex flex-col items-center">
             <div className="flex items-center mb-2">
-              {mediaType === "video" || (selectedFile && selectedFile.includes("video")) ? (
+              {fileType === "video" ? (
                 <Video className="w-8 h-8 text-green-500 mx-auto" />
+              ) : fileType === "pdf" ? (
+                <FileText className="w-8 h-8 text-green-500 mx-auto" />
               ) : (
                 <ImageIcon className="w-8 h-8 text-green-500 mx-auto" />
               )}
@@ -220,7 +255,11 @@ export function MediaUpload({
               />
             </div>
             <p className="text-sm font-medium text-green-700 mb-1">
-              {mediaType === "video" || (selectedFile && selectedFile.includes("video")) ? "Video caricato" : "Immagine caricata"}
+              {fileType === "video" 
+                ? "Video caricato" 
+                : fileType === "pdf" 
+                  ? "Documento PDF caricato" 
+                  : "Immagine caricata"}
             </p>
           </div>
         ) : (
@@ -229,6 +268,8 @@ export function MediaUpload({
               <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             ) : mediaType === "image" ? (
               <ImageIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            ) : mediaType === "pdf" ? (
+              <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             ) : (
               <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             )}
@@ -240,7 +281,11 @@ export function MediaUpload({
                 ? "Trascina qui un'immagine o clicca per scegliere" 
                 : mediaType === "video" 
                   ? "Trascina qui un video o clicca per scegliere"
-                  : "Trascina qui un'immagine o un video o clicca per scegliere"
+                  : mediaType === "pdf"
+                    ? "Trascina qui un documento PDF o clicca per scegliere"
+                    : mediaType === "both"
+                      ? "Trascina qui un'immagine o un video o clicca per scegliere"
+                      : "Trascina qui un'immagine, un video o un PDF o clicca per scegliere"
               }
             </p>
             <CustomButton 

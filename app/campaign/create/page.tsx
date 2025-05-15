@@ -14,6 +14,8 @@ import {
   Calendar,
   ArrowRight,
   Loader2,
+  FileText,
+  Video,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -115,7 +117,7 @@ export default function CreateCampaign() {
   // Add these new state variables after the existing state declarations
   const [imageGenerationMethod, setImageGenerationMethod] = useState<"automatic" | "custom" | "upload" | null>(null)
   const [customImagePrompt, setCustomImagePrompt] = useState("")
-  const [uploadedFileType, setUploadedFileType] = useState<"image" | "video" | null>(null)
+  const [uploadedFileType, setUploadedFileType] = useState<"image" | "video" | "pdf" | null>(null)
   const [uploadedFileUrl, setUploadedFileUrl] = useState("")
   // Add these state variables after the other state declarations
   const [showAIDialog, setShowAIDialog] = useState(false)
@@ -129,6 +131,8 @@ export default function CreateCampaign() {
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
   const [aiGeneratedPrompt, setAiGeneratedPrompt] = useState("")
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false)
+  // Stato per i dati del ristorante
+  const [restaurant, setRestaurant] = useState<{name?: string} | null>(null)
 
   // Fetch contacts from API
   useEffect(() => {
@@ -153,6 +157,7 @@ export default function CreateCampaign() {
           
           setContacts(contactsWithSelection);
           setCountryCodes(data.countryCodes || []);
+          setRestaurant(data.restaurant);
         } else {
           toast({
             title: "Errore",
@@ -412,12 +417,12 @@ export default function CreateCampaign() {
   }
 
   // Funzione per gestire l'upload di media per la campagna
-  const handleFileUpload = (fileType: "image" | "video") => {
+  const handleFileUpload = (fileType: "image" | "video" | "pdf") => {
     setImageGenerationMethod("upload")
     setUploadedFileType(fileType)
   }
 
-  const handleFileUploaded = (fileUrl: string, fileType: "image" | "video") => {
+  const handleFileUploaded = (fileUrl: string, fileType: "image" | "video" | "pdf") => {
     setUploadedFileUrl(fileUrl)
     setUseGeneratedImage(true)
     setUploadedFileType(fileType)
@@ -999,12 +1004,12 @@ export default function CreateCampaign() {
                             {/* Upload options */}
                             <div className="bg-white rounded-xl border border-gray-200 p-3">
                               <p className="font-medium text-gray-800 mb-2">Upload your own</p>
-                              <div className="flex gap-2">
+                              <div className="grid grid-cols-3 gap-2">
                                 <CustomButton
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleFileUpload("image")}
-                                  className="flex-1 text-xs py-2 flex items-center justify-center"
+                                  className="text-xs py-2 flex items-center justify-center"
                                 >
                                   <ImageIcon className="w-3 h-3 mr-1" /> Image
                                 </CustomButton>
@@ -1012,22 +1017,17 @@ export default function CreateCampaign() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleFileUpload("video")}
-                                  className="flex-1 text-xs py-2 flex items-center justify-center"
+                                  className="text-xs py-2 flex items-center justify-center"
                                 >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    className="w-3 h-3 mr-1"
-                                  >
-                                    <polygon points="23 7 16 12 23 17 23 7" />
-                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                                  </svg>
-                                  Video
+                                  <Video className="w-3 h-3 mr-1" /> Video
+                                </CustomButton>
+                                <CustomButton
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleFileUpload("pdf")}
+                                  className="text-xs py-2 flex items-center justify-center"
+                                >
+                                  <FileText className="w-3 h-3 mr-1" /> PDF
                                 </CustomButton>
                               </div>
                             </div>
@@ -1052,16 +1052,22 @@ export default function CreateCampaign() {
                         <MediaUpload 
                           onFileSelect={handleFileUploaded}
                           selectedFile={uploadedFileUrl}
-                          mediaType={uploadedFileType === "video" ? "video" : "image"}
+                          mediaType={uploadedFileType || "all"}
                           campaignType={campaignType}
-                          maxSize={uploadedFileType === "video" ? 30 : 10}
-                          label={`Carica il tuo ${uploadedFileType === "video" ? "video" : "immagine"}`}
+                          maxSize={uploadedFileType === "video" ? 30 : uploadedFileType === "pdf" ? 15 : 10}
+                          label={`Carica il tuo ${
+                            uploadedFileType === "video" 
+                              ? "video" 
+                              : uploadedFileType === "pdf" 
+                                ? "documento PDF" 
+                                : "immagine"
+                          }`}
                         />
                       )}
 
-                      {/* Generated or uploaded content preview */}
-                      {(generatedImageUrl || uploadedFileUrl) && (
-                        <div className="space-y-2">
+                      {/* Preview and media settings */}
+                      {generatedImageUrl || uploadedFileUrl ? (
+                        <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium text-gray-700">
                               {imageGenerationMethod === "automatic"
@@ -1070,18 +1076,12 @@ export default function CreateCampaign() {
                                   ? "Custom AI-generated image"
                                   : uploadedFileType === "image"
                                     ? "Uploaded image"
-                                    : "Uploaded video"}
+                                    : uploadedFileType === "pdf"
+                                      ? "Uploaded PDF"
+                                      : "Uploaded video"}
                             </p>
-                            <div className="flex gap-2">
-                              {imageGenerationMethod !== "upload" && (
-                                <CustomButton
-                                  size="sm"
-                                  onClick={() => generateImage(imageGenerationMethod as "automatic" | "custom")}
-                                  className="text-xs py-1 px-2 flex items-center"
-                                >
-                                  <Sparkles className="w-3 h-3 mr-1" /> Regenerate
-                                </CustomButton>
-                              )}
+                            
+                            <div className="flex items-center gap-2">
                               <CustomButton
                                 variant="outline"
                                 size="sm"
@@ -1097,11 +1097,50 @@ export default function CreateCampaign() {
                               </CustomButton>
                             </div>
                           </div>
-
-                          {(generatedImageUrl || (uploadedFileUrl && uploadedFileType === "image")) && (
+                          
+                          {/* Media preview */}
+                          {uploadedFileType === "pdf" && uploadedFileUrl && (
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-[#EF476F]/10 rounded-full flex items-center justify-center mr-3">
+                                  <FileText className="w-5 h-5 text-[#EF476F]" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-800">PDF Document</p>
+                                  <p className="text-xs text-gray-500">
+                                    <a 
+                                      href={uploadedFileUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-500 hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      Open PDF
+                                    </a>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {uploadedFileType === "video" && uploadedFileUrl && (
+                            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                              <div className="flex items-center">
+                                <div className="w-10 h-10 bg-[#EF476F]/10 rounded-full flex items-center justify-center mr-3">
+                                  <Video className="w-5 h-5 text-[#EF476F]" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-800">Video File</p>
+                                  <p className="text-xs text-gray-500">Ready to be included in your campaign</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {uploadedFileType === "image" && uploadedFileUrl && (
                             <div className="relative rounded-xl overflow-hidden border border-gray-200">
                               <Image
-                                src={generatedImageUrl || uploadedFileUrl}
+                                src={uploadedFileUrl}
                                 alt="Campaign media"
                                 width={400}
                                 height={300}
@@ -1109,45 +1148,20 @@ export default function CreateCampaign() {
                               />
                             </div>
                           )}
-
-                          {uploadedFileType === "video" && uploadedFileUrl && (
-                            <div className="bg-gray-50 rounded-xl p-3 flex items-center">
-                              <div className="w-10 h-10 bg-[#EF476F]/10 rounded-full flex items-center justify-center mr-3">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="w-5 h-5 text-[#EF476F]"
-                                >
-                                  <polygon points="23 7 16 12 23 17 23 7" />
-                                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                                </svg>
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-800">Video file</p>
-                                <p className="text-xs text-gray-500">campaign_video.mp4</p>
-                              </div>
-                              <button className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="w-4 h-4 text-[#EF476F]"
-                                >
-                                  <polygon points="5 3 19 12 5 21 5 3" />
-                                </svg>
-                              </button>
+                          
+                          {imageGenerationMethod !== "upload" && generatedImageUrl && (
+                            <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                              <Image
+                                src={generatedImageUrl}
+                                alt="Campaign media"
+                                width={400}
+                                height={300}
+                                className="w-full h-auto"
+                              />
                             </div>
                           )}
-
+                          
+                          {/* Media inclusion settings */}
                           <div className="flex items-center">
                             <Checkbox
                               id="use-media"
@@ -1156,11 +1170,11 @@ export default function CreateCampaign() {
                               className="mr-2 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
                             />
                             <Label htmlFor="use-media" className="text-sm text-gray-700">
-                              Include this {uploadedFileType === "video" ? "video" : "image"} in the campaign
+                              Include this {uploadedFileType === "video" ? "video" : uploadedFileType === "pdf" ? "document" : "image"} in the campaign
                             </Label>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
@@ -1320,28 +1334,133 @@ export default function CreateCampaign() {
                 {/* Message preview */}
                 <div className="bg-white rounded-3xl p-6 shadow-xl">
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Message Preview</h3>
-                  <div className="bg-gray-100 rounded-xl p-4">
-                    <div className="flex flex-col gap-3">
-                      <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[280px]">
+                  <div className="bg-[#E5DDD5] bg-opacity-30 rounded-xl p-4">
+                    {/* Header di WhatsApp simulato */}
+                    <div className="bg-[#075E54] py-2 px-3 rounded-t-xl flex items-center">
+                      <div className="h-6 w-6 rounded-full bg-white mr-2"></div>
+                      <span className="text-white text-sm font-medium">
+                        {restaurant?.name || "Your Business"}
+                      </span>
+                    </div>
+                    
+                    {/* Corpo della chat */}
+                    <div className="flex flex-col gap-3 bg-[#ECE5DD] p-3 min-h-[250px] rounded-b-xl">
+                      {/* Messaggio di esempio non letto */}
+                      <div className="self-start max-w-[70%] bg-white rounded-lg p-2 shadow-sm relative pl-3">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#25D366] rounded-l-lg"></div>
+                        <p className="text-xs text-gray-700 mb-1">{restaurant?.name || "Your Business"}</p>
+                        <p className="text-[13px] text-gray-800">Welcome! How can we assist you today?</p>
+                        <div className="mt-1 flex justify-end">
+                          <span className="text-[10px] text-gray-400">11:55</span>
+                        </div>
+                      </div>
+                      
+                      {/* Messaggio della campagna */}
+                      <div className="self-start max-w-[80%] bg-white rounded-lg p-3 shadow-sm relative pl-3">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#25D366] rounded-l-lg"></div>
+                        
+                        {/* Media Header colorato quando c'è un media */}
                         {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) && (
-                          <div className="mb-2 rounded-md overflow-hidden">
-                            <Image
-                              src={generatedImageUrl || uploadedFileUrl || "/placeholder.svg"}
-                              alt="Campaign image"
-                              width={260}
-                              height={180}
-                              className="w-full h-auto"
-                            />
+                          <div className="absolute left-0 right-0 top-0 h-10 bg-[#65CB9B] rounded-t-lg flex items-center px-4">
+                            <span className="text-white text-xs font-medium">Media Messages</span>
                           </div>
                         )}
-                        <p className="text-sm">{messageText || "Your message will appear here..."}</p>
-                        {primaryCta && (
-                          <div className="mt-2 bg-[#EF476F] text-white text-sm font-medium py-1 px-3 rounded-md inline-block">
-                            {primaryCta}
+                        
+                        {/* Media in anteprima: PDF, immagine o video */}
+                        {useGeneratedImage && (
+                          <>
+                            {/* Spazio extra per il Media Header quando necessario */}
+                            {(generatedImageUrl || uploadedFileUrl) && (
+                              <div className="mt-8"></div>
+                            )}
+                            
+                            {/* PDF */}
+                            {uploadedFileType === "pdf" && uploadedFileUrl && (
+                              <div className="mb-3 flex items-center bg-gray-100 p-2 rounded-md">
+                                <FileText className="w-4 h-4 text-gray-600 mr-2" />
+                                <span className="text-xs text-gray-700 truncate max-w-[200px]">
+                                  PDF Document
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Video */}
+                            {uploadedFileType === "video" && uploadedFileUrl && (
+                              <div className="mb-3 rounded-md overflow-hidden">
+                                <div className="bg-gray-900 w-full h-[140px] relative flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="white"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="w-6 h-6"
+                                    >
+                                      <polygon points="5 3 19 12 5 21 5 3" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Immagine */}
+                            {uploadedFileType !== "pdf" && uploadedFileType !== "video" && (generatedImageUrl || uploadedFileUrl) && (
+                              <div className="mb-3 rounded-md overflow-hidden">
+                                <Image
+                                  src={generatedImageUrl || uploadedFileUrl || "/placeholder.svg"}
+                                  alt="Campaign image"
+                                  width={260}
+                                  height={180}
+                                  className="w-full h-auto"
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Testo del messaggio */}
+                        <p className="text-[13px] text-gray-800 whitespace-pre-line">{messageText || "Your message will appear here..."}</p>
+                        
+                        {/* Dati numerici evidenziati in stile WhatsApp */}
+                        {messageText && messageText.includes('%') && (
+                          <div className="mt-1">
+                            <span className="text-[13px] text-[#2196F3] font-medium">98% message</span>{" "}
+                            <span className="text-[13px] text-gray-800">open rate &</span>{" "}
+                            <span className="text-[13px] text-[#2196F3] font-medium">45-60%</span>{" "}
+                            <span className="text-[13px] text-gray-800">click-through rate</span>
                           </div>
                         )}
-                        <div className="mt-1 bg-gray-200 text-gray-700 text-xs py-1 px-2 rounded-md inline-block">
-                          Unsubscribe
+                        
+                        {/* Call-to-action buttons in stile WhatsApp */}
+                        <div className="mt-3 flex flex-col gap-2">
+                          {primaryCta && (
+                            <a 
+                              href="#" 
+                              className="flex items-center justify-center w-full px-3 py-2 bg-white text-[#128C7E] text-[13px] font-medium border border-[#128C7E] rounded-md hover:bg-gray-50"
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              {primaryCta}
+                            </a>
+                          )}
+                          <a 
+                            href="#" 
+                            className="flex items-center justify-center w-full px-3 py-2 bg-white text-gray-600 text-[13px] font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            Unsubscribe
+                          </a>
+                        </div>
+                        
+                        {/* Orario del messaggio con doppia spunta blu */}
+                        <div className="mt-2 flex justify-end items-center gap-1">
+                          <span className="text-[10px] text-gray-400">12:00</span>
+                          <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7.58659 7.70721L14.0401 1.25244L15.1004 2.31348L7.58659 9.82911L2.63269 4.87521L3.69373 3.81418L7.58659 7.70721Z" fill="#53BDEB" />
+                            <path d="M11.4456 1.25244L4.9917 7.70513L2.63232 5.34692L1.57129 6.40795L4.9917 9.82703L12.5067 2.31348L11.4456 1.25244Z" fill="#53BDEB" />
+                          </svg>
                         </div>
                       </div>
                     </div>
