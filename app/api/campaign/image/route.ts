@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 
-// Timeout di 8 secondi per la richiesta fetch
-const FETCH_TIMEOUT = 8000;
+// Timeout di 15 secondi per la richiesta fetch
+const FETCH_TIMEOUT = 15000;
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
     
     try {
+      console.log(`Invio richiesta generazione immagine al backend con timeout di ${FETCH_TIMEOUT}ms`);
+      const startTime = Date.now();
+      
       // Chiamata al backend per generare l'immagine
       const response = await fetch(`${backendUrl}/api/campaign/generate-image`, {
         method: 'POST',
@@ -54,6 +57,9 @@ export async function POST(request: NextRequest) {
         signal: controller.signal
       });
       
+      const elapsedTime = Date.now() - startTime;
+      console.log(`Risposta ricevuta dal backend dopo ${elapsedTime}ms`);
+      
       clearTimeout(timeoutId);
 
       if (!response.ok) {
@@ -62,6 +68,12 @@ export async function POST(request: NextRequest) {
       }
 
       const imageData = await response.json()
+      console.log('Risposta di generazione immagine:', JSON.stringify({
+        success: imageData.success,
+        hasData: !!imageData.data,
+        hasImageUrl: !!(imageData.data && imageData.data.imageUrl)
+      }));
+      
       return NextResponse.json(imageData)
       
     } catch (fetchError: any) {
@@ -69,7 +81,7 @@ export async function POST(request: NextRequest) {
       
       // Se è un errore di abort (timeout), restituisci una risposta di fallback
       if (fetchError.name === 'AbortError') {
-        console.log('La richiesta di generazione immagine è andata in timeout');
+        console.log('La richiesta di generazione immagine è andata in timeout dopo', FETCH_TIMEOUT, 'ms');
         
         // Usa un'immagine di fallback generica
         const fallbackImageUrl = "/placeholder.jpg";
@@ -82,6 +94,8 @@ export async function POST(request: NextRequest) {
           }
         });
       }
+      
+      console.error('Errore nella chiamata fetch:', fetchError.name, fetchError.message);
       
       // Altrimenti propaga l'errore
       throw fetchError;

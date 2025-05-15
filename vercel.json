@@ -13,7 +13,7 @@
   "buildCommand": "next build",
   "functions": {
     "app/api/campaign/image/route.ts": {
-      "maxDuration": 15
+      "maxDuration": 30
     }
   }
 } 
