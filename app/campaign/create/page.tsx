@@ -1334,134 +1334,101 @@ export default function CreateCampaign() {
                 {/* Message preview */}
                 <div className="bg-white rounded-3xl p-6 shadow-xl">
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Message Preview</h3>
-                  <div className="bg-[#E5DDD5] bg-opacity-30 rounded-xl p-4">
-                    {/* Header di WhatsApp simulato */}
-                    <div className="bg-[#075E54] py-2 px-3 rounded-t-xl flex items-center">
-                      <div className="h-6 w-6 rounded-full bg-white mr-2"></div>
-                      <span className="text-white text-sm font-medium">
-                        {restaurant?.name || "Your Business"}
-                      </span>
-                    </div>
-                    
-                    {/* Corpo della chat */}
-                    <div className="flex flex-col gap-3 bg-[#ECE5DD] p-3 min-h-[250px] rounded-b-xl">
-                      {/* Messaggio di esempio non letto */}
-                      <div className="self-start max-w-[70%] bg-white rounded-lg p-2 shadow-sm relative pl-3">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#25D366] rounded-l-lg"></div>
-                        <p className="text-xs text-gray-700 mb-1">{restaurant?.name || "Your Business"}</p>
-                        <p className="text-[13px] text-gray-800">Welcome! How can we assist you today?</p>
-                        <div className="mt-1 flex justify-end">
-                          <span className="text-[10px] text-gray-400">11:55</span>
+                  <div className="bg-white rounded-xl p-4">
+                    {/* Bolla del messaggio semplificata */}
+                    <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 relative max-w-[90%]">
+                      {/* Media Header colorato quando c'è un media */}
+                      {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) && (
+                        <div className="absolute left-0 right-0 top-0 h-10 bg-[#65CB9B] rounded-t-lg flex items-center px-4">
+                          <span className="text-white text-xs font-medium">Media Messages</span>
                         </div>
-                      </div>
+                      )}
                       
-                      {/* Messaggio della campagna */}
-                      <div className="self-start max-w-[80%] bg-white rounded-lg p-3 shadow-sm relative pl-3">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#25D366] rounded-l-lg"></div>
-                        
-                        {/* Media Header colorato quando c'è un media */}
-                        {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) && (
-                          <div className="absolute left-0 right-0 top-0 h-10 bg-[#65CB9B] rounded-t-lg flex items-center px-4">
-                            <span className="text-white text-xs font-medium">Media Messages</span>
-                          </div>
-                        )}
-                        
-                        {/* Media in anteprima: PDF, immagine o video */}
-                        {useGeneratedImage && (
-                          <>
-                            {/* Spazio extra per il Media Header quando necessario */}
-                            {(generatedImageUrl || uploadedFileUrl) && (
-                              <div className="mt-8"></div>
-                            )}
-                            
-                            {/* PDF */}
-                            {uploadedFileType === "pdf" && uploadedFileUrl && (
-                              <div className="mb-3 flex items-center bg-gray-100 p-2 rounded-md">
-                                <FileText className="w-4 h-4 text-gray-600 mr-2" />
-                                <span className="text-xs text-gray-700 truncate max-w-[200px]">
-                                  PDF Document
-                                </span>
-                              </div>
-                            )}
-                            
-                            {/* Video */}
-                            {uploadedFileType === "video" && uploadedFileUrl && (
-                              <div className="mb-3 rounded-md overflow-hidden">
-                                <div className="bg-gray-900 w-full h-[140px] relative flex items-center justify-center">
-                                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="white"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      className="w-6 h-6"
-                                    >
-                                      <polygon points="5 3 19 12 5 21 5 3" />
-                                    </svg>
-                                  </div>
+                      {/* Media in anteprima: PDF, immagine o video */}
+                      {useGeneratedImage && (
+                        <>
+                          {/* Spazio extra per il Media Header quando necessario */}
+                          {(generatedImageUrl || uploadedFileUrl) && (
+                            <div className="mt-8"></div>
+                          )}
+                          
+                          {/* PDF */}
+                          {uploadedFileType === "pdf" && uploadedFileUrl && (
+                            <div className="mb-3 flex items-center bg-gray-100 p-2 rounded-md">
+                              <FileText className="w-4 h-4 text-gray-600 mr-2" />
+                              <span className="text-xs text-gray-700 truncate max-w-[200px]">
+                                PDF Document
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Video */}
+                          {uploadedFileType === "video" && uploadedFileUrl && (
+                            <div className="mb-3 rounded-md overflow-hidden">
+                              <div className="bg-gray-900 w-full h-[140px] relative flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-6 h-6"
+                                  >
+                                    <polygon points="5 3 19 12 5 21 5 3" />
+                                  </svg>
                                 </div>
                               </div>
-                            )}
-                            
-                            {/* Immagine */}
-                            {uploadedFileType !== "pdf" && uploadedFileType !== "video" && (generatedImageUrl || uploadedFileUrl) && (
-                              <div className="mb-3 rounded-md overflow-hidden">
-                                <Image
-                                  src={generatedImageUrl || uploadedFileUrl || "/placeholder.svg"}
-                                  alt="Campaign image"
-                                  width={260}
-                                  height={180}
-                                  className="w-full h-auto"
-                                />
-                              </div>
-                            )}
-                          </>
-                        )}
-                        
-                        {/* Testo del messaggio */}
-                        <p className="text-[13px] text-gray-800 whitespace-pre-line">{messageText || "Your message will appear here..."}</p>
-                        
-                        {/* Dati numerici evidenziati in stile WhatsApp */}
-                        {messageText && messageText.includes('%') && (
-                          <div className="mt-1">
-                            <span className="text-[13px] text-[#2196F3] font-medium">98% message</span>{" "}
-                            <span className="text-[13px] text-gray-800">open rate &</span>{" "}
-                            <span className="text-[13px] text-[#2196F3] font-medium">45-60%</span>{" "}
-                            <span className="text-[13px] text-gray-800">click-through rate</span>
-                          </div>
-                        )}
-                        
-                        {/* Call-to-action buttons in stile WhatsApp */}
-                        <div className="mt-3 flex flex-col gap-2">
-                          {primaryCta && (
-                            <a 
-                              href="#" 
-                              className="flex items-center justify-center w-full px-3 py-2 bg-white text-[#128C7E] text-[13px] font-medium border border-[#128C7E] rounded-md hover:bg-gray-50"
-                              onClick={(e) => e.preventDefault()}
-                            >
-                              {primaryCta}
-                            </a>
+                            </div>
                           )}
+                          
+                          {/* Immagine */}
+                          {uploadedFileType !== "pdf" && uploadedFileType !== "video" && (generatedImageUrl || uploadedFileUrl) && (
+                            <div className="mb-3 rounded-md overflow-hidden">
+                              <Image
+                                src={generatedImageUrl || uploadedFileUrl || "/placeholder.svg"}
+                                alt="Campaign image"
+                                width={260}
+                                height={180}
+                                className="w-full h-auto"
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {/* Testo del messaggio */}
+                      <p className="text-sm text-gray-800 whitespace-pre-line">{messageText || "Your message will appear here..."}</p>
+                      
+                      {/* Call-to-action buttons in stile WhatsApp */}
+                      <div className="mt-3 flex flex-col gap-2">
+                        {primaryCta && (
                           <a 
                             href="#" 
-                            className="flex items-center justify-center w-full px-3 py-2 bg-white text-gray-600 text-[13px] font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+                            className="flex items-center justify-center w-full px-3 py-2 bg-white text-[#128C7E] text-sm font-medium border border-[#128C7E] rounded-md hover:bg-gray-50"
                             onClick={(e) => e.preventDefault()}
                           >
-                            Unsubscribe
+                            {primaryCta}
                           </a>
-                        </div>
-                        
-                        {/* Orario del messaggio con doppia spunta blu */}
-                        <div className="mt-2 flex justify-end items-center gap-1">
-                          <span className="text-[10px] text-gray-400">12:00</span>
-                          <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M7.58659 7.70721L14.0401 1.25244L15.1004 2.31348L7.58659 9.82911L2.63269 4.87521L3.69373 3.81418L7.58659 7.70721Z" fill="#53BDEB" />
-                            <path d="M11.4456 1.25244L4.9917 7.70513L2.63232 5.34692L1.57129 6.40795L4.9917 9.82703L12.5067 2.31348L11.4456 1.25244Z" fill="#53BDEB" />
-                          </svg>
-                        </div>
+                        )}
+                        <a 
+                          href="#" 
+                          className="flex items-center justify-center w-full px-3 py-2 bg-white text-gray-600 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          Unsubscribe
+                        </a>
+                      </div>
+                      
+                      {/* Orario del messaggio con doppia spunta blu */}
+                      <div className="mt-2 flex justify-end items-center gap-1">
+                        <span className="text-xs text-gray-400">12:00</span>
+                        <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M7.58659 7.70721L14.0401 1.25244L15.1004 2.31348L7.58659 9.82911L2.63269 4.87521L3.69373 3.81418L7.58659 7.70721Z" fill="#53BDEB" />
+                          <path d="M11.4456 1.25244L4.9917 7.70513L2.63232 5.34692L1.57129 6.40795L4.9917 9.82703L12.5067 2.31348L11.4456 1.25244Z" fill="#53BDEB" />
+                        </svg>
                       </div>
                     </div>
                   </div>
