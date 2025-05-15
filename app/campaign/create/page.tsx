@@ -735,34 +735,61 @@ export default function CreateCampaign() {
         templateCategory = "UTILITY";
       }
       
-      // Invia il template per approvazione (non aspettiamo la risposta)
+      // 2. Invia il template per approvazione e attendi la risposta
       setIsSubmittingTemplate(true);
       setTemplateApprovalStatus("pending");
       
-      fetch(`/api/campaign/${campaignResult.data._id}/submit-template`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ category: templateCategory })
-      }).catch(error => {
-        console.error("Error submitting template:", error);
-      });
+      try {
+        console.log("Invio template a Twilio per approvazione...");
+        const submitResponse = await fetch(`/api/campaign/${campaignResult.data._id}/submit-template`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ category: templateCategory })
+        });
+        
+        if (!submitResponse.ok) {
+          const submitErrorData = await submitResponse.json();
+          console.error("Errore nell'invio del template a Twilio:", submitErrorData);
+          // Continuiamo comunque con lo scheduling
+        } else {
+          const submitData = await submitResponse.json();
+          console.log("Template inviato con successo a Twilio:", submitData);
+        }
+      } catch (submitError) {
+        console.error("Errore nell'invio del template a Twilio:", submitError);
+        // Continuiamo comunque con lo scheduling
+      }
       
-      // Programma l'invio della campagna (non aspettiamo la risposta)
+      // 3. Programma l'invio della campagna
       const scheduledDate = scheduleOption === "now" 
         ? new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minuti da ora
         : new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
       
-      fetch(`/api/campaign/${campaignResult.data._id}/schedule`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ scheduledDate })
-      }).catch(error => {
-        console.error("Error scheduling campaign:", error);
-      });
+      console.log("Programmazione invio campagna per:", scheduledDate);
+      
+      try {
+        const scheduleResponse = await fetch(`/api/campaign/${campaignResult.data._id}/schedule`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ scheduledDate })
+        });
+        
+        if (!scheduleResponse.ok) {
+          const scheduleErrorData = await scheduleResponse.json();
+          console.error("Errore nella programmazione della campagna:", scheduleErrorData);
+          // Mostriamo comunque un messaggio di successo per l'invio della campagna
+        } else {
+          const scheduleData = await scheduleResponse.json();
+          console.log("Campagna programmata con successo:", scheduleData);
+        }
+      } catch (scheduleError) {
+        console.error("Errore nella programmazione della campagna:", scheduleError);
+        // Mostriamo comunque un messaggio di successo per l'invio della campagna
+      }
       
       // Mostra il messaggio di successo
       setIsSubmitting(false);
