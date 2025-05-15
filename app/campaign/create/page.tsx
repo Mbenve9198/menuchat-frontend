@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
+import { MediaUpload } from "@/components/ui/media-upload"
 // Rimuoviamo l'import del servizio
 // import { campaignService } from "@/lib/campaign-service"
 
@@ -114,7 +115,6 @@ export default function CreateCampaign() {
   // Add these new state variables after the existing state declarations
   const [imageGenerationMethod, setImageGenerationMethod] = useState<"automatic" | "custom" | "upload" | null>(null)
   const [customImagePrompt, setCustomImagePrompt] = useState("")
-  const [isUploadingFile, setIsUploadingFile] = useState(false)
   const [uploadedFileType, setUploadedFileType] = useState<"image" | "video" | null>(null)
   const [uploadedFileUrl, setUploadedFileUrl] = useState("")
   // Add these state variables after the other state declarations
@@ -411,26 +411,16 @@ export default function CreateCampaign() {
     setUseGeneratedImage(true)
   }
 
-  // Add this new function for file uploads
-  const simulateFileUpload = (fileType: "image" | "video") => {
+  // Funzione per gestire l'upload di media per la campagna
+  const handleFileUpload = (fileType: "image" | "video") => {
     setImageGenerationMethod("upload")
     setUploadedFileType(fileType)
-    setIsUploadingFile(true)
+  }
 
-    // Simulate file upload
-    setTimeout(() => {
-      let fileUrl = ""
-
-      if (fileType === "image") {
-        fileUrl = "/delicious-restaurant-meal.png" // Placeholder for uploaded image
-      } else if (fileType === "video") {
-        fileUrl = "#" // Placeholder for uploaded video
-      }
-
-      setUploadedFileUrl(fileUrl)
-      setUseGeneratedImage(true)
-      setIsUploadingFile(false)
-    }, 1500)
+  const handleFileUploaded = (fileUrl: string, fileType: "image" | "video") => {
+    setUploadedFileUrl(fileUrl)
+    setUseGeneratedImage(true)
+    setUploadedFileType(fileType)
   }
 
   // Update the handleNext function
@@ -989,7 +979,7 @@ export default function CreateCampaign() {
                       </div>
 
                       {/* Image generation methods */}
-                      {!generatedImageUrl && !uploadedFileUrl && !isGeneratingImage && !isUploadingFile && (
+                      {!generatedImageUrl && !uploadedFileUrl && !isGeneratingImage && (
                         <div className="bg-gray-50 rounded-xl p-4">
                           <p className="text-sm text-gray-700 mb-3">Choose how to add media to your campaign:</p>
 
@@ -1013,7 +1003,7 @@ export default function CreateCampaign() {
                                 <CustomButton
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => simulateFileUpload("image")}
+                                  onClick={() => handleFileUpload("image")}
                                   className="flex-1 text-xs py-2 flex items-center justify-center"
                                 >
                                   <ImageIcon className="w-3 h-3 mr-1" /> Image
@@ -1021,7 +1011,7 @@ export default function CreateCampaign() {
                                 <CustomButton
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => simulateFileUpload("video")}
+                                  onClick={() => handleFileUpload("video")}
                                   className="flex-1 text-xs py-2 flex items-center justify-center"
                                 >
                                   <svg
@@ -1057,11 +1047,16 @@ export default function CreateCampaign() {
                         </div>
                       )}
 
-                      {isUploadingFile && (
-                        <div className="bg-gray-50 rounded-xl p-4 text-center">
-                          <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-[#EF476F]" />
-                          <p className="text-sm text-gray-700">Uploading your {uploadedFileType}...</p>
-                        </div>
+                      {/* MediaUpload component */}
+                      {imageGenerationMethod === "upload" && !uploadedFileUrl && (
+                        <MediaUpload 
+                          onFileSelect={handleFileUploaded}
+                          selectedFile={uploadedFileUrl}
+                          mediaType={uploadedFileType === "video" ? "video" : "image"}
+                          campaignType={campaignType}
+                          maxSize={uploadedFileType === "video" ? 30 : 10}
+                          label={`Carica il tuo ${uploadedFileType === "video" ? "video" : "immagine"}`}
+                        />
                       )}
 
                       {/* Generated or uploaded content preview */}
