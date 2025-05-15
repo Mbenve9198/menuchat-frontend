@@ -16,6 +16,7 @@ import {
   Loader2,
   FileText,
   Video,
+  RefreshCw,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -197,7 +198,7 @@ export default function CreateCampaign() {
   // Generate content when moving to step 3
   useEffect(() => {
     if (currentStep === 2 && !messageText) {
-      generateMessageText(false)
+      regenerateWithAI()
     }
   }, [currentStep])
 
@@ -277,6 +278,100 @@ export default function CreateCampaign() {
         setIsGeneratingText(false)
       },
       showLoading ? 1500 : 0,
+    )
+  }
+
+  // Funzione per rigenerare il testo del messaggio con AI
+  const regenerateWithAI = async () => {
+    setIsGeneratingText(true)
+    
+    try {
+      const response = await fetch('/api/campaign/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          campaignType,
+          language,
+          campaignObjective
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error regenerating content')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.data) {
+        setMessageText(data.data.messageText)
+        setPrimaryCta(data.data.cta.text || primaryCta)
+        setPrimaryCtaType(data.data.cta.type || primaryCtaType)
+        
+        toast({
+          title: "Message regenerated",
+          description: "New content has been created for your campaign.",
+        });
+      } else {
+        throw new Error('Invalid response format')
+      }
+    } catch (error) {
+      console.error('Error regenerating AI content:', error)
+      toast({
+        title: "Error regenerating content",
+        description: "Failed to regenerate content. Please try again later.",
+        variant: "destructive",
+      })
+      
+      // Fallback alla generazione locale se necessario
+      generateMessageTextFallback()
+    } finally {
+      setIsGeneratingText(false)
+    }
+  }
+  
+  // Funzione fallback per il caso in cui la chiamata API fallisca
+  const generateMessageTextFallback = () => {
+    // Questa è la vecchia funzione generateMessageText rinominata
+    let generatedText = ""
+
+    // Use the campaign objective to personalize the message if provided
+    const objective = campaignObjective.trim()
+    const hasObjective = objective.length > 0
+
+    if (campaignType === "promo") {
+      generatedText = hasObjective
+        ? `🌟 Special Offer! ${objective.includes("discount") ? objective : "Enjoy 20% off your next order this weekend."} Use code TASTY20 at checkout. Limited time only!`
+        : "🌟 Special Offer! Enjoy 20% off your next order this weekend. Use code TASTY20 at checkout. Limited time only!"
+    } else if (campaignType === "event") {
+      generatedText = hasObjective
+        ? `🎉 You're invited! ${objective.includes("event") ? objective : "Join us for our special tasting event this Friday at 7PM."} Reserve your spot now!`
+        : "🎉 You're invited! Join us for our special tasting event this Friday at 7PM. Reserve your spot now!"
+    } else if (campaignType === "update") {
+      generatedText = hasObjective
+        ? `🍽️ ${objective.includes("menu") ? objective : "Our menu just got better! Check out our 5 new seasonal dishes, available now."} Which one will be your favorite?`
+        : "🍽️ Our menu just got better! Check out our 5 new seasonal dishes, available now. Which one will be your favorite?"
+    } else if (campaignType === "feedback") {
+      generatedText = hasObjective
+        ? `👋 ${objective.includes("feedback") ? objective : "We value your opinion! How was your recent experience with us?"} Take our quick 1-minute survey and get a free dessert on your next visit!`
+        : "👋 We value your opinion! How was your recent experience with us? Take our quick 1-minute survey and get a free dessert on your next visit!"
+    } else {
+      generatedText = hasObjective
+        ? `Hello from Pizza Palace! ${objective}`
+        : "Hello from Pizza Palace! We miss you and would love to see you again soon. Check out what's new on our menu!"
+    }
+
+    setMessageText(generatedText)
+    setPrimaryCta(
+      campaignType === "promo"
+        ? "Order Now"
+        : campaignType === "event"
+          ? "Reserve a Spot"
+          : campaignType === "update"
+            ? "View Menu"
+            : "Take Survey",
     )
   }
 
@@ -511,7 +606,7 @@ export default function CreateCampaign() {
           })
           
           // Fallback alla generazione locale
-          generateMessageText(false)
+          generateMessageTextFallback()
         } finally {
           setIsGeneratingAIContent(false)
         }
@@ -953,7 +1048,7 @@ export default function CreateCampaign() {
                         </Label>
                         <CustomButton
                           size="sm"
-                          onClick={() => generateMessageText(true)}
+                          onClick={regenerateWithAI}
                           className="text-xs py-1 px-3 flex items-center"
                           disabled={isGeneratingText}
                         >
@@ -1337,20 +1432,39 @@ export default function CreateCampaign() {
                   <div className="bg-white rounded-xl p-4">
                     {/* Bolla del messaggio semplificata */}
                     <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 relative max-w-[90%]">
-                      {/* Media Header colorato quando c'è un media */}
-                      {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) && (
-                        <div className="absolute left-0 right-0 top-0 h-10 bg-[#65CB9B] rounded-t-lg flex items-center px-4">
-                          <span className="text-white text-xs font-medium">Media Messages</span>
+                      {/* Header per indicare generazione AI */}
+                      <div className="absolute top-0 left-0 right-0 px-4 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-medium rounded-t-xl flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Sparkles className="w-3 h-3 mr-1.5" /> AI Generated
                         </div>
-                      )}
+                        <CustomButton
+                          size="sm"
+                          variant="ghost"
+                          onClick={regenerateWithAI}
+                          className="text-white hover:bg-white/20 py-0.5 px-1.5 h-auto"
+                          disabled={isGeneratingText}
+                        >
+                          {isGeneratingText ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-3 h-3" />
+                          )}
+                        </CustomButton>
+                      </div>
+                      
+                      {/* Compensazione per l'header AI */}
+                      <div className="mt-6"></div>
                       
                       {/* Media in anteprima: PDF, immagine o video */}
-                      {useGeneratedImage && (
+                      {useGeneratedImage && (generatedImageUrl || uploadedFileUrl) && (
                         <>
-                          {/* Spazio extra per il Media Header quando necessario */}
-                          {(generatedImageUrl || uploadedFileUrl) && (
-                            <div className="mt-8"></div>
-                          )}
+                          {/* Media Header colorato quando c'è un media */}
+                          <div className="absolute left-0 right-0 top-[1.5rem] h-7 bg-[#65CB9B] rounded-t-none text-white text-xs font-medium flex items-center px-4">
+                            Media Messages
+                          </div>
+                          
+                          {/* Spazio extra per entrambi gli header */}
+                          <div className="mt-8"></div>
                           
                           {/* PDF */}
                           {uploadedFileType === "pdf" && uploadedFileUrl && (
