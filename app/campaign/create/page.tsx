@@ -660,6 +660,30 @@ export default function CreateCampaign() {
     setIsSubmitting(true)
 
     try {
+      // 1. Prima creiamo/otteniamo i template predefiniti
+      const templateResponse = await fetch('/api/campaign-templates/create-defaults', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!templateResponse.ok) {
+        const errorData = await templateResponse.json()
+        throw new Error(errorData.error || 'Errore nella creazione dei template predefiniti')
+      }
+      
+      const templateData = await templateResponse.json()
+      
+      // Seleziona il template appropriato in base al tipo di campagna
+      const matchingTemplate = templateData.data.find(
+        (t: any) => t.campaignType === campaignType
+      )
+      
+      if (!matchingTemplate) {
+        throw new Error('Nessun template trovato per questo tipo di campagna')
+      }
+
       // Get selected contact IDs
       const selectedContactIds = contacts
         .filter(contact => contact.selected)
@@ -669,7 +693,7 @@ export default function CreateCampaign() {
       const campaignData = {
         name: campaignType ? campaignTypes.find(t => t.id === campaignType)?.name || "Campaign" : "Campaign",
         description: campaignObjective,
-        templateId: "TEMPLATE_ID", // Questo dovrebbe essere selezionato o creato prima
+        templateId: matchingTemplate._id, // Usa l'ID reale del template
         scheduledDate: scheduleOption === "now" ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : `${scheduleDate}T${scheduleTime}`,
         targetAudience: {
           selectionMethod: "manual",
@@ -711,102 +735,51 @@ export default function CreateCampaign() {
         templateCategory = "UTILITY";
       }
       
-      // Invia il template per approvazione
+      // Invia il template per approvazione (non aspettiamo la risposta)
       setIsSubmittingTemplate(true);
       setTemplateApprovalStatus("pending");
       
-      try {
-        const approvalResponse = await fetch(`/api/campaign/${campaignResult.data._id}/submit-template`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ category: templateCategory })
-        });
-        
-        if (!approvalResponse.ok) {
-          const errorData = await approvalResponse.json();
-          throw new Error(errorData.error || 'Error submitting template for approval');
-        }
-        
-        const approvalResult = await approvalResponse.json();
-        setTemplateApprovalStatus(approvalResult.data.status);
-        
-        // Se vogliamo inviare immediatamente
-        if (scheduleOption === "now") {
-          // Attendiamo un po' per dare tempo al template di essere approvato
-          // In un'applicazione reale, dovremmo implementare un polling o webhook
-          setTimeout(async () => {
-            try {
-              // Controlla lo stato di approvazione del template
-              const statusResponse = await fetch(`/api/campaign/${campaignResult.data._id}/template-status`);
-              const statusResult = await statusResponse.json();
-              
-              setTemplateApprovalStatus(statusResult.data.status);
-              
-              if (statusResult.data.status === "approved") {
-                // Programma l'invio della campagna
-                await scheduleMessage(campaignResult.data._id);
-              } else if (statusResult.data.status === "rejected") {
-                setTemplateRejectionReason(statusResult.data.rejectionReason || "Template was rejected by WhatsApp");
-                setIsSubmitting(false);
-                setIsSubmittingTemplate(false);
-                
-                toast({
-                  title: "Template rejected",
-                  description: `WhatsApp rejected the template: ${statusResult.data.rejectionReason || "No reason provided"}`,
-                  variant: "destructive",
-                });
-              } else {
-                // Template still pending
-                setIsSubmitting(false);
-                setIsSubmittingTemplate(false);
-                setIsApproved(true); // This will show the success message but with waiting status
-                
-                toast({
-                  title: "Campaign scheduled!",
-                  description: `Your campaign has been created. The template is pending WhatsApp approval.`,
-                });
-              }
-            } catch (error: any) {
-              console.error("Error checking template status:", error);
-              setIsSubmitting(false);
-              setIsSubmittingTemplate(false);
-              
-              toast({
-                title: "Error checking template status",
-                description: error.message || "Failed to check template status",
-                variant: "destructive",
-              });
-            }
-          }, 5000); // Wait 5 seconds before checking status
-        } else {
-          // For later scheduling, we'll just create the campaign and mark as approved
-          setIsSubmitting(false);
-          setIsSubmittingTemplate(false);
-          setIsApproved(true);
-          
-          toast({
-            title: "Campaign created!",
-            description: `Your campaign has been created and will be sent at the scheduled time once the template is approved.`,
-          });
-          
-          // Redirect to dashboard after a delay
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 3000);
-        }
-      } catch (error: any) {
+      fetch(`/api/campaign/${campaignResult.data._id}/submit-template`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ category: templateCategory })
+      }).catch(error => {
         console.error("Error submitting template:", error);
-        setIsSubmitting(false);
-        setIsSubmittingTemplate(false);
-        
-        toast({
-          title: "Error submitting template",
-          description: error.message || "Failed to submit template for approval",
-          variant: "destructive",
-        });
-      }
+      });
+      
+      // Programma l'invio della campagna (non aspettiamo la risposta)
+      const scheduledDate = scheduleOption === "now" 
+        ? new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minuti da ora
+        : new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+      
+      fetch(`/api/campaign/${campaignResult.data._id}/schedule`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ scheduledDate })
+      }).catch(error => {
+        console.error("Error scheduling campaign:", error);
+      });
+      
+      // Mostra il messaggio di successo
+      setIsSubmitting(false);
+      setIsSubmittingTemplate(false);
+      setIsApproved(true);
+      
+      toast({
+        title: "Campagna programmata!",
+        description: `La tua campagna sarà inviata a ${selectedCount} contatti ${
+          scheduleOption === "now" ? "tra circa 10 minuti" : "all'ora programmata"
+        }`,
+      });
+      
+      // Redirect alla dashboard dopo un breve ritardo
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 3000);
     } catch (error: any) {
       console.error("Error creating campaign:", error);
       toast({
