@@ -152,26 +152,29 @@ export function MediaUpload({
           if (isVideo) fileType = "video"
           if (isPdf) fileType = "pdf"
           
-          // Se è un video, assicurati che l'URL contenga l'estensione .webm
-          // e utilizzi il formato WebM che è supportato da WhatsApp
+          // Se è un video, assicurati che l'URL sia in formato MP4 con codec H.264 e audio AAC
+          // come richiesto specificatamente dalla documentazione WhatsApp
           let fileUrl = data.file.url
-          if (isVideo && !fileUrl.includes("f_webm")) {
+          if (isVideo) {
             // Aggiungi la trasformazione solo se non è già presente
             if (fileUrl.includes("/upload/")) {
-              // Utilizza WebM con codec VP9, che è ampiamente supportato
-              fileUrl = fileUrl.replace("/upload/", "/upload/f_webm,vc_vp9/")
+              // Utilizza trasformazioni specifiche per WhatsApp:
+              // f_mp4 - formato MP4
+              // vc_h264 - codec H.264 esplicito
+              // ac_aac - codec audio AAC esplicito
+              fileUrl = fileUrl.replace("/upload/", "/upload/f_mp4,vc_h264,ac_aac/")
             }
             
-            // Assicura che l'estensione finale sia .webm
-            if (!fileUrl.endsWith(".webm")) {
+            // Assicura che l'estensione finale sia .mp4
+            if (!fileUrl.endsWith(".mp4")) {
               const urlParts = fileUrl.split(".")
               if (urlParts.length > 1) {
                 // Sostituisci l'estensione esistente
-                urlParts[urlParts.length - 1] = "webm"
+                urlParts[urlParts.length - 1] = "mp4"
                 fileUrl = urlParts.join(".")
               } else {
                 // Aggiungi l'estensione se non c'è
-                fileUrl += ".webm"
+                fileUrl += ".mp4"
               }
             }
           }
@@ -294,7 +297,7 @@ export function MediaUpload({
             </p>
             {fileType === "video" && (
               <p className="text-xs text-gray-500">
-                Convertito in formato WebM compatibile con WhatsApp
+                Convertito in formato MP4 con codec H.264 e audio AAC
               </p>
             )}
           </div>
@@ -316,7 +319,7 @@ export function MediaUpload({
               {mediaType === "image" 
                 ? "Trascina qui un'immagine o clicca per scegliere" 
                 : mediaType === "video" 
-                  ? "Trascina qui un video o clicca per scegliere (sarà convertito in WebM)"
+                  ? "Trascina qui un video o clicca per scegliere (sarà convertito in MP4 con codec H.264 e audio AAC)"
                   : mediaType === "pdf"
                     ? "Trascina qui un documento PDF o clicca per scegliere"
                     : mediaType === "both"
