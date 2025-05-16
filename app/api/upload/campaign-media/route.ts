@@ -9,11 +9,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || ''
 });
 
-// Configurazione per non utilizzare bodyParser di Next.js
+// Configurazione per non utilizzare bodyParser di Next.js e per estendere il timeout
 export const config = {
   api: {
     bodyParser: false,
+    responseLimit: false,
   },
+  maxDuration: 60, // Impostazione del timeout massimo a 60 secondi (massimo consentito da Vercel)
 };
 
 export async function POST(request: NextRequest) {
@@ -92,27 +94,27 @@ export async function POST(request: NextRequest) {
     if (resourceType === 'video') {
       console.log('Configurando trasformazione video per compatibilità WhatsApp');
       
-      // Aggiungi opzioni di trasformazione specifiche per video WhatsApp
-      uploadOptions.transformation = [
-        {
-          video_codec: 'h264', // Usa codec h264 (ampiamente supportato)
-          audio_codec: 'aac', // Standard audio codec
-          format: 'mp4', // Formato file di output
-          quality: 'auto', // Regola automaticamente la qualità per ottimizzare la dimensione
-          bit_rate: '1500k' // Bitrate moderato per buona qualità
-        }
-      ];
+      // Forziamo la trasformazione durante l'upload iniziale
+      // La compatibilità con WhatsApp è essenziale
+      uploadOptions.resource_type = 'video';
       
-      // Settaggi specifici per garantire compatibilità con i requisiti di WhatsApp
+      // Aggiungiamo esplicitamente i parametri di trasformazione necessari
+      // per garantire la compatibilità con WhatsApp
       uploadOptions.eager = [
         {
-          video_codec: 'h264',
-          audio_codec: 'aac',
-          format: 'mp4'
+          video_codec: 'h264', // Codec H.264 richiesto da WhatsApp
+          audio_codec: 'aac',  // Audio codec AAC compatibile
+          format: 'mp4'        // Formato MP4 supportato
         }
       ];
       
-      console.log('Opzioni trasformazione video:', JSON.stringify(uploadOptions.transformation, null, 2));
+      // Forziamo l'uso del codec video corretto
+      uploadOptions.video_codec = 'h264';
+      
+      // Trasformazione tramite URL string di Cloudinary
+      uploadOptions.raw_transformation = 'vc_h264,ac_aac/f_mp4';
+      
+      console.log('Parametri di trasformazione video:', JSON.stringify(uploadOptions, null, 2));
     }
     
     // Carica il file su Cloudinary
@@ -128,10 +130,30 @@ export async function POST(request: NextRequest) {
     // Per i video, usa l'URL della versione trasformata se disponibile
     let mediaUrl = cloudinaryResponse.secure_url;
     
-    // Se abbiamo eager transformations per i video, usa quella URL
-    if (resourceType === 'video' && cloudinaryResponse.eager && cloudinaryResponse.eager.length > 0) {
-      mediaUrl = cloudinaryResponse.eager[0].secure_url;
-      console.log('Usando URL video trasformato:', mediaUrl);
+    // Se si tratta di un video, assicuriamoci di usare l'URL trasformato
+    if (resourceType === 'video') {
+      console.log('Ottimizzando URL video per WhatsApp');
+      
+      // Se abbiamo una trasformazione eager, usiamo quell'URL
+      if (cloudinaryResponse.eager && cloudinaryResponse.eager.length > 0) {
+        mediaUrl = cloudinaryResponse.eager[0].secure_url;
+        console.log('Usando URL video trasformato da eager:', mediaUrl);
+      } else {
+        // Altrimenti, aggiungiamo manualmente i parametri di trasformazione all'URL
+        // Formato: https://res.cloudinary.com/cloud_name/video/upload/vc_h264,ac_aac/v123456/public_id.mp4
+        const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+        
+        // Costruiamo l'URL con i parametri di trasformazione
+        const urlParts = mediaUrl.split('/upload/');
+        if (urlParts.length === 2) {
+          mediaUrl = `${urlParts[0]}/upload/vc_h264,ac_aac,f_mp4/${urlParts[1]}`;
+          console.log('URL video con parametri di trasformazione:', mediaUrl);
+        } else {
+          // Se non riusciamo a costruire l'URL, usiamo almeno l'URL formato trasformato di Cloudinary
+          mediaUrl = `https://res.cloudinary.com/${cloudName}/video/upload/vc_h264,ac_aac,f_mp4/${cloudinaryResponse.public_id}.mp4`;
+          console.log('URL video costruito manualmente:', mediaUrl);
+        }
+      }
     }
     
     // Restituisci i dati del file caricato

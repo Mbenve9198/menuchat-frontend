@@ -116,39 +116,69 @@ export function MediaUpload({
         formData.append('campaignType', campaignType)
       }
       
-      // Upload using fetch
-      const response = await fetch('/api/upload/campaign-media', {
-        method: 'POST',
-        body: formData
-      })
-      
-      clearInterval(progressInterval)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Errore durante l\'upload')
+      // Per i video, mostriamo un messaggio speciale
+      if (isVideo) {
+        console.log("Caricamento video - potrebbe richiedere più tempo")
       }
       
-      const data = await response.json()
+      // Impostiamo un timeout più lungo per i video
+      const timeoutMs = isVideo ? 60000 : 30000 // 60 secondi per i video, 30 per altri file
       
-      if (data.success && data.file && data.file.url) {
-        // 100% progress completed
-        setUploadingProgress(100)
+      // Upload using fetch with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+      
+      try {
+        // Upload using fetch
+        const response = await fetch('/api/upload/campaign-media', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        })
         
-        // Breve pausa per mostrare il 100% prima di resettare
-        setTimeout(() => {
-          setUploadingProgress(0)
-          setIsUploading(false)
+        clearTimeout(timeoutId)
+        clearInterval(progressInterval)
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Errore durante l\'upload')
+        }
+        
+        const data = await response.json()
+        
+        if (data.success && data.file && data.file.url) {
+          // 100% progress completed
+          setUploadingProgress(100)
           
-          // Call the callback with the uploaded file URL
-          let fileType: "image" | "video" | "pdf" = "image"
-          if (isVideo) fileType = "video"
-          if (isPdf) fileType = "pdf"
-          
-          onFileSelect(data.file.url, fileType)
-        }, 500)
-      } else {
-        throw new Error('Risposta non valida dal server')
+          // Breve pausa per mostrare il 100% prima di resettare
+          setTimeout(() => {
+            setUploadingProgress(0)
+            setIsUploading(false)
+            
+            // Call the callback with the uploaded file URL
+            let fileType: "image" | "video" | "pdf" = "image"
+            if (isVideo) fileType = "video"
+            if (isPdf) fileType = "pdf"
+            
+            onFileSelect(data.file.url, fileType)
+          }, 500)
+        } else {
+          throw new Error('Risposta non valida dal server')
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        clearInterval(progressInterval)
+        
+        if (fetchError.name === 'AbortError') {
+          console.error('Timeout durante l\'upload del file')
+          setError(
+            isVideo ? 
+            'Timeout durante l\'upload del video. I video grandi possono richiedere più tempo. Prova con un video più piccolo o ottimizzato.' :
+            'Timeout durante l\'upload. Riprova con un file più piccolo.'
+          )
+        } else {
+          throw fetchError // Rilanciamo l'errore per il catch esterno
+        }
       }
     } catch (error: any) {
       console.error('Errore durante l\'upload:', error)
@@ -265,7 +295,20 @@ export function MediaUpload({
         ) : (
           <>
             {mediaType === "video" ? (
-              <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <>
+                <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600 mb-2">
+                  {label}
+                </p>
+                <p className="text-xs text-gray-500 mb-3">
+                  Trascina qui un video o clicca per scegliere
+                </p>
+                <div className="bg-blue-50 p-2 rounded-md mb-3">
+                  <p className="text-xs text-blue-700">
+                    <span className="font-medium">Requisiti WhatsApp:</span> I video devono essere in formato MP4 con codec H.264 e audio AAC. Durata consigliata: max 30 secondi. Il sistema convertirà automaticamente il video nel formato richiesto.
+                  </p>
+                </div>
+              </>
             ) : mediaType === "image" ? (
               <ImageIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             ) : mediaType === "pdf" ? (
