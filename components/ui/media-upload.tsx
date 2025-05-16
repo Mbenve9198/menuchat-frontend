@@ -305,7 +305,7 @@ export function MediaUpload({
                 </p>
                 <div className="bg-blue-50 p-2 rounded-md mb-3">
                   <p className="text-xs text-blue-700">
-                    <span className="font-medium">Requisiti WhatsApp:</span> I video devono essere in formato MP4 con codec H.264 e audio AAC. Durata consigliata: max 30 secondi. Il sistema convertirà automaticamente il video nel formato richiesto.
+                    <span className="font-medium">Requisiti WhatsApp:</span> I video devono essere in formato MP4 con codec H.264 e audio AAC. <span className="font-semibold">Max 15MB e 30 secondi</span>. Video più piccoli e corti hanno maggiori probabilità di essere caricati con successo.
                   </p>
                 </div>
               </>

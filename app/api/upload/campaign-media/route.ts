@@ -57,8 +57,16 @@ export async function POST(request: NextRequest) {
       maxSize = 15 * 1024 * 1024; // 15MB per PDF
     }
     
-    if (file.size > maxSize) {
-      const sizeInMB = Math.round(maxSize / (1024 * 1024));
+    let actualMaxSize = maxSize
+    if (resourceType === 'video') {
+      actualMaxSize = 15 * 1024 * 1024; // Limitiamo a 15MB per i video (invece di 30MB) per evitare timeout
+      console.log('Limitazione dimensione video a 15MB per evitare timeout durante la conversione');
+    } else if (resourceType === 'raw') { 
+      actualMaxSize = 15 * 1024 * 1024; // 15MB per PDF
+    }
+    
+    if (file.size > actualMaxSize) {
+      const sizeInMB = Math.round(actualMaxSize / (1024 * 1024));
       return NextResponse.json({ 
         success: false, 
         error: `Il file è troppo grande. La dimensione massima è ${sizeInMB}MB` 
@@ -78,34 +86,67 @@ export async function POST(request: NextRequest) {
     
     // Genera un nome file sicuro
     const fileExtension = file.name.split('.').pop() || '';
-    const safeFileName = `campaign-${campaignType}-${Date.now()}.${fileExtension}`;
+    const safeFileName = `campaign-${campaignType}-${Date.now()}`;
     
-    // Configurazione base per l'upload
-    const uploadOptions = {
-      public_id: safeFileName.replace(`.${fileExtension}`, ''),
-      folder: 'campaign-media',
-      resource_type: resourceType
-    };
+    let mediaUrl;
     
-    // Carica il file su Cloudinary (senza opzioni pesanti)
-    console.log('Inizio upload su Cloudinary', { tempFilePath, safeFileName, resourceType, fileType });
-    const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, uploadOptions);
+    // Upload specializzato per video - con trasformazione immediata
+    if (resourceType === 'video') {
+      console.log('Upload video con trasformazione immediata per WhatsApp');
+      
+      // Per i video, utilizziamo opzioni minime ma essenziali per la conversione
+      const videoUploadOptions = {
+        public_id: safeFileName,
+        folder: 'campaign-media',
+        resource_type: 'video' as 'video',
+        eager: [{ 
+          format: 'mp4', 
+          video_codec: 'h264',
+          audio_codec: 'aac'
+        }],
+        eager_async: false, // Importante: forza la trasformazione sincrona
+        transformation: [{ 
+          video_codec: 'h264',
+          audio_codec: 'aac'
+        }]
+      };
+      
+      // Upload video con trasformazione immediata
+      try {
+        const videoResponse = await cloudinary.uploader.upload(tempFilePath, videoUploadOptions);
+        
+        // Usa l'URL della versione trasformata
+        if (videoResponse.eager && videoResponse.eager.length > 0) {
+          mediaUrl = videoResponse.eager[0].secure_url;
+          console.log('Video convertito con successo:', mediaUrl);
+        } else {
+          // Fallback all'URL originale con parametri di trasformazione
+          mediaUrl = videoResponse.secure_url;
+          const urlParts = mediaUrl.split('/upload/');
+          if (urlParts.length === 2) {
+            mediaUrl = `${urlParts[0]}/upload/vc_h264,ac_aac,f_mp4/${urlParts[1]}`;
+          }
+          console.log('Fallback a URL con parametri di trasformazione:', mediaUrl);
+        }
+      } catch (videoError) {
+        console.error('Errore nella trasformazione del video:', videoError);
+        throw new Error('Errore nella conversione del video per WhatsApp');
+      }
+    } else {
+      // Upload standard per immagini e PDF
+      const uploadOptions = {
+        public_id: safeFileName,
+        folder: 'campaign-media',
+        resource_type: resourceType
+      };
+      
+      // Upload normale per altri tipi di file
+      const response = await cloudinary.uploader.upload(tempFilePath, uploadOptions);
+      mediaUrl = response.secure_url;
+    }
     
     // Elimina il file temporaneo
     fs.unlinkSync(tempFilePath);
-    
-    // Prepara l'URL del media
-    let mediaUrl = cloudinaryResponse.secure_url;
-    
-    // Per i video, modifichiamo l'URL per forzare la trasformazione lato client
-    if (resourceType === 'video') {
-      const urlParts = mediaUrl.split('/upload/');
-      if (urlParts.length === 2) {
-        // Aggiungiamo i parametri di trasformazione all'URL per garantire compatibilità WhatsApp
-        mediaUrl = `${urlParts[0]}/upload/vc_h264,ac_aac,f_mp4/${urlParts[1]}`;
-        console.log('URL video compatibile con WhatsApp:', mediaUrl);
-      }
-    }
     
     // Restituisci i dati del file caricato
     return NextResponse.json({
@@ -115,8 +156,8 @@ export async function POST(request: NextRequest) {
         originalName: file.name,
         size: file.size,
         mediaType: fileType,
-        fileName: cloudinaryResponse.public_id,
-        publicId: cloudinaryResponse.public_id
+        fileName: safeFileName,
+        publicId: safeFileName
       }
     });
   } catch (error: any) {
