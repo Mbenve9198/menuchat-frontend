@@ -152,17 +152,17 @@ export function MediaUpload({
           if (isVideo) fileType = "video"
           if (isPdf) fileType = "pdf"
           
-          // Se è un video, assicurati che l'URL sia in formato MP4 con codec H.264 e audio AAC
-          // come richiesto specificatamente dalla documentazione WhatsApp
+          // Se è un video, assicurati che l'URL sia in formato MP4 per WhatsApp
+          // con trasformazioni specifiche per garantire compatibilità con WhatsApp
           let fileUrl = data.file.url
           if (isVideo) {
             // Aggiungi la trasformazione solo se non è già presente
             if (fileUrl.includes("/upload/")) {
-              // Utilizza trasformazioni specifiche per WhatsApp:
-              // f_mp4 - formato MP4
-              // vc_h264 - codec H.264 esplicito
-              // ac_aac - codec audio AAC esplicito
-              fileUrl = fileUrl.replace("/upload/", "/upload/f_mp4,vc_h264,ac_aac/")
+              // Utilizza trasformazioni specifiche con controllo bitrate e codec specifico
+              // vc_h264:high:3.1 - Codifica video H.264 con profilo High e livello 3.1
+              // br_2m - Bitrate massimo di 2 Mbps
+              // q_70 - Qualità del 70%
+              fileUrl = fileUrl.replace("/upload/", "/upload/q_70,vc_h264:high:3.1,br_2m,f_mp4/")
             }
             
             // Assicura che l'estensione finale sia .mp4
