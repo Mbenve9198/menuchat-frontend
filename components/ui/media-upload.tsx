@@ -158,7 +158,9 @@ export function MediaUpload({
           if (isVideo && !fileUrl.includes("f_mp4")) {
             // Aggiunge la trasformazione solo se non è già presente
             if (fileUrl.includes("/upload/")) {
-              fileUrl = fileUrl.replace("/upload/", "/upload/f_mp4,vc_auto/")
+              // Utilizza una trasformazione specifica con codec h264 base profile
+              // che è ampiamente supportato da WhatsApp
+              fileUrl = fileUrl.replace("/upload/", "/upload/f_mp4,vc_h264:baseline:3.1/")
             }
             
             // Assicura che l'estensione finale sia .mp4
