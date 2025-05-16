@@ -1639,6 +1639,11 @@ export default function CreateCampaign() {
                                   </svg>
                                 </div>
                               </div>
+                              <div className="mt-2 bg-orange-50 border border-orange-200 p-2 rounded-md">
+                                <p className="text-xs text-orange-700">
+                                  <b>Nota:</b> I video per WhatsApp devono rispettare requisiti specifici. Il sistema tenterà di convertire automaticamente il video, ma per maggiore compatibilità è consigliabile utilizzare video MP4 con codec H.264 e audio AAC.
+                                </p>
+                              </div>
                             </div>
                           )}
                           
