@@ -112,6 +112,13 @@ export function MediaUpload({
       // Create form data
       const formData = new FormData()
       formData.append('file', file)
+      
+      // Specify if we need format conversion for videos
+      if (isVideo) {
+        formData.append('needsConversion', 'true')
+        formData.append('targetFormat', 'mp4') // Converti sempre i video in MP4 per WhatsApp
+      }
+      
       if (campaignType) {
         formData.append('campaignType', campaignType)
       }
@@ -145,7 +152,30 @@ export function MediaUpload({
           if (isVideo) fileType = "video"
           if (isPdf) fileType = "pdf"
           
-          onFileSelect(data.file.url, fileType)
+          // Se è un video, assicurati che l'URL contenga l'estensione .mp4
+          // e la trasformazione f_mp4,vc_auto per garantire compatibilità
+          let fileUrl = data.file.url
+          if (isVideo && !fileUrl.includes("f_mp4")) {
+            // Aggiunge la trasformazione solo se non è già presente
+            if (fileUrl.includes("/upload/")) {
+              fileUrl = fileUrl.replace("/upload/", "/upload/f_mp4,vc_auto/")
+            }
+            
+            // Assicura che l'estensione finale sia .mp4
+            if (!fileUrl.endsWith(".mp4")) {
+              const urlParts = fileUrl.split(".")
+              if (urlParts.length > 1) {
+                // Sostituisci l'estensione esistente
+                urlParts[urlParts.length - 1] = "mp4"
+                fileUrl = urlParts.join(".")
+              } else {
+                // Aggiungi l'estensione se non c'è
+                fileUrl += ".mp4"
+              }
+            }
+          }
+          
+          onFileSelect(fileUrl, fileType)
         }, 500)
       } else {
         throw new Error('Risposta non valida dal server')
@@ -261,6 +291,11 @@ export function MediaUpload({
                   ? "Documento PDF caricato" 
                   : "Immagine caricata"}
             </p>
+            {fileType === "video" && (
+              <p className="text-xs text-gray-500">
+                Convertito in formato MP4 compatibile con WhatsApp
+              </p>
+            )}
           </div>
         ) : (
           <>
@@ -280,7 +315,7 @@ export function MediaUpload({
               {mediaType === "image" 
                 ? "Trascina qui un'immagine o clicca per scegliere" 
                 : mediaType === "video" 
-                  ? "Trascina qui un video o clicca per scegliere"
+                  ? "Trascina qui un video o clicca per scegliere (sarà convertito in MP4)"
                   : mediaType === "pdf"
                     ? "Trascina qui un documento PDF o clicca per scegliere"
                     : mediaType === "both"
