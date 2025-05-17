@@ -158,11 +158,12 @@ export function MediaUpload({
           if (isVideo) {
             // Aggiungi la trasformazione solo se non è già presente
             if (fileUrl.includes("/upload/")) {
-              // Utilizza trasformazioni specifiche con controllo bitrate e codec specifico
-              // vc_h264:high:3.1 - Codifica video H.264 con profilo High e livello 3.1
+              // Utilizza trasformazioni specifiche con:
+              // vc_h264:baseline:3.1 - Codifica video H.264 con profilo baseline e livello 3.1
+              // ac_aac - Codec audio AAC LC
               // br_2m - Bitrate massimo di 2 Mbps
               // q_70 - Qualità del 70%
-              fileUrl = fileUrl.replace("/upload/", "/upload/q_70,vc_h264:high:3.1,br_2m,f_mp4/")
+              fileUrl = fileUrl.replace("/upload/", "/upload/q_70,vc_h264:baseline:3.1,ac_aac,br_2m,f_mp4/")
             }
             
             // Assicura che l'estensione finale sia .mp4
@@ -297,7 +298,7 @@ export function MediaUpload({
             </p>
             {fileType === "video" && (
               <p className="text-xs text-gray-500">
-                Convertito in formato MP4 con codec H.264 e audio AAC
+                Convertito in formato MP4 con codec H.264 (baseline) e audio AAC
               </p>
             )}
           </div>
