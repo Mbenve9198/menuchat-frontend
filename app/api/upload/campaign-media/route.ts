@@ -105,9 +105,20 @@ export async function POST(request: NextRequest) {
       type: 'upload'
     };
     
-    // Se è un video per WhatsApp, forza formato mp4
+    // Se è un video per WhatsApp, forza formato mp4 e aggiungi trasformazioni
     if (resourceType === 'video' && optimizeForWhatsApp) {
+      // Opzioni speciali per WhatsApp
       uploadOptions.format = 'mp4';
+      
+      // Per assicurare che il video abbia sia traccia video H.264 che audio AAC
+      uploadOptions.transformation = [
+        { quality: 70, video_codec: 'h264:baseline:3.1', audio_codec: 'aac', bit_rate: '2m', flags: 'faststart' }
+      ];
+      
+      // Aggiungere fl_attachment per forzare Content-Type pulito
+      if (!noTransformations) {
+        uploadOptions.transformation.push({ flags: 'attachment' });
+      }
     }
     
     // Carica il file su Cloudinary
@@ -132,10 +143,57 @@ export async function POST(request: NextRequest) {
     // Ottieni l'URL e assicurati che per i video termini con .mp4
     let mediaUrl = cloudinaryResponse.secure_url;
     
+    // Se è un video WhatsApp, verifica che l'URL contenga fl_attachment o aggiungilo
+    if (resourceType === 'video' && optimizeForWhatsApp && !mediaUrl.includes('fl_attachment') && mediaUrl.includes('/upload/')) {
+      mediaUrl = mediaUrl.replace(/\/upload\//, '/upload/fl_attachment/');
+      console.log('URL con fl_attachment aggiunto:', mediaUrl);
+    }
+    
     // Se è un video, assicurati che l'estensione sia .mp4
     if (resourceType === 'video' && !mediaUrl.endsWith('.mp4')) {
       mediaUrl = mediaUrl.replace(/\.\w+$/, '.mp4');
       console.log('URL corretto a .mp4:', mediaUrl);
+    }
+    
+    // Per i video, verifica il Content-Type con una chiamata HEAD
+    if (resourceType === 'video' && optimizeForWhatsApp) {
+      try {
+        const axios = require('axios');
+        const response = await axios.head(mediaUrl);
+        const contentType = response.headers['content-type'];
+        console.log(`Verifica Content-Type dell'URL video: ${contentType}`);
+        
+        // Se il Content-Type è problematico, prova con upload raw
+        if (contentType.includes('codecs=avc1') && !contentType.includes('mp4a.40.2')) {
+          console.warn(`⚠️ Content-Type problematico: ${contentType}`);
+          console.log('Tentativo di upload come raw per forzare Content-Type pulito...');
+          
+          // Scarica nuovamente il file per caricarlo come raw
+          const { data } = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
+          const rawTempPath = `/tmp/raw_video_${Date.now()}.mp4`;
+          fs.writeFileSync(rawTempPath, data);
+          
+          // Upload come raw con mime_type forzato
+          const rawUploadResult = await cloudinary.uploader.upload(rawTempPath, {
+            resource_type: 'raw',
+            public_id: `${cloudinaryResponse.public_id}_raw`,
+            folder: 'campaign-media',
+            type: 'upload',
+            format: 'mp4',
+            access_mode: 'public',
+            mime_type: 'video/mp4'
+          });
+          
+          // Usa l'URL raw
+          mediaUrl = rawUploadResult.secure_url;
+          console.log('URL raw con Content-Type forzato:', mediaUrl);
+          
+          // Pulizia
+          fs.unlinkSync(rawTempPath);
+        }
+      } catch (headError: any) {
+        console.error('Errore nella verifica Content-Type:', headError.message);
+      }
     }
     
     console.log('URL finale restituito al client:', mediaUrl);

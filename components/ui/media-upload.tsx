@@ -119,6 +119,7 @@ export function MediaUpload({
       if (isVideo) {
         formData.append('noTransformations', 'true')
         formData.append('optimizeForWhatsApp', 'true')
+        console.log("Impostato optimizeForWhatsApp=true per il video")
       }
       
       if (campaignType) {
