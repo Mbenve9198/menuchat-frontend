@@ -9,17 +9,29 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || ''
 });
 
-// Configurazione per non utilizzare bodyParser di Next.js
+// Configurazione per non utilizzare bodyParser di Next.js e aumentare il limite di dimensione
 export const config = {
   api: {
     bodyParser: false,
+    responseLimit: false,
   },
+  maxDuration: 60, // Estendi il timeout a 60 secondi per upload grandi
 };
+
+// Funzione ausiliaria per leggere il FormData in modo affidabile
+async function getFormData(request: NextRequest) {
+  try {
+    return await request.formData();
+  } catch (error: any) {
+    console.error('Errore durante l\'elaborazione di formData:', error);
+    throw new Error(`Errore di parsing del FormData: ${error.message}`);
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     // Estrai i dati multipart dalla richiesta
-    const formData = await request.formData();
+    const formData = await getFormData(request);
     
     // Ottieni il file dal formData
     const file = formData.get('file') as File;
@@ -39,8 +51,18 @@ export async function POST(request: NextRequest) {
       optimizeForWhatsApp,
       noTransformations,
       fileType: file.type,
-      fileName: file.name
+      fileName: file.name,
+      fileSize: file.size
     });
+    
+    // Verifica dimensione massima consentita
+    const maxSizeAllowed = 50 * 1024 * 1024; // Limite massimo 50MB per Vercel
+    if (file.size > maxSizeAllowed) {
+      return NextResponse.json({
+        success: false,
+        error: `Il file è troppo grande. La dimensione massima consentita è 50MB.`
+      }, { status: 413 });
+    }
     
     // Determina il tipo di risorsa basato sul MIME type
     let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image';
@@ -72,10 +94,79 @@ export async function POST(request: NextRequest) {
       const sizeInMB = Math.round(maxSize / (1024 * 1024));
       return NextResponse.json({ 
         success: false, 
-        error: `Il file è troppo grande. La dimensione massima è ${sizeInMB}MB` 
+        error: `Il file è troppo grande. La dimensione massima per questo tipo di file è ${sizeInMB}MB` 
       }, { status: 400 });
     }
     
+    // Per file molto grandi, carica direttamente su Cloudinary invece di usare Node.js
+    if (file.size > 5 * 1024 * 1024) { // Se più grande di 5MB
+      return await handleLargeFileUpload(file, formData, resourceType, fileType);
+    }
+    
+    // Per file piccoli, usa il metodo standard
+    return await handleStandardUpload(file, formData, resourceType, fileType);
+  } catch (error: any) {
+    console.error('Errore durante l\'upload del media:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Errore durante l\'upload del media',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
+/**
+ * Gestisce l'upload di file grandi direttamente attraverso l'unsigned upload di Cloudinary
+ */
+async function handleLargeFileUpload(file: File, formData: FormData, resourceType: string, fileType: string) {
+  try {
+    // Estrai informazioni aggiuntive
+    const campaignType = formData.get('campaignType')?.toString() || 'campaign';
+    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp')?.toString() === 'true';
+    
+    // Genera un nome file sicuro
+    let fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // Se è un video e ottimizziamo per WhatsApp, forza estensione mp4
+    if (resourceType === 'video' && optimizeForWhatsApp) {
+      fileExtension = 'mp4';
+    }
+    
+    // Crea una firma di upload firmata per Cloudinary
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const publicId = `campaign-${campaignType}-${Date.now()}`;
+    
+    let uploadPreset = 'menuchat_preset'; // Usa un preset configurato in Cloudinary
+    
+    // Restituisci al client le informazioni per fare l'upload diretto a Cloudinary
+    return NextResponse.json({
+      success: false, // Per ora segnaliamo un errore per far funzionare il fallback
+      error: 'Dimensione file troppo grande per upload tramite API route',
+      suggestUploadPreset: true,
+      uploadPreset,
+      resourceType,
+      fileType,
+      file: {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }
+    }, { status: 413 });
+  } catch (error: any) {
+    console.error('Errore nella preparazione dell\'upload diretto:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Errore durante la preparazione dell\'upload diretto',
+      details: error.message
+    }, { status: 500 });
+  }
+}
+
+/**
+ * Gestisce l'upload standard tramite Node.js
+ */
+async function handleStandardUpload(file: File, formData: FormData, resourceType: string, fileType: string) {
+  try {
     // Estrai informazioni dal file
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -86,6 +177,8 @@ export async function POST(request: NextRequest) {
     
     // Estrai informazioni aggiuntive
     const campaignType = formData.get('campaignType')?.toString() || 'campaign';
+    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp')?.toString() === 'true';
+    const noTransformations = formData.get('noTransformations')?.toString() === 'true';
     
     // Genera un nome file sicuro
     let fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
@@ -212,10 +305,10 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('Errore durante l\'upload del media:', error);
+    console.error('Errore durante l\'upload standard:', error);
     return NextResponse.json({
       success: false,
-      error: 'Errore durante l\'upload del media',
+      error: 'Errore durante l\'upload standard',
       details: error.message
     }, { status: 500 });
   }

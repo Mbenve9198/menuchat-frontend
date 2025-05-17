@@ -92,6 +92,14 @@ export function MediaUpload({
       actualMaxSize = 15 // 15MB per PDF
     }
     
+    // Verifica il limite assoluto di Vercel per API Routes (50MB)
+    const vercelLimit = 50 * 1024 * 1024
+    
+    if (file.size > vercelLimit) {
+      setError(`File troppo grande. La dimensione massima è 50MB.`)
+      return
+    }
+    
     if (file.size > actualMaxSize * 1024 * 1024) {
       setError(`File troppo grande. La dimensione massima è ${actualMaxSize}MB.`)
       return
@@ -134,6 +142,19 @@ export function MediaUpload({
       
       clearInterval(progressInterval)
       
+      // Verifica se è un errore 413 (Content Too Large) che richiede upload diretto
+      if (response.status === 413) {
+        const errorData = await response.json()
+        
+        // Se l'API suggerisce upload diretto con uploadPreset
+        if (errorData.suggestUploadPreset) {
+          console.log('Fallback a upload diretto su Cloudinary:', errorData)
+          return await handleDirectCloudinaryUpload(file, errorData, isVideo)
+        }
+        
+        throw new Error(errorData.error || 'File troppo grande per upload tramite API');
+      }
+      
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Errore durante l\'upload')
@@ -168,6 +189,100 @@ export function MediaUpload({
       setError(error.message || 'Errore durante l\'upload del file')
       setIsUploading(false)
       setUploadingProgress(0)
+    }
+  }
+  
+  // Funzione per gestire l'upload diretto su Cloudinary per i file grandi
+  const handleDirectCloudinaryUpload = async (file: File, config: any, isVideo: boolean) => {
+    try {
+      console.log('Iniziando upload diretto a Cloudinary...')
+      
+      // Ottieni configurazione Cloudinary dal server
+      let cloudName = 'menuchat'
+      let uploadPreset = config.uploadPreset || 'menuchat_preset'
+      
+      try {
+        // Ottieni configurazione Cloudinary dal backend
+        const configResponse = await fetch('/api/upload/cloudinary-config')
+        if (configResponse.ok) {
+          const configData = await configResponse.json()
+          if (configData.success && configData.cloudName) {
+            cloudName = configData.cloudName
+            uploadPreset = configData.uploadPreset || uploadPreset
+          }
+        }
+      } catch (configError) {
+        console.warn('Errore nel caricamento configurazione Cloudinary:', configError)
+        // Continua con i valori predefiniti
+      }
+      
+      // Crea Form Data per upload diretto a Cloudinary
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', uploadPreset)
+      formData.append('resource_type', config.resourceType)
+      
+      // Per i video WhatsApp, aggiungi parametri di trasformazione
+      if (isVideo) {
+        formData.append('eager', 'q_70,vc_h264:baseline:3.1,ac_aac,br_2m,fl_attachment,fl_faststart')
+        formData.append('eager_async', 'true')
+      }
+      
+      // Progress tracking non supportato per upload diretto a Cloudinary
+      setUploadingProgress(50) // Impostiamo al 50% fisso durante l'upload
+      
+      // Upload using fetch direttamente a Cloudinary
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error?.message || 'Errore durante l\'upload diretto a Cloudinary')
+      }
+      
+      const data = await response.json()
+      console.log('Upload diretto completato:', data)
+      
+      // 100% progress completed
+      setUploadingProgress(100)
+      
+      let fileUrl = data.secure_url
+      
+      // Per i video, assicurati che l'estensione sia .mp4 e aggiungi fl_attachment
+      if (isVideo) {
+        // Verifica se l'URL contiene già fl_attachment, altrimenti aggiungilo
+        if (!fileUrl.includes('fl_attachment') && fileUrl.includes('/upload/')) {
+          fileUrl = fileUrl.replace(/\/upload\//, '/upload/fl_attachment/')
+        }
+        
+        // Assicurati che l'URL termini con .mp4
+        if (!fileUrl.endsWith('.mp4')) {
+          fileUrl = fileUrl.replace(/\.\w+$/, '.mp4')
+        }
+      }
+      
+      // Breve pausa per mostrare il 100% prima di resettare
+      setTimeout(() => {
+        setUploadingProgress(0)
+        setIsUploading(false)
+        
+        // Call the callback with the uploaded file URL
+        let fileType: "image" | "video" | "pdf" = "image"
+        if (isVideo) fileType = "video"
+        if (file.type === 'application/pdf') fileType = "pdf"
+        
+        onFileSelect(fileUrl, fileType)
+      }, 500)
+      
+      return true
+    } catch (error: any) {
+      console.error('Errore durante l\'upload diretto a Cloudinary:', error)
+      setError(error.message || 'Errore durante l\'upload diretto a Cloudinary')
+      setIsUploading(false)
+      setUploadingProgress(0)
+      return false
     }
   }
 
