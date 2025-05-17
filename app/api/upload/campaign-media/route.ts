@@ -31,6 +31,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
+    // Ottieni parametri di trasformazione e ottimizzazione
+    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp')?.toString() === 'true';
+    const noTransformations = formData.get('noTransformations')?.toString() === 'true';
+    
+    console.log('Parametri upload:', {
+      optimizeForWhatsApp,
+      noTransformations,
+      fileType: file.type,
+      fileName: file.name
+    });
+    
     // Determina il tipo di risorsa basato sul MIME type
     let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image';
     let fileType = 'image';
@@ -77,17 +88,40 @@ export async function POST(request: NextRequest) {
     const campaignType = formData.get('campaignType')?.toString() || 'campaign';
     
     // Genera un nome file sicuro
-    const fileExtension = file.name.split('.').pop() || '';
+    let fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // Se è un video e ottimizziamo per WhatsApp, forza estensione mp4
+    if (resourceType === 'video' && optimizeForWhatsApp) {
+      fileExtension = 'mp4';
+    }
+    
     const safeFileName = `campaign-${campaignType}-${Date.now()}.${fileExtension}`;
     
-    // Carica il file su Cloudinary
-    console.log('Inizio upload su Cloudinary', { tempFilePath, safeFileName, resourceType, fileType });
-    const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, {
+    // Opzioni di upload
+    const uploadOptions: any = {
       public_id: safeFileName.replace(`.${fileExtension}`, ''),
       folder: 'campaign-media',
       resource_type: resourceType,
       type: 'upload'
+    };
+    
+    // Se è un video per WhatsApp, forza formato mp4
+    if (resourceType === 'video' && optimizeForWhatsApp) {
+      uploadOptions.format = 'mp4';
+    }
+    
+    // Carica il file su Cloudinary
+    console.log('Inizio upload su Cloudinary', { 
+      tempFilePath, 
+      safeFileName, 
+      resourceType, 
+      fileType,
+      optimizeForWhatsApp,
+      noTransformations,
+      uploadOptions
     });
+    
+    const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, uploadOptions);
     
     // Log della risposta completa di Cloudinary
     console.log('Risposta di Cloudinary:', JSON.stringify(cloudinaryResponse, null, 2));
@@ -95,8 +129,16 @@ export async function POST(request: NextRequest) {
     // Elimina il file temporaneo
     fs.unlinkSync(tempFilePath);
     
-    // Usa l'URL sicuro fornito da Cloudinary
-    const mediaUrl = cloudinaryResponse.secure_url;
+    // Ottieni l'URL e assicurati che per i video termini con .mp4
+    let mediaUrl = cloudinaryResponse.secure_url;
+    
+    // Se è un video, assicurati che l'estensione sia .mp4
+    if (resourceType === 'video' && !mediaUrl.endsWith('.mp4')) {
+      mediaUrl = mediaUrl.replace(/\.\w+$/, '.mp4');
+      console.log('URL corretto a .mp4:', mediaUrl);
+    }
+    
+    console.log('URL finale restituito al client:', mediaUrl);
     
     // Restituisci i dati del file caricato
     return NextResponse.json({
@@ -105,7 +147,8 @@ export async function POST(request: NextRequest) {
         url: mediaUrl,
         originalName: file.name,
         size: file.size,
-        mediaType: fileType, // Usiamo fileType invece di resourceType per la risposta
+        format: resourceType === 'video' ? 'mp4' : fileExtension,
+        resourceType,
         fileName: cloudinaryResponse.public_id,
         publicId: cloudinaryResponse.public_id
       }
