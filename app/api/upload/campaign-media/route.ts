@@ -9,29 +9,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || ''
 });
 
-// Configurazione per non utilizzare bodyParser di Next.js e aumentare il limite di dimensione
+// Configurazione per non utilizzare bodyParser di Next.js
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: false,
   },
-  maxDuration: 60, // Estendi il timeout a 60 secondi per upload grandi
 };
-
-// Funzione ausiliaria per leggere il FormData in modo affidabile
-async function getFormData(request: NextRequest) {
-  try {
-    return await request.formData();
-  } catch (error: any) {
-    console.error('Errore durante l\'elaborazione di formData:', error);
-    throw new Error(`Errore di parsing del FormData: ${error.message}`);
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
     // Estrai i dati multipart dalla richiesta
-    const formData = await getFormData(request);
+    const formData = await request.formData();
     
     // Ottieni il file dal formData
     const file = formData.get('file') as File;
@@ -51,25 +39,16 @@ export async function POST(request: NextRequest) {
       optimizeForWhatsApp,
       noTransformations,
       fileType: file.type,
-      fileName: file.name,
-      fileSize: file.size
+      fileName: file.name
     });
-    
-    // Verifica dimensione massima consentita
-    const maxSizeAllowed = 50 * 1024 * 1024; // Limite massimo 50MB per Vercel
-    if (file.size > maxSizeAllowed) {
-      return NextResponse.json({
-        success: false,
-        error: `Il file è troppo grande. La dimensione massima consentita è 50MB.`
-      }, { status: 413 });
-    }
     
     // Determina il tipo di risorsa basato sul MIME type
     let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image';
     let fileType = 'image';
     
     if (file.type.startsWith('video/')) {
-      resourceType = 'video';
+      // Per i video WhatsApp, useremo resource_type: 'raw' per evitare il problema del Content-Type
+      resourceType = optimizeForWhatsApp ? 'raw' : 'video';
       fileType = 'video';
     } else if (file.type === 'application/pdf') {
       resourceType = 'raw'; // I PDF vanno caricati come raw in Cloudinary
@@ -84,9 +63,9 @@ export async function POST(request: NextRequest) {
     // Verifica dimensione massima in base al tipo di file
     let maxSize = 10 * 1024 * 1024; // Default 10MB per immagini
     
-    if (resourceType === 'video') {
+    if (fileType === 'video') {
       maxSize = 30 * 1024 * 1024; // 30MB per video
-    } else if (resourceType === 'raw') { 
+    } else if (fileType === 'pdf') { 
       maxSize = 15 * 1024 * 1024; // 15MB per PDF
     }
     
@@ -94,79 +73,10 @@ export async function POST(request: NextRequest) {
       const sizeInMB = Math.round(maxSize / (1024 * 1024));
       return NextResponse.json({ 
         success: false, 
-        error: `Il file è troppo grande. La dimensione massima per questo tipo di file è ${sizeInMB}MB` 
+        error: `Il file è troppo grande. La dimensione massima è ${sizeInMB}MB` 
       }, { status: 400 });
     }
     
-    // Per file molto grandi, carica direttamente su Cloudinary invece di usare Node.js
-    if (file.size > 5 * 1024 * 1024) { // Se più grande di 5MB
-      return await handleLargeFileUpload(file, formData, resourceType, fileType);
-    }
-    
-    // Per file piccoli, usa il metodo standard
-    return await handleStandardUpload(file, formData, resourceType, fileType);
-  } catch (error: any) {
-    console.error('Errore durante l\'upload del media:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Errore durante l\'upload del media',
-      details: error.message
-    }, { status: 500 });
-  }
-}
-
-/**
- * Gestisce l'upload di file grandi direttamente attraverso l'unsigned upload di Cloudinary
- */
-async function handleLargeFileUpload(file: File, formData: FormData, resourceType: string, fileType: string) {
-  try {
-    // Estrai informazioni aggiuntive
-    const campaignType = formData.get('campaignType')?.toString() || 'campaign';
-    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp')?.toString() === 'true';
-    
-    // Genera un nome file sicuro
-    let fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-    
-    // Se è un video e ottimizziamo per WhatsApp, forza estensione mp4
-    if (resourceType === 'video' && optimizeForWhatsApp) {
-      fileExtension = 'mp4';
-    }
-    
-    // Crea una firma di upload firmata per Cloudinary
-    const timestamp = Math.round(new Date().getTime() / 1000);
-    const publicId = `campaign-${campaignType}-${Date.now()}`;
-    
-    let uploadPreset = 'menuchat_preset'; // Usa un preset configurato in Cloudinary
-    
-    // Restituisci al client le informazioni per fare l'upload diretto a Cloudinary
-    return NextResponse.json({
-      success: false, // Per ora segnaliamo un errore per far funzionare il fallback
-      error: 'Dimensione file troppo grande per upload tramite API route',
-      suggestUploadPreset: true,
-      uploadPreset,
-      resourceType,
-      fileType,
-      file: {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      }
-    }, { status: 413 });
-  } catch (error: any) {
-    console.error('Errore nella preparazione dell\'upload diretto:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Errore durante la preparazione dell\'upload diretto',
-      details: error.message
-    }, { status: 500 });
-  }
-}
-
-/**
- * Gestisce l'upload standard tramite Node.js
- */
-async function handleStandardUpload(file: File, formData: FormData, resourceType: string, fileType: string) {
-  try {
     // Estrai informazioni dal file
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -177,51 +87,142 @@ async function handleStandardUpload(file: File, formData: FormData, resourceType
     
     // Estrai informazioni aggiuntive
     const campaignType = formData.get('campaignType')?.toString() || 'campaign';
-    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp')?.toString() === 'true';
-    const noTransformations = formData.get('noTransformations')?.toString() === 'true';
     
     // Genera un nome file sicuro
     let fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
     
     // Se è un video e ottimizziamo per WhatsApp, forza estensione mp4
-    if (resourceType === 'video' && optimizeForWhatsApp) {
+    if (fileType === 'video') {
       fileExtension = 'mp4';
     }
     
-    const safeFileName = `campaign-${campaignType}-${Date.now()}.${fileExtension}`;
+    const timestamp = Date.now();
+    const safeFileName = `campaign-${campaignType}-${timestamp}`;
     
-    // Opzioni di upload
+    // Se è un video per WhatsApp, dobbiamo eseguire due passaggi:
+    // 1) Caricarlo come video e applicare le trasformazioni
+    // 2) Poi caricarlo come raw per avere un Content-Type pulito
+    if (fileType === 'video' && optimizeForWhatsApp) {
+      try {
+        console.log('Video per WhatsApp: processo in due fasi per Content-Type pulito');
+        
+        // Passo 1: Carica come video per la trascodifica
+        console.log('Fase 1: Caricamento come video per trascodifica');
+        const videoUploadOptions = {
+          public_id: `${safeFileName}_processing`,
+          folder: 'campaign-media',
+          resource_type: 'video' as 'video',
+          type: 'upload',
+          format: 'mp4',
+          transformation: [
+            {quality: 70, video_codec: 'h264:baseline:3.1', audio_codec: 'aac', bit_rate: '2m', flags: 'faststart'}
+          ]
+        };
+        
+        console.log('Opzioni di caricamento video:', videoUploadOptions);
+        const videoResult = await cloudinary.uploader.upload(tempFilePath, videoUploadOptions);
+        console.log('Risultato trascodifica video:', videoResult.secure_url);
+        
+        // Pausa breve per assicurarsi che la trascodifica sia completata
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Ottieni l'URL del video trascodificato
+        const transcodedUrl = videoResult.secure_url;
+        
+        // Passo 2: Scarica il video trascodificato e ricaricalo come raw
+        console.log('Fase 2: Ricaricamento come raw con MIME type pulito');
+        
+        // Crea un file temporaneo per il video trascodificato
+        const axios = (await import('axios')).default;
+        const response = await axios.get(transcodedUrl, { responseType: 'arraybuffer' });
+        const transcodedBuffer = Buffer.from(response.data);
+        const transcodedFilePath = `/tmp/${safeFileName}_transcoded.mp4`;
+        fs.writeFileSync(transcodedFilePath, transcodedBuffer);
+        
+        // Carica come raw con mime_type esplicito
+        const rawUploadOptions = {
+          public_id: `${safeFileName}_whatsapp_optimized`,
+          folder: 'campaign-media',
+          resource_type: 'raw' as 'raw',
+          type: 'upload',
+          mime_type: 'video/mp4' // Questo garantisce un Content-Type pulito
+        };
+        
+        console.log('Opzioni di caricamento raw:', rawUploadOptions);
+        const rawResult = await cloudinary.uploader.upload(transcodedFilePath, rawUploadOptions);
+        console.log('Risultato caricamento raw:', rawResult.secure_url);
+        
+        // Pulisci i file temporanei
+        fs.unlinkSync(transcodedFilePath);
+        
+        // Usa l'URL pulito
+        let mediaUrl = rawResult.secure_url;
+        
+        // Assicurati che termini con .mp4
+        if (!mediaUrl.endsWith('.mp4')) {
+          mediaUrl = `${mediaUrl}.mp4`;
+          console.log('URL corretto a .mp4:', mediaUrl);
+        }
+        
+        console.log('URL finale del video WhatsApp ottimizzato:', mediaUrl);
+        
+        // Verifica l'header Content-Type con una richiesta HEAD
+        try {
+          const headResponse = await axios.head(mediaUrl);
+          const contentType = headResponse.headers['content-type'];
+          console.log('Content-Type verificato:', contentType);
+          
+          if (contentType && contentType.includes('codecs=')) {
+            console.warn('⚠️ Attenzione: Content-Type contiene ancora parametri codec:', contentType);
+          }
+        } catch (headError: any) {
+          console.warn('Non è stato possibile verificare il Content-Type:', headError.message);
+        }
+        
+        // Restituisci i dati del file caricato
+        fs.unlinkSync(tempFilePath); // Elimina il file temporaneo originale
+        return NextResponse.json({
+          success: true,
+          file: {
+            url: mediaUrl,
+            originalName: file.name,
+            size: file.size,
+            format: 'mp4',
+            resourceType: 'video', // Per il frontend, è comunque un video
+            fileName: rawResult.public_id,
+            publicId: rawResult.public_id
+          }
+        });
+      } catch (processingError) {
+        console.error('Errore nella lavorazione del video WhatsApp:', processingError);
+        // Continuiamo con l'upload normale come fallback
+      }
+    }
+    
+    // Opzioni di upload standard (per i casi non WhatsApp o fallback)
     const uploadOptions: any = {
-      public_id: safeFileName.replace(`.${fileExtension}`, ''),
+      public_id: safeFileName,
       folder: 'campaign-media',
       resource_type: resourceType,
       type: 'upload'
     };
     
-    // Se è un video per WhatsApp, forza formato mp4 e aggiungi trasformazioni
-    if (resourceType === 'video' && optimizeForWhatsApp) {
-      // Opzioni speciali per WhatsApp
+    // Aggiungi MIME type se è raw
+    if (resourceType === 'raw' && fileType === 'video') {
+      uploadOptions.mime_type = 'video/mp4';
+    }
+    
+    // Per i video normali (non WhatsApp) imposta il formato mp4
+    if (resourceType === 'video') {
       uploadOptions.format = 'mp4';
-      
-      // Per assicurare che il video abbia sia traccia video H.264 che audio AAC
-      uploadOptions.transformation = [
-        { quality: 70, video_codec: 'h264:baseline:3.1', audio_codec: 'aac', bit_rate: '2m', flags: 'faststart' }
-      ];
-      
-      // Aggiungere fl_attachment per forzare Content-Type pulito
-      if (!noTransformations) {
-        uploadOptions.transformation.push({ flags: 'attachment' });
-      }
     }
     
     // Carica il file su Cloudinary
-    console.log('Inizio upload su Cloudinary', { 
+    console.log('Inizio upload standard su Cloudinary', { 
       tempFilePath, 
       safeFileName, 
       resourceType, 
       fileType,
-      optimizeForWhatsApp,
-      noTransformations,
       uploadOptions
     });
     
@@ -236,57 +237,10 @@ async function handleStandardUpload(file: File, formData: FormData, resourceType
     // Ottieni l'URL e assicurati che per i video termini con .mp4
     let mediaUrl = cloudinaryResponse.secure_url;
     
-    // Se è un video WhatsApp, verifica che l'URL contenga fl_attachment o aggiungilo
-    if (resourceType === 'video' && optimizeForWhatsApp && !mediaUrl.includes('fl_attachment') && mediaUrl.includes('/upload/')) {
-      mediaUrl = mediaUrl.replace(/\/upload\//, '/upload/fl_attachment/');
-      console.log('URL con fl_attachment aggiunto:', mediaUrl);
-    }
-    
     // Se è un video, assicurati che l'estensione sia .mp4
-    if (resourceType === 'video' && !mediaUrl.endsWith('.mp4')) {
-      mediaUrl = mediaUrl.replace(/\.\w+$/, '.mp4');
+    if (fileType === 'video' && !mediaUrl.endsWith('.mp4')) {
+      mediaUrl = `${mediaUrl}.mp4`;
       console.log('URL corretto a .mp4:', mediaUrl);
-    }
-    
-    // Per i video, verifica il Content-Type con una chiamata HEAD
-    if (resourceType === 'video' && optimizeForWhatsApp) {
-      try {
-        const axios = require('axios');
-        const response = await axios.head(mediaUrl);
-        const contentType = response.headers['content-type'];
-        console.log(`Verifica Content-Type dell'URL video: ${contentType}`);
-        
-        // Se il Content-Type è problematico, prova con upload raw
-        if (contentType.includes('codecs=avc1') && !contentType.includes('mp4a.40.2')) {
-          console.warn(`⚠️ Content-Type problematico: ${contentType}`);
-          console.log('Tentativo di upload come raw per forzare Content-Type pulito...');
-          
-          // Scarica nuovamente il file per caricarlo come raw
-          const { data } = await axios.get(mediaUrl, { responseType: 'arraybuffer' });
-          const rawTempPath = `/tmp/raw_video_${Date.now()}.mp4`;
-          fs.writeFileSync(rawTempPath, data);
-          
-          // Upload come raw con mime_type forzato
-          const rawUploadResult = await cloudinary.uploader.upload(rawTempPath, {
-            resource_type: 'raw',
-            public_id: `${cloudinaryResponse.public_id}_raw`,
-            folder: 'campaign-media',
-            type: 'upload',
-            format: 'mp4',
-            access_mode: 'public',
-            mime_type: 'video/mp4'
-          });
-          
-          // Usa l'URL raw
-          mediaUrl = rawUploadResult.secure_url;
-          console.log('URL raw con Content-Type forzato:', mediaUrl);
-          
-          // Pulizia
-          fs.unlinkSync(rawTempPath);
-        }
-      } catch (headError: any) {
-        console.error('Errore nella verifica Content-Type:', headError.message);
-      }
     }
     
     console.log('URL finale restituito al client:', mediaUrl);
@@ -298,17 +252,17 @@ async function handleStandardUpload(file: File, formData: FormData, resourceType
         url: mediaUrl,
         originalName: file.name,
         size: file.size,
-        format: resourceType === 'video' ? 'mp4' : fileExtension,
-        resourceType,
+        format: fileType === 'video' ? 'mp4' : fileExtension,
+        resourceType: fileType, // Usiamo fileType invece di resourceType per la risposta
         fileName: cloudinaryResponse.public_id,
         publicId: cloudinaryResponse.public_id
       }
     });
   } catch (error: any) {
-    console.error('Errore durante l\'upload standard:', error);
+    console.error('Errore durante l\'upload del media:', error);
     return NextResponse.json({
       success: false,
-      error: 'Errore durante l\'upload standard',
+      error: 'Errore durante l\'upload del media',
       details: error.message
     }, { status: 500 });
   }
