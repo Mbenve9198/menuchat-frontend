@@ -28,6 +28,7 @@ export function MediaUpload({
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [uploadingProgress, setUploadingProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -113,10 +114,11 @@ export function MediaUpload({
       const formData = new FormData()
       formData.append('file', file)
       
-      // Specify if we need format conversion for videos
+      // Per i video, specifichiamo che non vogliamo trasformazioni
+      // nell'URL finale, ma vogliamo un file già compatibile con WhatsApp
       if (isVideo) {
-        formData.append('needsConversion', 'true')
-        formData.append('targetFormat', 'mp4') // Converti sempre i video in MP4 per WhatsApp
+        formData.append('noTransformations', 'true')
+        formData.append('optimizeForWhatsApp', 'true')
       }
       
       if (campaignType) {
@@ -152,33 +154,8 @@ export function MediaUpload({
           if (isVideo) fileType = "video"
           if (isPdf) fileType = "pdf"
           
-          // Se è un video, assicurati che l'URL sia in formato MP4 per WhatsApp
-          // con trasformazioni specifiche per garantire compatibilità con WhatsApp
+          // Per i video, usiamo direttamente l'URL senza trasformazioni
           let fileUrl = data.file.url
-          if (isVideo) {
-            // Aggiungi la trasformazione solo se non è già presente
-            if (fileUrl.includes("/upload/")) {
-              // Utilizza trasformazioni specifiche con:
-              // vc_h264:baseline:3.1 - Codifica video H.264 con profilo baseline e livello 3.1
-              // ac_aac - Codec audio AAC LC
-              // br_2m - Bitrate massimo di 2 Mbps
-              // q_70 - Qualità del 70%
-              fileUrl = fileUrl.replace("/upload/", "/upload/q_70,vc_h264:baseline:3.1,ac_aac,br_2m,f_mp4/")
-            }
-            
-            // Assicura che l'estensione finale sia .mp4
-            if (!fileUrl.endsWith(".mp4")) {
-              const urlParts = fileUrl.split(".")
-              if (urlParts.length > 1) {
-                // Sostituisci l'estensione esistente
-                urlParts[urlParts.length - 1] = "mp4"
-                fileUrl = urlParts.join(".")
-              } else {
-                // Aggiungi l'estensione se non c'è
-                fileUrl += ".mp4"
-              }
-            }
-          }
           
           onFileSelect(fileUrl, fileType)
         }, 500)
@@ -298,7 +275,7 @@ export function MediaUpload({
             </p>
             {fileType === "video" && (
               <p className="text-xs text-gray-500">
-                Convertito in formato MP4 con codec H.264 (baseline) e audio AAC
+                Video ottimizzato per WhatsApp (senza trasformazioni nell'URL)
               </p>
             )}
           </div>
@@ -320,7 +297,7 @@ export function MediaUpload({
               {mediaType === "image" 
                 ? "Trascina qui un'immagine o clicca per scegliere" 
                 : mediaType === "video" 
-                  ? "Trascina qui un video o clicca per scegliere (sarà convertito in MP4 con codec H.264 e audio AAC)"
+                  ? "Trascina qui un video o clicca per scegliere (sarà ottimizzato per WhatsApp)"
                   : mediaType === "pdf"
                     ? "Trascina qui un documento PDF o clicca per scegliere"
                     : mediaType === "both"
