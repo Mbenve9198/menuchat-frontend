@@ -67,6 +67,8 @@ export default function Dashboard() {
       fetchStats()
       fetchActivities()
       fetchRestaurantInfo()
+      // Sincronizza automaticamente le recensioni da Google ad ogni caricamento
+      syncGoogleReviews()
       // Carica lo stato Twilio solo all'avvio, non quando cambiano i filtri
       if (!twilioStatus) {
         fetchTwilioStatus()
@@ -417,6 +419,25 @@ export default function Dashboard() {
     setShowFilterDropdown(false)
   }
 
+  // Sincronizza le recensioni da Google
+  const syncGoogleReviews = async () => {
+    try {
+      const restaurantId = session?.user?.restaurantId
+      const response = await fetch(`/api/restaurants/${restaurantId}/sync-reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        console.log("Google reviews synced successfully")
+      }
+    } catch (error) {
+      console.error("Error syncing reviews:", error)
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
@@ -699,19 +720,10 @@ export default function Dashboard() {
                   
                   try {
                     setIsSyncingReviews(true);
-                    const restaurantId = session?.user?.restaurantId;
-                    const response = await fetch(`/api/restaurants/${restaurantId}/sync-reviews`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      }
-                    });
-                    
-                    if (response.ok) {
-                      // Ricarica i dati dopo la sincronizzazione
-                      await fetchStats();
-                      await fetchRestaurantInfo();
-                    }
+                    await syncGoogleReviews();
+                    // Ricarica i dati dopo la sincronizzazione
+                    await fetchStats();
+                    await fetchRestaurantInfo();
                   } catch (error) {
                     console.error("Error syncing reviews:", error);
                   } finally {
@@ -846,7 +858,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-3 gap-2">
             <CustomButton
               className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
-              onClick={() => router.push("/campaigns")}
+              onClick={() => router.push("/campaign")}
             >
               <MessageSquare className="w-6 h-6 mb-1" />
               Campaigns
