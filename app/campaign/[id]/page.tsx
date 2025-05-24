@@ -7,9 +7,7 @@ import {
   Calendar,
   Users,
   Eye,
-  MousePointerClick,
   MessageSquare,
-  BarChart3,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -24,7 +22,6 @@ import {
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -51,21 +48,11 @@ interface Campaign {
   statistics?: any
 }
 
-interface Recipient {
-  id: string
-  name: string
-  phone: string
-  status: string
-  openTime?: string | null
-  clicked: boolean
-}
-
 export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState("overview")
   const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [recipients, setRecipients] = useState<Recipient[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -115,28 +102,6 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
       }
 
       setCampaign(transformedCampaign)
-
-      // TODO: Implementare il fetch dei destinatari quando sarà disponibile l'endpoint
-      // Per ora usiamo dati mock per i destinatari
-      const mockRecipients: Recipient[] = [
-        {
-          id: "1",
-          name: "Cliente 1",
-          phone: "+39 333-123-4567",
-          status: "opened",
-          openTime: "2023-06-15T14:35:00",
-          clicked: true,
-        },
-        {
-          id: "2",
-          name: "Cliente 2",
-          phone: "+39 333-234-5678",
-          status: "delivered",
-          openTime: null,
-          clicked: false,
-        },
-      ]
-      setRecipients(mockRecipients)
 
     } catch (err: any) {
       console.error('Errore nel recupero della campagna:', err)
@@ -204,19 +169,6 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         return <Star className="w-5 h-5 text-[#06D6A0]" />
       default:
         return <MessageSquare className="w-5 h-5 text-gray-500" />
-    }
-  }
-
-  const getRecipientStatusBadge = (status: string) => {
-    switch (status) {
-      case "opened":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Opened</Badge>
-      case "delivered":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Delivered</Badge>
-      case "failed":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Failed</Badge>
-      default:
-        return null
     }
   }
 
@@ -344,7 +296,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
-                    <MousePointerClick className="w-4 h-4 text-gray-500" />
+                    <Eye className="w-4 h-4 text-gray-500" />
                   </div>
                   <p className="text-xs text-gray-500">Tasso Click</p>
                   <p className="text-sm font-bold text-gray-800">
@@ -377,9 +329,8 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             {/* Tabs */}
             <div className="w-full max-w-md mb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 bg-white/80 rounded-xl">
+                <TabsList className="grid w-full grid-cols-2 bg-white/80 rounded-xl">
                   <TabsTrigger value="overview" className="rounded-lg">Panoramica</TabsTrigger>
-                  <TabsTrigger value="analytics" className="rounded-lg">Analytics</TabsTrigger>
                   <TabsTrigger value="recipients" className="rounded-lg">Destinatari</TabsTrigger>
                 </TabsList>
 
@@ -524,108 +475,45 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   </div>
                 </TabsContent>
 
-                {/* Analytics Tab */}
-                <TabsContent value="analytics" className="mt-4 space-y-4">
-                  <div className="bg-white rounded-3xl p-5 shadow-xl">
-                    <h3 className="text-lg font-bold text-gray-800 mb-4">Performance Dettagliata</h3>
-                    
-                    {campaign.status === "sent" && campaign.statistics ? (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Consegnati</span>
-                            <span className="font-medium text-gray-800">
-                              {campaign.statistics.delivered || campaign.recipients} / {campaign.recipients}
-                            </span>
-                          </div>
-                          <Progress
-                            value={((campaign.statistics.delivered || campaign.recipients) / campaign.recipients) * 100}
-                            className="h-2 bg-gray-100"
-                            indicatorClassName="bg-blue-500 transition-all duration-700 ease-in-out"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Aperti</span>
-                            <span className="font-medium text-gray-800">
-                              {campaign.statistics.opened || 0} / {campaign.recipients}
-                            </span>
-                          </div>
-                          <Progress
-                            value={((campaign.statistics.opened || 0) / campaign.recipients) * 100}
-                            className="h-2 bg-gray-100"
-                            indicatorClassName="bg-green-500 transition-all duration-700 ease-in-out"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Click</span>
-                            <span className="font-medium text-gray-800">
-                              {campaign.statistics.clicked || 0} / {campaign.recipients}
-                            </span>
-                          </div>
-                          <Progress
-                            value={((campaign.statistics.clicked || 0) / campaign.recipients) * 100}
-                            className="h-2 bg-gray-100"
-                            indicatorClassName="bg-yellow-500 transition-all duration-700 ease-in-out"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Risposte</span>
-                            <span className="font-medium text-gray-800">
-                              {campaign.statistics.responded || 0} / {campaign.recipients}
-                            </span>
-                          </div>
-                          <Progress
-                            value={((campaign.statistics.responded || 0) / campaign.recipients) * 100}
-                            className="h-2 bg-gray-100"
-                            indicatorClassName="bg-purple-500 transition-all duration-700 ease-in-out"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500">
-                          {campaign.status === "sent" 
-                            ? "Dati analytics non ancora disponibili" 
-                            : "Analytics disponibili dopo l'invio della campagna"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
                 {/* Recipients Tab */}
                 <TabsContent value="recipients" className="mt-4 space-y-4">
                   <div className="bg-white rounded-3xl p-5 shadow-xl">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">Destinatari</h3>
                     
                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                      {recipients.length > 0 ? (
-                        recipients.map((recipient) => (
+                      {campaign.targetAudience?.manualContacts && campaign.targetAudience.manualContacts.length > 0 ? (
+                        campaign.targetAudience.manualContacts.map((contact: any, index: number) => (
                           <motion.div
-                            key={recipient.id}
+                            key={contact._id || index}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
                           >
                             <div className="flex-1">
-                              <p className="font-medium text-gray-800">{recipient.name}</p>
-                              <p className="text-xs text-gray-500">{recipient.phone}</p>
-                              {recipient.openTime && (
-                                <p className="text-xs text-green-600">
-                                  Aperto: {formatDateTime(recipient.openTime)}
+                              <p className="font-medium text-gray-800">{contact.name || 'Nome non disponibile'}</p>
+                              <p className="text-xs text-gray-500">{contact.phoneNumber || 'Telefono non disponibile'}</p>
+                              {contact.language && (
+                                <p className="text-xs text-blue-600">
+                                  Lingua: {contact.language}
+                                </p>
+                              )}
+                              {contact.lastContactDate && (
+                                <p className="text-xs text-gray-500">
+                                  Ultimo contatto: {formatDate(contact.lastContactDate)}
                                 </p>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {recipient.clicked && <MousePointerClick className="w-4 h-4 text-yellow-500" />}
-                              {getRecipientStatusBadge(recipient.status)}
+                              {contact.marketingConsent?.status && (
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                  Consenso ✓
+                                </span>
+                              )}
+                              {contact.interactionCount && (
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                  {contact.interactionCount} interazioni
+                                </span>
+                              )}
                             </div>
                           </motion.div>
                         ))
@@ -643,27 +531,28 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                     <h3 className="text-lg font-bold text-gray-800 mb-4">Riepilogo Destinatari</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">Aperti</p>
-                        <p className="text-lg font-bold text-green-600">
-                          {recipients.filter((r) => r.status === "opened").length}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">Click</p>
-                        <p className="text-lg font-bold text-yellow-600">
-                          {recipients.filter((r) => r.clicked).length}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">Solo Consegnati</p>
+                        <p className="text-xs text-gray-500 mb-1">Totale Destinatari</p>
                         <p className="text-lg font-bold text-blue-600">
-                          {recipients.filter((r) => r.status === "delivered").length}
+                          {campaign.targetAudience?.manualContacts?.length || 0}
                         </p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-1">Falliti</p>
-                        <p className="text-lg font-bold text-red-600">
-                          {recipients.filter((r) => r.status === "failed").length}
+                        <p className="text-xs text-gray-500 mb-1">Con Consenso</p>
+                        <p className="text-lg font-bold text-green-600">
+                          {campaign.targetAudience?.manualContacts?.filter((contact: any) => contact.marketingConsent?.status).length || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">Lingue Diverse</p>
+                        <p className="text-lg font-bold text-purple-600">
+                          {campaign.targetAudience?.manualContacts ? 
+                            new Set(campaign.targetAudience.manualContacts.map((contact: any) => contact.language).filter(Boolean)).size : 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">Interazioni Totali</p>
+                        <p className="text-lg font-bold text-orange-600">
+                          {campaign.targetAudience?.manualContacts?.reduce((sum: number, contact: any) => sum + (contact.interactionCount || 0), 0) || 0}
                         </p>
                       </div>
                     </div>
