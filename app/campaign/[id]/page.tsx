@@ -19,6 +19,7 @@ import {
   Star,
   Share2,
   Edit3,
+  FileText,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -154,7 +155,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     }
   }, [status, session, params.id])
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "sent":
         return (
@@ -177,7 +178,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
       case "draft":
         return (
           <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1">
-            <Edit className="w-3 h-3" /> Draft
+            <Edit3 className="w-3 h-3" /> Draft
           </Badge>
         )
       case "failed":
@@ -191,7 +192,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     }
   }
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case "promo":
         return <Gift className="w-5 h-5 text-[#EF476F]" />
@@ -206,7 +207,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     }
   }
 
-  const getRecipientStatusBadge = (status) => {
+  const getRecipientStatusBadge = (status: string) => {
     switch (status) {
       case "opened":
         return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Opened</Badge>
@@ -219,7 +220,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     }
   }
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return "—"
     const date = new Date(dateString)
     return date.toLocaleDateString("en-US", {
@@ -229,7 +230,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     })
   }
 
-  const formatTime = (dateString) => {
+  const formatTime = (dateString?: string) => {
     if (!dateString) return ""
     const date = new Date(dateString)
     return date.toLocaleTimeString("en-US", {
@@ -239,7 +240,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     })
   }
 
-  const formatDateTime = (dateString) => {
+  const formatDateTime = (dateString?: string) => {
     if (!dateString) return "—"
     return `${formatDate(dateString)} at ${formatTime(dateString)}`
   }
@@ -386,28 +387,162 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                 <TabsContent value="overview" className="mt-4 space-y-4">
                   <div className="bg-white rounded-3xl p-5 shadow-xl">
                     <h3 className="text-lg font-bold text-gray-800 mb-3">Anteprima Messaggio</h3>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <div className="flex flex-col gap-3">
-                        <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[280px]">
-                          {campaign.template?.message && (
-                            <p className="text-sm">{campaign.template.message}</p>
-                          )}
-                          {campaign.template?.cta && (
-                            <div className="mt-2 bg-[#EF476F] text-white text-sm font-medium py-1 px-3 rounded-md inline-block">
-                              {campaign.template.cta}
+                    <div className="bg-white rounded-xl p-4">
+                      {/* Bolla del messaggio in stile WhatsApp */}
+                      <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 relative max-w-[90%]">
+                        {/* Header per indicare campagna salvata */}
+                        <div className="absolute top-0 left-0 right-0 px-4 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-medium rounded-t-xl flex items-center justify-between">
+                          <div className="flex items-center">
+                            <CheckCircle2 className="w-3 h-3 mr-1.5" /> Campagna Salvata
+                          </div>
+                          <span className="text-xs opacity-75">
+                            {campaign.status === "sent" ? "Inviata" : campaign.status === "scheduled" ? "Programmata" : "Bozza"}
+                          </span>
+                        </div>
+                        
+                        {/* Compensazione per l'header */}
+                        <div className="mt-6"></div>
+                        
+                        {/* Media in anteprima se presente */}
+                        {campaign.templateParameters?.useImage && campaign.templateParameters?.imageUrl && (
+                          <>
+                            {/* Media Header colorato quando c'è un media */}
+                            <div className="absolute left-0 right-0 top-[1.5rem] h-7 bg-[#65CB9B] rounded-t-none text-white text-xs font-medium flex items-center px-4">
+                              Media Messages
                             </div>
+                            
+                            {/* Spazio extra per entrambi gli header */}
+                            <div className="mt-8"></div>
+                            
+                            {/* Determina il tipo di media dall'URL */}
+                            {campaign.templateParameters.imageUrl.includes('.pdf') ? (
+                              <div className="mb-3 flex items-center bg-gray-100 p-2 rounded-md">
+                                <FileText className="w-4 h-4 text-gray-600 mr-2" />
+                                <span className="text-xs text-gray-700 truncate max-w-[200px]">
+                                  PDF Document
+                                </span>
+                              </div>
+                            ) : campaign.templateParameters.imageUrl.includes('.mp4') || campaign.templateParameters.imageUrl.includes('video') ? (
+                              <div className="mb-3 rounded-md overflow-hidden">
+                                <div className="bg-gray-900 w-full h-[140px] relative flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="white"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      className="w-6 h-6"
+                                    >
+                                      <polygon points="5 3 19 12 5 21 5 3" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mb-3 rounded-md overflow-hidden">
+                                <Image
+                                  src={campaign.templateParameters.imageUrl}
+                                  alt="Campaign media"
+                                  width={260}
+                                  height={180}
+                                  className="w-full h-auto"
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Testo del messaggio */}
+                        <p className="text-sm text-gray-800 whitespace-pre-line">
+                          {campaign.templateParameters?.message || 
+                           campaign.template?.message || 
+                           "Messaggio non disponibile"}
+                        </p>
+                        
+                        {/* Call-to-action buttons in stile WhatsApp */}
+                        <div className="mt-3 flex flex-col gap-2">
+                          {campaign.templateParameters?.cta && (
+                            <a 
+                              href="#" 
+                              className="flex items-center justify-center w-full px-3 py-2 bg-white text-[#128C7E] text-sm font-medium border border-[#128C7E] rounded-md hover:bg-gray-50"
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              {campaign.templateParameters.cta}
+                            </a>
                           )}
+                          <a 
+                            href="#" 
+                            className="flex items-center justify-center w-full px-3 py-2 bg-white text-gray-600 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            Disiscriviti
+                          </a>
+                        </div>
+                        
+                        {/* Orario del messaggio con doppia spunta blu */}
+                        <div className="mt-2 flex justify-end items-center gap-1">
+                          <span className="text-xs text-gray-400">
+                            {campaign.sentDate ? formatTime(campaign.sentDate) : "12:00"}
+                          </span>
+                          <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7.58659 7.70721L14.0401 1.25244L15.1004 2.31348L7.58659 9.82911L2.63269 4.87521L3.69373 3.81418L7.58659 7.70721Z" fill="#53BDEB" />
+                            <path d="M11.4456 1.25244L4.9917 7.70513L2.63232 5.34692L1.57129 6.40795L4.9917 9.82703L12.5067 2.31348L11.4456 1.25244Z" fill="#53BDEB" />
+                          </svg>
                         </div>
                       </div>
                     </div>
                   </div>
 
+                  {/* Dettagli della campagna */}
                   {campaign.description && (
                     <div className="bg-white rounded-3xl p-5 shadow-xl">
                       <h3 className="text-lg font-bold text-gray-800 mb-3">Descrizione</h3>
                       <p className="text-gray-600">{campaign.description}</p>
                     </div>
                   )}
+
+                  {/* Informazioni tecniche */}
+                  <div className="bg-white rounded-3xl p-5 shadow-xl">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3">Dettagli Tecnici</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Lingua:</span>
+                        <span className="font-medium text-gray-800">
+                          {campaign.templateParameters?.language || 'Non specificata'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tipo CTA:</span>
+                        <span className="font-medium text-gray-800">
+                          {campaign.templateParameters?.ctaType === 'url' ? 'Link' : 
+                           campaign.templateParameters?.ctaType === 'phone' ? 'Telefono' : 'Non specificato'}
+                        </span>
+                      </div>
+                      {campaign.templateParameters?.ctaValue && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Valore CTA:</span>
+                          <span className="font-medium text-gray-800 truncate max-w-[200px]">
+                            {campaign.templateParameters.ctaValue}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Include Media:</span>
+                        <span className="font-medium text-gray-800">
+                          {campaign.templateParameters?.useImage ? 'Sì' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Data Creazione:</span>
+                        <span className="font-medium text-gray-800">
+                          {campaign.createdAt ? formatDate(campaign.createdAt) : 'Non disponibile'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 {/* Analytics Tab */}
@@ -565,7 +700,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 }
 
 // Custom Edit icon component
-function Edit({ className }) {
+function Edit({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
