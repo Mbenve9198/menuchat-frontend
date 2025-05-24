@@ -24,8 +24,10 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import BubbleBackground from "@/components/bubble-background"
+import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { useSession } from "next-auth/react"
+import { useTranslation } from "react-i18next"
 
 // Tipi TypeScript
 interface Campaign {
@@ -51,6 +53,7 @@ interface Campaign {
 export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState("overview")
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -219,8 +222,8 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             >
               <ChevronLeft className="w-6 h-6 text-gray-600" />
             </CustomButton>
-            <h1 className="text-xl font-bold text-gray-800">Dettagli Campagna</h1>
-            <div className="w-10" />
+            <h1 className="text-xl font-bold text-gray-800">{t("campaigns.details")}</h1>
+            <UILanguageSelector variant="compact" />
           </div>
         </div>
 

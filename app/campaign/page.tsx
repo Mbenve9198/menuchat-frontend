@@ -11,8 +11,10 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import BubbleBackground from "@/components/bubble-background"
+import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { useSession } from "next-auth/react"
+import { useTranslation } from "react-i18next"
 
 // Tipi TypeScript per le campagne
 interface Campaign {
@@ -64,6 +66,7 @@ const sortOptions = [
 export default function CampaignsPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
@@ -286,8 +289,8 @@ export default function CampaignsPage() {
             >
               <ChevronLeft className="w-6 h-6 text-gray-600" />
             </CustomButton>
-            <h1 className="text-2xl font-bold text-gray-800">Campaigns</h1>
-            <div className="w-10" />
+            <h1 className="text-2xl font-bold text-gray-800">{t("campaigns.title")}</h1>
+            <UILanguageSelector variant="compact" />
           </div>
 
           {/* Search and Filters */}

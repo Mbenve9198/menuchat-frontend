@@ -5,7 +5,127 @@
     "finish": "Finish",
     "save": "Save",
     "cancel": "Cancel",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "continue": "Continue",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "campaigns": "Campaigns",
+    "templates": "Templates",
+    "contacts": "Contacts",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "quickStats": "Quick Stats",
+    "syncGoogleReviews": "Sync Google Reviews",
+    "campaigns": "Campaigns",
+    "contacts": "Contacts",
+    "messages": "Messages"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "create": "Create Campaign",
+    "list": "Campaign List",
+    "details": "Campaign Details",
+    "edit": "Edit Campaign",
+    "delete": "Delete Campaign",
+    "duplicate": "Duplicate",
+    "share": "Share",
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "sending": "Sending",
+      "sent": "Sent",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed"
+    },
+    "recipients": "Recipients",
+    "overview": "Overview",
+    "analytics": "Analytics",
+    "messagePreview": "Message Preview",
+    "technicalDetails": "Technical Details",
+    "recipientsSummary": "Recipients Summary",
+    "totalRecipients": "Total Recipients",
+    "withConsent": "With Consent",
+    "differentLanguages": "Different Languages",
+    "totalInteractions": "Total Interactions",
+    "noRecipientsFound": "No recipients found",
+    "campaignScheduled": "Campaign Scheduled!",
+    "willBeSent": "Your campaign will be sent to {{count}} contacts {{time}}",
+    "inMinutes": "in approximately 10 minutes",
+    "atScheduledTime": "at the scheduled time"
+  },
+  "campaignCreate": {
+    "title": "Create Campaign",
+    "steps": {
+      "selectContacts": "Select Contacts",
+      "campaignSetup": "Campaign Setup",
+      "contentCreation": "Content Creation",
+      "scheduleApprove": "Schedule & Approve"
+    },
+    "selectAudience": "Select your audience",
+    "searchContacts": "Search contacts...",
+    "filterByCountry": "Filter by country",
+    "clearFilter": "Clear filter",
+    "selectAllContacts": "Select all contacts",
+    "selectedContacts": "Selected contacts",
+    "campaignSetup": "Campaign setup",
+    "campaignType": "Campaign type",
+    "messageLanguage": "Message language",
+    "campaignDetails": "Campaign details & objective",
+    "campaignDetailsPlaceholder": "Describe what you want to achieve with this campaign and any specific details to include...",
+    "contentCreation": "Content creation",
+    "messageText": "Message text",
+    "regenerate": "Regenerate",
+    "campaignMedia": "Campaign media",
+    "primaryCTA": "Primary call to action",
+    "secondaryCTA": "Secondary call to action (required)",
+    "unsubscribe": "Unsubscribe",
+    "messagePreview": "Message Preview",
+    "scheduleYourCampaign": "Schedule your campaign",
+    "whenToSend": "When to send",
+    "sendNow": "Send now",
+    "scheduleForLater": "Schedule for later",
+    "campaignSummary": "Campaign Summary",
+    "readyToSend": "Ready to send your campaign?",
+    "scheduleCampaign": "Schedule Campaign",
+    "types": {
+      "promo": "Promotional Offer",
+      "event": "Event Invitation",
+      "update": "Menu Update",
+      "feedback": "Feedback Request"
+    },
+    "errors": {
+      "noContactsSelected": "No contacts selected",
+      "selectAtLeastOne": "Please select at least one contact to continue",
+      "campaignTypeRequired": "Campaign type required",
+      "selectCampaignType": "Please select a campaign type to continue",
+      "campaignDetailsRequired": "Campaign details required",
+      "enterCampaignDetails": "Please enter campaign details and objective to continue",
+      "messageTextRequired": "Message text required",
+      "generateOrEnterMessage": "Please generate or enter message text",
+      "invalidScheduleTime": "Invalid schedule time",
+      "scheduleAtLeast10Minutes": "Schedule time must be at least 10 minutes from now"
+    }
   },
   "setup": {
     "steps": {
@@ -15,10 +135,39 @@
       "preview": "Preview"
     },
     "language": {
-      "title": "Select Language",
+      "title": "Select language",
       "description": "Choose the main language for your restaurant. We'll automatically generate messages in other languages too."
     },
     "completed": "Setup completed!",
-    "restart": "Start Over"
+    "restart": "Restart"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "name": "Name",
+    "phone": "Phone",
+    "language": "Language",
+    "lastContact": "Last contact",
+    "interactions": "interactions",
+    "consent": "Consent",
+    "optedIn": "Opted in",
+    "optedOut": "Opted out"
+  },
+  "media": {
+    "uploadImage": "Upload Image",
+    "uploadVideo": "Upload Video",
+    "uploadPDF": "Upload PDF",
+    "generateWithAI": "Generate with AI",
+    "customPrompt": "Custom Prompt",
+    "automaticGeneration": "Automatic Generation"
   }
 } 

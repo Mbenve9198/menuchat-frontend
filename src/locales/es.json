@@ -5,7 +5,127 @@
     "finish": "Finalizar",
     "save": "Guardar",
     "cancel": "Cancelar",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "continue": "Continuar",
+    "close": "Cerrar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "update": "Actualizar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "all": "Todos",
+    "none": "Ninguno",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "navigation": {
+    "dashboard": "Panel",
+    "campaigns": "Campañas",
+    "templates": "Plantillas",
+    "contacts": "Contactos",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido",
+    "overview": "Resumen",
+    "recentActivity": "Actividad Reciente",
+    "quickStats": "Estadísticas Rápidas",
+    "syncGoogleReviews": "Sincronizar Reseñas de Google",
+    "campaigns": "Campañas",
+    "contacts": "Contactos",
+    "messages": "Mensajes"
+  },
+  "campaigns": {
+    "title": "Campañas",
+    "create": "Crear Campaña",
+    "list": "Lista de Campañas",
+    "details": "Detalles de Campaña",
+    "edit": "Editar Campaña",
+    "delete": "Eliminar Campaña",
+    "duplicate": "Duplicar",
+    "share": "Compartir",
+    "status": {
+      "draft": "Borrador",
+      "scheduled": "Programada",
+      "sending": "Enviando",
+      "sent": "Enviada",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "failed": "Fallida"
+    },
+    "recipients": "Destinatarios",
+    "overview": "Resumen",
+    "analytics": "Analíticas",
+    "messagePreview": "Vista Previa del Mensaje",
+    "technicalDetails": "Detalles Técnicos",
+    "recipientsSummary": "Resumen de Destinatarios",
+    "totalRecipients": "Total de Destinatarios",
+    "withConsent": "Con Consentimiento",
+    "differentLanguages": "Idiomas Diferentes",
+    "totalInteractions": "Interacciones Totales",
+    "noRecipientsFound": "No se encontraron destinatarios",
+    "campaignScheduled": "¡Campaña Programada!",
+    "willBeSent": "Tu campaña será enviada a {{count}} contactos {{time}}",
+    "inMinutes": "en aproximadamente 10 minutos",
+    "atScheduledTime": "a la hora programada"
+  },
+  "campaignCreate": {
+    "title": "Crear Campaña",
+    "steps": {
+      "selectContacts": "Seleccionar Contactos",
+      "campaignSetup": "Configuración de Campaña",
+      "contentCreation": "Creación de Contenido",
+      "scheduleApprove": "Programar y Aprobar"
+    },
+    "selectAudience": "Selecciona tu audiencia",
+    "searchContacts": "Buscar contactos...",
+    "filterByCountry": "Filtrar por país",
+    "clearFilter": "Limpiar filtro",
+    "selectAllContacts": "Seleccionar todos los contactos",
+    "selectedContacts": "Contactos seleccionados",
+    "campaignSetup": "Configuración de campaña",
+    "campaignType": "Tipo de campaña",
+    "messageLanguage": "Idioma del mensaje",
+    "campaignDetails": "Detalles y objetivo de la campaña",
+    "campaignDetailsPlaceholder": "Describe lo que quieres lograr con esta campaña y cualquier detalle específico a incluir...",
+    "contentCreation": "Creación de contenido",
+    "messageText": "Texto del mensaje",
+    "regenerate": "Regenerar",
+    "campaignMedia": "Medios de campaña",
+    "primaryCTA": "Llamada a la acción principal",
+    "secondaryCTA": "Llamada a la acción secundaria (obligatoria)",
+    "unsubscribe": "Darse de baja",
+    "messagePreview": "Vista Previa del Mensaje",
+    "scheduleYourCampaign": "Programa tu campaña",
+    "whenToSend": "Cuándo enviar",
+    "sendNow": "Enviar ahora",
+    "scheduleForLater": "Programar para después",
+    "campaignSummary": "Resumen de Campaña",
+    "readyToSend": "¿Listo para enviar tu campaña?",
+    "scheduleCampaign": "Programar Campaña",
+    "types": {
+      "promo": "Oferta Promocional",
+      "event": "Invitación a Evento",
+      "update": "Actualización de Menú",
+      "feedback": "Solicitud de Comentarios"
+    },
+    "errors": {
+      "noContactsSelected": "No hay contactos seleccionados",
+      "selectAtLeastOne": "Por favor selecciona al menos un contacto para continuar",
+      "campaignTypeRequired": "Tipo de campaña requerido",
+      "selectCampaignType": "Por favor selecciona un tipo de campaña para continuar",
+      "campaignDetailsRequired": "Detalles de campaña requeridos",
+      "enterCampaignDetails": "Por favor ingresa los detalles y objetivo de la campaña para continuar",
+      "messageTextRequired": "Texto del mensaje requerido",
+      "generateOrEnterMessage": "Por favor genera o ingresa el texto del mensaje",
+      "invalidScheduleTime": "Hora de programación inválida",
+      "scheduleAtLeast10Minutes": "La hora de programación debe ser al menos 10 minutos desde ahora"
+    }
   },
   "setup": {
     "steps": {
@@ -16,9 +136,38 @@
     },
     "language": {
       "title": "Seleccionar idioma",
-      "description": "Elige el idioma principal para tu restaurante. Generaremos automáticamente los mensajes en otros idiomas también."
+      "description": "Elige el idioma principal para tu restaurante. Generaremos automáticamente mensajes en otros idiomas también."
     },
     "completed": "¡Configuración completada!",
-    "restart": "Empezar de nuevo"
+    "restart": "Reiniciar"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes una cuenta?",
+    "hasAccount": "¿Ya tienes una cuenta?"
+  },
+  "contacts": {
+    "title": "Contactos",
+    "name": "Nombre",
+    "phone": "Teléfono",
+    "language": "Idioma",
+    "lastContact": "Último contacto",
+    "interactions": "interacciones",
+    "consent": "Consentimiento",
+    "optedIn": "Consentimiento activo",
+    "optedOut": "Consentimiento negado"
+  },
+  "media": {
+    "uploadImage": "Subir Imagen",
+    "uploadVideo": "Subir Video",
+    "uploadPDF": "Subir PDF",
+    "generateWithAI": "Generar con IA",
+    "customPrompt": "Prompt Personalizado",
+    "automaticGeneration": "Generación Automática"
   }
 } 

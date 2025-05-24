@@ -29,8 +29,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import BubbleBackground from "@/components/bubble-background"
+import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { MediaUpload } from "@/components/ui/media-upload"
+import { useTranslation } from "react-i18next"
 // Rimuoviamo l'import del servizio
 // import { campaignService } from "@/lib/campaign-service"
 
@@ -89,6 +91,7 @@ const steps = ["Select Contacts", "Campaign Setup", "Content Creation", "Schedul
 export default function CreateCampaign() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -927,16 +930,19 @@ export default function CreateCampaign() {
               <button onClick={handlePrevious} className="mr-2">
                 <ChevronLeft className="w-6 h-6 text-gray-700" />
               </button>
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">Create Campaign</h1>
+              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">{t("campaignCreate.title")}</h1>
             </div>
-            <div className="relative w-10 h-10">
-              <Image
-                src={getMascotImage() || "/placeholder.svg"}
-                alt="Mascot"
-                width={40}
-                height={40}
-                className="drop-shadow-lg"
-              />
+            <div className="flex items-center gap-2">
+              <UILanguageSelector variant="compact" />
+              <div className="relative w-10 h-10">
+                <Image
+                  src={getMascotImage() || "/placeholder.svg"}
+                  alt="Mascot"
+                  width={40}
+                  height={40}
+                  className="drop-shadow-lg"
+                />
+              </div>
             </div>
           </div>
 
@@ -1700,13 +1706,13 @@ export default function CreateCampaign() {
                 <div className="bg-white rounded-3xl p-6 shadow-xl">
                   <div className="flex items-center gap-2 mb-4">
                     <Calendar className="w-5 h-5 text-[#EF476F]" />
-                    <span className="text-sm font-medium text-[#EF476F]">Schedule your campaign</span>
+                    <span className="text-sm font-medium text-[#EF476F]">{t("campaignCreate.schedule")}</span>
                   </div>
 
                   <div className="space-y-4">
                     {/* Schedule options */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">When to send</Label>
+                      <Label className="text-sm font-medium text-gray-700">{t("campaignCreate.whenToSend")}</Label>
                       <RadioGroup 
                         value={scheduleOption} 
                         onValueChange={(value: any) => setScheduleOption(value as "now" | "later")} 
@@ -1718,8 +1724,8 @@ export default function CreateCampaign() {
                         >
                           <RadioGroupItem value="now" id="schedule-now" className="mr-3 text-[#EF476F]" />
                           <div>
-                            <p className="font-medium text-gray-800">Send now</p>
-                            <p className="text-xs text-gray-500">Campaign will be sent in approximately 10 minutes</p>
+                            <p className="font-medium text-gray-800">{t("campaignCreate.sendNow")}</p>
+                            <p className="text-xs text-gray-500">{t("campaignCreate.sendNowDescription")}</p>
                           </div>
                         </Label>
                         <Label
@@ -1728,8 +1734,8 @@ export default function CreateCampaign() {
                         >
                           <RadioGroupItem value="later" id="schedule-later" className="mr-3 text-[#EF476F]" />
                           <div>
-                            <p className="font-medium text-gray-800">Schedule for later</p>
-                            <p className="text-xs text-gray-500">Choose a specific date and time</p>
+                            <p className="font-medium text-gray-800">{t("campaignCreate.scheduleLater")}</p>
+                            <p className="text-xs text-gray-500">{t("campaignCreate.scheduleLaterDescription")}</p>
                           </div>
                         </Label>
                       </RadioGroup>
@@ -1741,7 +1747,7 @@ export default function CreateCampaign() {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
                             <Label htmlFor="schedule-date" className="text-sm font-medium text-gray-700">
-                              Date
+                              {t("campaignCreate.date")}
                             </Label>
                             <Input
                               id="schedule-date"
@@ -1754,7 +1760,7 @@ export default function CreateCampaign() {
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="schedule-time" className="text-sm font-medium text-gray-700">
-                              Time
+                              {t("campaignCreate.time")}
                             </Label>
                             <Input
                               id="schedule-time"
@@ -1766,14 +1772,14 @@ export default function CreateCampaign() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-500">
-                          Note: Campaign must be scheduled at least 10 minutes from now.
+                          {t("campaignCreate.scheduleNote")}
                         </p>
                       </>
                     )}
 
                     {/* Campaign summary */}
                     <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                      <h4 className="font-medium text-gray-800">Campaign Summary</h4>
+                      <h4 className="font-medium text-gray-800">{t("campaignCreate.summary")}</h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="text-gray-600">Recipients:</div>
                         <div className="font-medium text-gray-800">{selectedCount} contacts</div>

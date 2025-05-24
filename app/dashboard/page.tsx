@@ -7,15 +7,18 @@ import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
+import UILanguageSelector from "@/components/ui-language-selector"
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar"
 import "react-circular-progressbar/dist/styles.css"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { useSession } from "next-auth/react"
+import { useTranslation } from "react-i18next"
 
 export default function Dashboard() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -459,16 +462,19 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <motion.div
-              className={`bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md border-2 ${isCustomNumber ? "border-green-500" : "border-[#1B9AAA]"} cursor-pointer`}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => setShowWhatsappDialog(true)}
-            >
-              <Phone className={`w-4 h-4 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
-              <span className={`text-sm font-bold ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`}>
-                {isCustomNumber ? "Custom WhatsApp" : "Default WhatsApp"}
-              </span>
-            </motion.div>
+            <div className="flex items-center gap-2">
+              <UILanguageSelector variant="compact" />
+              <motion.div
+                className={`bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md border-2 ${isCustomNumber ? "border-green-500" : "border-[#1B9AAA]"} cursor-pointer`}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setShowWhatsappDialog(true)}
+              >
+                <Phone className={`w-4 h-4 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
+                <span className={`text-sm font-bold ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`}>
+                  {isCustomNumber ? "Custom WhatsApp" : "Default WhatsApp"}
+                </span>
+              </motion.div>
+            </div>
           </div>
 
           <p className="text-lg text-gray-700 mb-4">
