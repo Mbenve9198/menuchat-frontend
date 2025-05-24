@@ -12,94 +12,25 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
+import { useSession } from "next-auth/react"
 
-// Mock data for campaigns
-const mockCampaigns = [
-  {
-    id: 1,
-    name: "Summer Special Offer",
-    type: "promo",
-    status: "sent",
-    sentDate: "2023-06-15T14:30:00",
-    scheduledDate: null,
-    recipients: 128,
-    openRate: 76,
-    clickRate: 42,
-    responseRate: 18,
-  },
-  {
-    id: 2,
-    name: "New Menu Items Launch",
-    type: "update",
-    status: "scheduled",
-    sentDate: null,
-    scheduledDate: "2023-07-05T10:00:00",
-    recipients: 156,
-    openRate: null,
-    clickRate: null,
-    responseRate: null,
-  },
-  {
-    id: 3,
-    name: "Customer Feedback Request",
-    type: "feedback",
-    status: "sent",
-    sentDate: "2023-05-20T09:15:00",
-    scheduledDate: null,
-    recipients: 98,
-    openRate: 82,
-    clickRate: 65,
-    responseRate: 31,
-  },
-  {
-    id: 4,
-    name: "Weekend Brunch Event",
-    type: "event",
-    status: "in_progress",
-    sentDate: "2023-06-28T08:45:00",
-    scheduledDate: null,
-    recipients: 75,
-    openRate: 45,
-    clickRate: 20,
-    responseRate: 8,
-  },
-  {
-    id: 5,
-    name: "Holiday Special Menu",
-    type: "update",
-    status: "draft",
-    sentDate: null,
-    scheduledDate: null,
-    recipients: 0,
-    openRate: null,
-    clickRate: null,
-    responseRate: null,
-  },
-  {
-    id: 6,
-    name: "Loyalty Program Launch",
-    type: "promo",
-    status: "failed",
-    sentDate: "2023-06-10T16:20:00",
-    scheduledDate: null,
-    recipients: 145,
-    openRate: 12,
-    clickRate: 5,
-    responseRate: 2,
-  },
-  {
-    id: 7,
-    name: "Valentine's Day Special",
-    type: "event",
-    status: "sent",
-    sentDate: "2023-02-12T12:00:00",
-    scheduledDate: null,
-    recipients: 112,
-    openRate: 91,
-    clickRate: 78,
-    responseRate: 45,
-  },
-]
+// Tipi TypeScript per le campagne
+interface Campaign {
+  id: string
+  name: string
+  description?: string
+  type: string
+  status: string
+  sentDate?: string
+  scheduledDate?: string
+  recipients: number
+  openRate?: number | null
+  clickRate?: number | null
+  responseRate?: number | null
+  createdAt?: string
+  updatedAt?: string
+  template?: any
+}
 
 // Campaign status options
 const statusOptions = [
@@ -109,6 +40,7 @@ const statusOptions = [
   { value: "in_progress", label: "In Progress" },
   { value: "draft", label: "Draft" },
   { value: "failed", label: "Failed" },
+  { value: "cancelled", label: "Cancelled" },
 ]
 
 // Campaign type options
@@ -131,20 +63,87 @@ const sortOptions = [
 
 export default function CampaignsPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
   const [sortBy, setSortBy] = useState("date_desc")
-  const [filteredCampaigns, setFilteredCampaigns] = useState(mockCampaigns)
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
   const [activeTab, setActiveTab] = useState("all")
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch campaigns from API
+  const fetchCampaigns = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/campaign', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        throw new Error(`Errore ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Errore nel recupero delle campagne')
+      }
+
+      // Trasforma i dati dal backend nel formato atteso dal frontend
+      const transformedCampaigns: Campaign[] = data.data.map((campaign: any) => ({
+        id: campaign._id,
+        name: campaign.name,
+        description: campaign.description,
+        type: campaign.template?.campaignType || 'promo',
+        status: campaign.status,
+        sentDate: campaign.sentDate,
+        scheduledDate: campaign.scheduledDate,
+        recipients: campaign.targetAudience?.totalContacts || 0,
+        openRate: campaign.statistics?.openRate || null,
+        clickRate: campaign.statistics?.clickRate || null,
+        responseRate: campaign.statistics?.responseRate || null,
+        createdAt: campaign.createdAt,
+        updatedAt: campaign.updatedAt,
+        template: campaign.template
+      }))
+
+      setCampaigns(transformedCampaigns)
+    } catch (err: any) {
+      console.error('Errore nel recupero delle campagne:', err)
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Load campaigns when component mounts and session is ready
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.restaurantId) {
+      fetchCampaigns()
+    } else if (status === "unauthenticated") {
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
+    }
+  }, [status, session])
 
   useEffect(() => {
     // Filter and sort campaigns based on current filters
-    let result = [...mockCampaigns]
+    let result = [...campaigns]
 
     // Apply search filter
     if (searchQuery) {
-      result = result.filter((campaign) => campaign.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      result = result.filter((campaign) => 
+        campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (campaign.description && campaign.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
     }
 
     // Apply status filter
@@ -170,9 +169,9 @@ export default function CampaignsPage() {
     result = sortCampaigns(result, sortBy)
 
     setFilteredCampaigns(result)
-  }, [searchQuery, statusFilter, typeFilter, sortBy, activeTab])
+  }, [campaigns, searchQuery, statusFilter, typeFilter, sortBy, activeTab])
 
-  const sortCampaigns = (campaigns, sortOption) => {
+  const sortCampaigns = (campaigns: Campaign[], sortOption: string) => {
     switch (sortOption) {
       case "date_desc":
         return [...campaigns].sort((a, b) => {
@@ -197,7 +196,7 @@ export default function CampaignsPage() {
     }
   }
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "sent":
         return (
@@ -234,7 +233,7 @@ export default function CampaignsPage() {
     }
   }
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case "promo":
         return <span className="text-lg">🎁</span>
@@ -249,7 +248,7 @@ export default function CampaignsPage() {
     }
   }
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return "—"
     const date = new Date(dateString)
     return date.toLocaleDateString("en-US", {
@@ -259,7 +258,7 @@ export default function CampaignsPage() {
     })
   }
 
-  const formatTime = (dateString) => {
+  const formatTime = (dateString?: string) => {
     if (!dateString) return ""
     const date = new Date(dateString)
     return date.toLocaleTimeString("en-US", {
@@ -274,250 +273,264 @@ export default function CampaignsPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
       <BubbleBackground />
-
-      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
+      <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pt-8">
         {/* Header */}
         <div className="w-full max-w-md mb-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <button onClick={() => router.push("/dashboard")} className="mr-2">
-                <ChevronLeft className="w-6 h-6 text-gray-700" />
-              </button>
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">Campaigns</h1>
-            </div>
-            <div className="relative w-10 h-10">
-              <Image
-                src={getMascotImage() || "/placeholder.svg"}
-                alt="Mascot"
-                width={40}
-                height={40}
-                className="drop-shadow-lg"
-              />
-            </div>
+            <CustomButton
+              variant="ghost"
+              className="p-2 hover:bg-white/50 rounded-full"
+              onClick={() => router.push("/dashboard")}
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </CustomButton>
+            <h1 className="text-2xl font-bold text-gray-800">Campaigns</h1>
+            <div className="w-10" />
           </div>
 
-          {/* Tabs */}
-          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4 bg-transparent shadow-none border-b border-gray-200">
-              <TabsTrigger value="all" className="text-sm">
-                All
-              </TabsTrigger>
-              <TabsTrigger value="sent" className="text-sm">
-                Sent
-              </TabsTrigger>
-              <TabsTrigger value="scheduled" className="text-sm">
-                Scheduled
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
           {/* Search and Filters */}
-          <div className="space-y-3 mb-4">
+          <div className="space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Search campaigns..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 rounded-xl border-gray-200"
+                className="pl-10 bg-white/80 border-gray-200 rounded-xl"
               />
             </div>
 
             <div className="flex gap-2">
-              <div className="flex-1">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="rounded-xl border-gray-200 h-9 text-xs">
-                    <Filter className="w-3 h-3 mr-1" />
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="flex-1 bg-white/80 border-gray-200 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-              <div className="flex-1">
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="rounded-xl border-gray-200 h-9 text-xs">
-                    <MessageSquare className="w-3 h-3 mr-1" />
-                    <SelectValue placeholder="Filter by type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {typeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="flex-1 bg-white/80 border-gray-200 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-              <div className="flex-1">
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="rounded-xl border-gray-200 h-9 text-xs">
-                    <ArrowUpDown className="w-3 h-3 mr-1" />
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-12 bg-white/80 border-gray-200 rounded-xl">
+                  <ArrowUpDown className="w-4 h-4" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
 
-        {/* Campaign List */}
-        <div className="w-full max-w-md space-y-4 mb-6">
-          {filteredCampaigns.length > 0 ? (
-            filteredCampaigns.map((campaign) => (
-              <motion.div
-                key={campaign.id}
-                className="bg-white rounded-3xl p-5 shadow-xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-                transition={{ duration: 0.3 }}
-                onClick={() => router.push(`/campaigns/${campaign.id}`)}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <div>{getTypeIcon(campaign.type)}</div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        {getStatusBadge(campaign.status)}
-                        <span className="text-xs text-gray-500">
-                          {campaign.sentDate
-                            ? `Sent: ${formatDate(campaign.sentDate)}`
-                            : campaign.scheduledDate
-                              ? `Scheduled: ${formatDate(campaign.scheduledDate)}`
-                              : "Not scheduled"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">👥</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Recipients</p>
-                    <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">👁️</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Open Rate</p>
-                    <p className="text-sm font-bold text-gray-800">
-                      {campaign.openRate !== null ? `${campaign.openRate}%` : "—"}
-                    </p>
-                  </div>
-
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">👆</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Click Rate</p>
-                    <p className="text-sm font-bold text-gray-800">
-                      {campaign.clickRate !== null ? `${campaign.clickRate}%` : "—"}
-                    </p>
-                  </div>
-                </div>
-
-                {campaign.status === "sent" && campaign.openRate !== null && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-500">Performance</span>
-                      <span className="font-medium text-gray-700">
-                        {campaign.openRate >= 75 ? "Excellent" : campaign.openRate >= 50 ? "Good" : "Average"}
-                      </span>
-                    </div>
-                    <Progress
-                      value={campaign.openRate}
-                      className="h-2 bg-gray-100"
-                      indicatorClassName={`transition-all duration-700 ease-in-out ${
-                        campaign.openRate >= 75
-                          ? "bg-green-500"
-                          : campaign.openRate >= 50
-                            ? "bg-yellow-500"
-                            : "bg-orange-500"
-                      }`}
-                    />
-                  </div>
-                )}
-              </motion.div>
-            ))
-          ) : (
-            <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
-              <div className="flex justify-center mb-4">
-                <Image
-                  src={getMascotImage() || "/placeholder.svg"}
-                  alt="Mascot"
-                  width={80}
-                  height={80}
-                  className="opacity-50"
-                />
-              </div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">No campaigns found</h3>
-              <p className="text-gray-500 mb-4">
-                {searchQuery || statusFilter !== "all" || typeFilter !== "all"
-                  ? "Try adjusting your filters to see more results."
-                  : "Create your first campaign to get started!"}
-              </p>
-              <CustomButton
-                className="py-2 px-4 flex items-center justify-center mx-auto"
-                onClick={() => router.push("/campaign/create")}
-              >
-                <Plus className="w-4 h-4 mr-2" /> Create Campaign
-              </CustomButton>
-            </div>
-          )}
+        {/* Tabs */}
+        <div className="w-full max-w-md mb-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 bg-white/80 rounded-xl">
+              <TabsTrigger value="all" className="rounded-lg">All</TabsTrigger>
+              <TabsTrigger value="sent" className="rounded-lg">Sent</TabsTrigger>
+              <TabsTrigger value="scheduled" className="rounded-lg">Scheduled</TabsTrigger>
+              <TabsTrigger value="drafts" className="rounded-lg">Drafts</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AAA]"></div>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Caricamento campagne...</h3>
+            <p className="text-gray-500">Stiamo recuperando le tue campagne dal database.</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <span className="text-6xl">⚠️</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Errore nel caricamento</h3>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <CustomButton
+              className="py-2 px-4 flex items-center justify-center mx-auto"
+              onClick={fetchCampaigns}
+            >
+              Riprova
+            </CustomButton>
+          </div>
+        )}
+
+        {/* Campaign List */}
+        {!isLoading && !error && (
+          <div className="w-full max-w-md space-y-4 mb-20">
+            {filteredCampaigns.length > 0 ? (
+              filteredCampaigns.map((campaign, index) => (
+                <motion.div
+                  key={campaign.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-3xl p-5 shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300"
+                  onClick={() => router.push(`/campaign/${campaign.id}`)}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <div>{getTypeIcon(campaign.type)}</div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          {getStatusBadge(campaign.status)}
+                          <span className="text-xs text-gray-500">
+                            {campaign.sentDate
+                              ? `Sent: ${formatDate(campaign.sentDate)}`
+                              : campaign.scheduledDate
+                                ? `Scheduled: ${formatDate(campaign.scheduledDate)}`
+                                : "Not scheduled"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-1">
+                        <span className="text-xl">👥</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Recipients</p>
+                      <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-1">
+                        <span className="text-xl">👁️</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Open Rate</p>
+                      <p className="text-sm font-bold text-gray-800">
+                        {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
+                      </p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-1">
+                        <span className="text-xl">👆</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Click Rate</p>
+                      <p className="text-sm font-bold text-gray-800">
+                        {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {campaign.status === "sent" && campaign.openRate !== null && campaign.openRate !== undefined && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500">Performance</span>
+                        <span className="font-medium text-gray-700">
+                          {campaign.openRate >= 75 ? "Excellent" : campaign.openRate >= 50 ? "Good" : "Average"}
+                        </span>
+                      </div>
+                      <Progress
+                        value={campaign.openRate}
+                        className="h-2 bg-gray-100"
+                        indicatorClassName={`transition-all duration-700 ease-in-out ${
+                          campaign.openRate >= 75
+                            ? "bg-green-500"
+                            : campaign.openRate >= 50
+                              ? "bg-yellow-500"
+                              : "bg-orange-500"
+                        }`}
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              ))
+            ) : (
+              <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
+                <div className="flex justify-center mb-4">
+                  <Image
+                    src={getMascotImage() || "/placeholder.svg"}
+                    alt="Mascot"
+                    width={80}
+                    height={80}
+                    className="opacity-50"
+                  />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Nessuna campagna trovata</h3>
+                <p className="text-gray-500 mb-4">
+                  {searchQuery || statusFilter !== "all" || typeFilter !== "all"
+                    ? "Prova a modificare i filtri per vedere più risultati."
+                    : "Crea la tua prima campagna per iniziare!"}
+                </p>
+                <CustomButton
+                  className="py-2 px-4 flex items-center justify-center mx-auto"
+                  onClick={() => router.push("/campaign/create")}
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Crea Campagna
+                </CustomButton>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Campaign Stats Summary */}
-        {filteredCampaigns.length > 0 && (
+        {!isLoading && !error && filteredCampaigns.length > 0 && (
           <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Campaign Performance</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Performance Campagne</h3>
             <div className="flex items-center justify-between mb-4">
               <div className="text-center">
-                <p className="text-xs text-gray-500">Total Sent</p>
+                <p className="text-xs text-gray-500">Totale Inviate</p>
                 <p className="text-2xl font-extrabold text-[#1B9AAA]">
-                  {mockCampaigns.filter((c) => c.status === "sent" || c.status === "in_progress").length}
+                  {campaigns.filter((c) => c.status === "sent" || c.status === "in_progress").length}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-500">Avg. Open Rate</p>
+                <p className="text-xs text-gray-500">Tasso Apertura Medio</p>
                 <p className="text-2xl font-extrabold text-[#EF476F]">
-                  {Math.round(
-                    mockCampaigns.filter((c) => c.openRate !== null).reduce((sum, c) => sum + c.openRate, 0) /
-                      mockCampaigns.filter((c) => c.openRate !== null).length,
-                  )}
+                  {campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).length > 0 ? (
+                    Math.round(
+                      campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).reduce((sum, c) => sum + (c.openRate || 0), 0) /
+                        campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).length,
+                    )
+                  ) : 0}
                   %
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-500">Avg. Click Rate</p>
+                <p className="text-xs text-gray-500">Tasso Click Medio</p>
                 <p className="text-2xl font-extrabold text-[#06D6A0]">
-                  {Math.round(
-                    mockCampaigns.filter((c) => c.clickRate !== null).reduce((sum, c) => sum + c.clickRate, 0) /
-                      mockCampaigns.filter((c) => c.clickRate !== null).length,
-                  )}
+                  {campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).length > 0 ? (
+                    Math.round(
+                      campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).reduce((sum, c) => sum + (c.clickRate || 0), 0) /
+                        campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).length,
+                    )
+                  ) : 0}
                   %
                 </p>
               </div>
@@ -528,32 +541,35 @@ export default function CampaignsPage() {
                   <span className="text-xl">💡</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Performance Tip</p>
+                  <p className="text-sm font-medium text-gray-800">Suggerimento</p>
                   <p className="text-xs text-gray-600">
-                    Campaigns sent between 5-7 PM have 25% higher open rates. Try scheduling your next campaign during
-                    this time!
+                    Le campagne inviate tra le 17:00 e le 19:00 hanno un tasso di apertura del 25% più alto. 
+                    Prova a programmare la tua prossima campagna in questo orario!
                   </p>
                 </div>
               </div>
             </div>
           </div>
         )}
+
         {/* Fixed Create Campaign Button */}
-        <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
-          <CustomButton
-            className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
-            onClick={() => router.push("/campaign/create")}
-          >
-            <Plus className="w-5 h-5 mr-2" /> Create New Campaign
-          </CustomButton>
-        </div>
+        {!isLoading && !error && (
+          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
+            <CustomButton
+              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+              onClick={() => router.push("/campaign/create")}
+            >
+              <Plus className="w-5 h-5 mr-2" /> Crea Nuova Campagna
+            </CustomButton>
+          </div>
+        )}
       </div>
     </main>
   )
 }
 
 // Custom Edit icon component
-function Edit({ className }) {
+function Edit({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -572,7 +588,7 @@ function Edit({ className }) {
 }
 
 // Custom ChevronRight icon component
-function ChevronRight({ className }) {
+function ChevronRight({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

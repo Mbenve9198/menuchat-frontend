@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   ChevronLeft,
@@ -27,81 +27,132 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import BubbleBackground from "@/components/bubble-background"
 import { CustomButton } from "@/components/ui/custom-button"
+import { useSession } from "next-auth/react"
 
-// Mock campaign data
-const mockCampaign = {
-  id: 1,
-  name: "Summer Special Offer",
-  type: "promo",
-  status: "sent",
-  sentDate: "2023-06-15T14:30:00",
-  scheduledDate: null,
-  recipients: 128,
-  openRate: 76,
-  clickRate: 42,
-  responseRate: 18,
-  message:
-    "🌟 Special Offer! Enjoy 20% off your next order this weekend. Use code TASTY20 at checkout. Limited time only!",
-  imageUrl: "/restaurant-special-offer.png",
-  cta: "Order Now",
-  ctaUrl: "https://example.com/order",
-  openCount: 97,
-  clickCount: 54,
-  responseCount: 23,
-  deliveryFailed: 3,
+// Tipi TypeScript
+interface Campaign {
+  id: string
+  name: string
+  description?: string
+  type: string
+  status: string
+  sentDate?: string
+  scheduledDate?: string
+  recipients: number
+  openRate?: number | null
+  clickRate?: number | null
+  responseRate?: number | null
+  createdAt?: string
+  updatedAt?: string
+  template?: any
+  templateParameters?: any
+  targetAudience?: any
+  statistics?: any
 }
 
-// Mock recipient data
-const mockRecipients = [
-  {
-    id: 1,
-    name: "John Smith",
-    phone: "+1 555-123-4567",
-    status: "opened",
-    openTime: "2023-06-15T14:35:00",
-    clicked: true,
-  },
-  {
-    id: 2,
-    name: "Maria Garcia",
-    phone: "+34 612-345-678",
-    status: "opened",
-    openTime: "2023-06-15T14:40:00",
-    clicked: true,
-  },
-  {
-    id: 3,
-    name: "Paolo Rossi",
-    phone: "+39 333-789-0123",
-    status: "opened",
-    openTime: "2023-06-15T15:10:00",
-    clicked: false,
-  },
-  { id: 4, name: "Emma Wilson", phone: "+44 7700-900123", status: "delivered", openTime: null, clicked: false },
-  {
-    id: 5,
-    name: "Ahmed Hassan",
-    phone: "+20 100-456-7890",
-    status: "opened",
-    openTime: "2023-06-15T16:20:00",
-    clicked: true,
-  },
-  { id: 6, name: "Sophia Chen", phone: "+86 138-0123-4567", status: "failed", openTime: null, clicked: false },
-  { id: 7, name: "Carlos Mendez", phone: "+52 55-1234-5678", status: "delivered", openTime: null, clicked: false },
-  {
-    id: 8,
-    name: "Aisha Patel",
-    phone: "+91 98765-43210",
-    status: "opened",
-    openTime: "2023-06-15T14:50:00",
-    clicked: false,
-  },
-]
+interface Recipient {
+  id: string
+  name: string
+  phone: string
+  status: string
+  openTime?: string | null
+  clicked: boolean
+}
 
-export default function CampaignDetailPage({ params }) {
+export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState("overview")
-  const campaign = mockCampaign // In a real app, fetch the campaign by params.id
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [recipients, setRecipients] = useState<Recipient[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch campaign details from API
+  const fetchCampaignDetails = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/campaign/${params.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        throw new Error(`Errore ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Errore nel recupero della campagna')
+      }
+
+      // Trasforma i dati dal backend nel formato atteso dal frontend
+      const transformedCampaign: Campaign = {
+        id: data.data._id,
+        name: data.data.name,
+        description: data.data.description,
+        type: data.data.template?.campaignType || 'promo',
+        status: data.data.status,
+        sentDate: data.data.sentDate,
+        scheduledDate: data.data.scheduledDate,
+        recipients: data.data.targetAudience?.totalContacts || 0,
+        openRate: data.data.statistics?.openRate || null,
+        clickRate: data.data.statistics?.clickRate || null,
+        responseRate: data.data.statistics?.responseRate || null,
+        createdAt: data.data.createdAt,
+        updatedAt: data.data.updatedAt,
+        template: data.data.template,
+        templateParameters: data.data.templateParameters,
+        targetAudience: data.data.targetAudience,
+        statistics: data.data.statistics
+      }
+
+      setCampaign(transformedCampaign)
+
+      // TODO: Implementare il fetch dei destinatari quando sarà disponibile l'endpoint
+      // Per ora usiamo dati mock per i destinatari
+      const mockRecipients: Recipient[] = [
+        {
+          id: "1",
+          name: "Cliente 1",
+          phone: "+39 333-123-4567",
+          status: "opened",
+          openTime: "2023-06-15T14:35:00",
+          clicked: true,
+        },
+        {
+          id: "2",
+          name: "Cliente 2",
+          phone: "+39 333-234-5678",
+          status: "delivered",
+          openTime: null,
+          clicked: false,
+        },
+      ]
+      setRecipients(mockRecipients)
+
+    } catch (err: any) {
+      console.error('Errore nel recupero della campagna:', err)
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Load campaign when component mounts and session is ready
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.restaurantId) {
+      fetchCampaignDetails()
+    } else if (status === "unauthenticated") {
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
+    }
+  }, [status, session, params.id])
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -202,322 +253,312 @@ export default function CampaignDetailPage({ params }) {
   }
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
       <BubbleBackground />
-
-      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
+      <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pt-8">
         {/* Header */}
         <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <button onClick={() => router.push("/campaigns")} className="mr-2">
-                <ChevronLeft className="w-6 h-6 text-gray-700" />
-              </button>
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">Campaign Details</h1>
-            </div>
-            <div className="relative w-10 h-10">
-              <Image
-                src={getMascotImage() || "/placeholder.svg"}
-                alt="Mascot"
-                width={40}
-                height={40}
-                className="drop-shadow-lg"
-              />
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <CustomButton
+              variant="ghost"
+              className="p-2 hover:bg-white/50 rounded-full"
+              onClick={() => router.push("/campaign")}
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </CustomButton>
+            <h1 className="text-xl font-bold text-gray-800">Dettagli Campagna</h1>
+            <div className="w-10" />
           </div>
+        </div>
 
-          {/* Campaign Header */}
-          <div className="bg-white rounded-3xl p-5 shadow-xl mb-4">
-            <div className="flex items-start gap-4 mb-3">
-              <div className="p-3 rounded-full bg-gray-100">{getTypeIcon(campaign.type)}</div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-800">{campaign.name}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  {getStatusBadge(campaign.status)}
-                  <span className="text-xs text-gray-500">
-                    {campaign.sentDate
-                      ? `Sent: ${formatDate(campaign.sentDate)}`
-                      : campaign.scheduledDate
-                        ? `Scheduled: ${formatDate(campaign.scheduledDate)}`
-                        : "Not scheduled"}
-                  </span>
-                </div>
-              </div>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AAA]"></div>
             </div>
-
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <Users className="w-4 h-4 text-gray-500" />
-                </div>
-                <p className="text-xs text-gray-500">Recipients</p>
-                <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <Eye className="w-4 h-4 text-gray-500" />
-                </div>
-                <p className="text-xs text-gray-500">Open Rate</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {campaign.openRate !== null ? `${campaign.openRate}%` : "—"}
-                </p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <MousePointerClick className="w-4 h-4 text-gray-500" />
-                </div>
-                <p className="text-xs text-gray-500">Click Rate</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {campaign.clickRate !== null ? `${campaign.clickRate}%` : "—"}
-                </p>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              <CustomButton
-                variant="outline"
-                className="flex-1 py-2 flex items-center justify-center text-xs"
-                onClick={() => {}}
-              >
-                <Share2 className="w-4 h-4 mr-1" /> Share Results
-              </CustomButton>
-              <CustomButton
-                className="flex-1 py-2 flex items-center justify-center text-xs"
-                onClick={() => router.push(`/campaign/create?duplicate=${campaign.id}`)}
-              >
-                <Edit3 className="w-4 h-4 mr-1" /> Duplicate
-              </CustomButton>
-            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Caricamento campagna...</h3>
+            <p className="text-gray-500">Stiamo recuperando i dettagli della campagna.</p>
           </div>
+        )}
 
-          {/* Tabs */}
-          <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="overview" className="text-sm">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="recipients" className="text-sm">
-                Recipients
-              </TabsTrigger>
-            </TabsList>
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <span className="text-6xl">⚠️</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Errore nel caricamento</h3>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <CustomButton
+              className="py-2 px-4 flex items-center justify-center mx-auto"
+              onClick={fetchCampaignDetails}
+            >
+              Riprova
+            </CustomButton>
+          </div>
+        )}
 
-            <TabsContent value="overview" className="space-y-4">
-              {/* Message Preview */}
-              <div className="bg-white rounded-3xl p-5 shadow-xl">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Message Preview</h3>
-                <div className="bg-gray-100 rounded-xl p-4">
-                  <div className="flex flex-col gap-3">
-                    <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[280px]">
-                      {campaign.imageUrl && (
-                        <div className="mb-2 rounded-md overflow-hidden">
-                          <Image
-                            src={campaign.imageUrl || "/placeholder.svg"}
-                            alt="Campaign image"
-                            width={260}
-                            height={180}
-                            className="w-full h-auto"
+        {/* Campaign Details */}
+        {!isLoading && !error && campaign && (
+          <>
+            {/* Campaign Header */}
+            <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-4">
+              <div className="flex items-start gap-4 mb-3">
+                <div className="p-3 rounded-full bg-gray-100">{getTypeIcon(campaign.type)}</div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-gray-800">{campaign.name}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getStatusBadge(campaign.status)}
+                    <span className="text-xs text-gray-500">
+                      {campaign.sentDate
+                        ? `Inviata: ${formatDate(campaign.sentDate)}`
+                        : campaign.scheduledDate
+                          ? `Programmata: ${formatDate(campaign.scheduledDate)}`
+                          : "Non programmata"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-1">
+                    <Users className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <p className="text-xs text-gray-500">Destinatari</p>
+                  <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-1">
+                    <Eye className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <p className="text-xs text-gray-500">Tasso Apertura</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
+                  </p>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-1">
+                    <MousePointerClick className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <p className="text-xs text-gray-500">Tasso Click</p>
+                  <p className="text-sm font-bold text-gray-800">
+                    {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <CustomButton
+                  className="flex-1 py-2 flex items-center justify-center text-xs"
+                  onClick={() => router.push(`/campaign/create?duplicate=${campaign.id}`)}
+                >
+                  <Edit3 className="w-4 h-4 mr-1" /> Duplica
+                </CustomButton>
+                <CustomButton
+                  variant="outline"
+                  className="flex-1 py-2 flex items-center justify-center text-xs"
+                  onClick={() => {
+                    // TODO: Implementare condivisione
+                    console.log("Condividi campagna")
+                  }}
+                >
+                  <Share2 className="w-4 h-4 mr-1" /> Condividi
+                </CustomButton>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="w-full max-w-md mb-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 bg-white/80 rounded-xl">
+                  <TabsTrigger value="overview" className="rounded-lg">Panoramica</TabsTrigger>
+                  <TabsTrigger value="analytics" className="rounded-lg">Analytics</TabsTrigger>
+                  <TabsTrigger value="recipients" className="rounded-lg">Destinatari</TabsTrigger>
+                </TabsList>
+
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="mt-4 space-y-4">
+                  <div className="bg-white rounded-3xl p-5 shadow-xl">
+                    <h3 className="text-lg font-bold text-gray-800 mb-3">Anteprima Messaggio</h3>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="self-start bg-white rounded-lg p-3 shadow-sm max-w-[280px]">
+                          {campaign.template?.message && (
+                            <p className="text-sm">{campaign.template.message}</p>
+                          )}
+                          {campaign.template?.cta && (
+                            <div className="mt-2 bg-[#EF476F] text-white text-sm font-medium py-1 px-3 rounded-md inline-block">
+                              {campaign.template.cta}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {campaign.description && (
+                    <div className="bg-white rounded-3xl p-5 shadow-xl">
+                      <h3 className="text-lg font-bold text-gray-800 mb-3">Descrizione</h3>
+                      <p className="text-gray-600">{campaign.description}</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Analytics Tab */}
+                <TabsContent value="analytics" className="mt-4 space-y-4">
+                  <div className="bg-white rounded-3xl p-5 shadow-xl">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Performance Dettagliata</h3>
+                    
+                    {campaign.status === "sent" && campaign.statistics ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Consegnati</span>
+                            <span className="font-medium text-gray-800">
+                              {campaign.statistics.delivered || campaign.recipients} / {campaign.recipients}
+                            </span>
+                          </div>
+                          <Progress
+                            value={((campaign.statistics.delivered || campaign.recipients) / campaign.recipients) * 100}
+                            className="h-2 bg-gray-100"
+                            indicatorClassName="bg-blue-500 transition-all duration-700 ease-in-out"
                           />
                         </div>
-                      )}
-                      <p className="text-sm">{campaign.message}</p>
-                      {campaign.cta && (
-                        <div className="mt-2 bg-[#EF476F] text-white text-sm font-medium py-1 px-3 rounded-md inline-block">
-                          {campaign.cta}
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Aperti</span>
+                            <span className="font-medium text-gray-800">
+                              {campaign.statistics.opened || 0} / {campaign.recipients}
+                            </span>
+                          </div>
+                          <Progress
+                            value={((campaign.statistics.opened || 0) / campaign.recipients) * 100}
+                            className="h-2 bg-gray-100"
+                            indicatorClassName="bg-green-500 transition-all duration-700 ease-in-out"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Click</span>
+                            <span className="font-medium text-gray-800">
+                              {campaign.statistics.clicked || 0} / {campaign.recipients}
+                            </span>
+                          </div>
+                          <Progress
+                            value={((campaign.statistics.clicked || 0) / campaign.recipients) * 100}
+                            className="h-2 bg-gray-100"
+                            indicatorClassName="bg-yellow-500 transition-all duration-700 ease-in-out"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Risposte</span>
+                            <span className="font-medium text-gray-800">
+                              {campaign.statistics.responded || 0} / {campaign.recipients}
+                            </span>
+                          </div>
+                          <Progress
+                            value={((campaign.statistics.responded || 0) / campaign.recipients) * 100}
+                            className="h-2 bg-gray-100"
+                            indicatorClassName="bg-purple-500 transition-all duration-700 ease-in-out"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">
+                          {campaign.status === "sent" 
+                            ? "Dati analytics non ancora disponibili" 
+                            : "Analytics disponibili dopo l'invio della campagna"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Recipients Tab */}
+                <TabsContent value="recipients" className="mt-4 space-y-4">
+                  <div className="bg-white rounded-3xl p-5 shadow-xl">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Destinatari</h3>
+                    
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                      {recipients.length > 0 ? (
+                        recipients.map((recipient) => (
+                          <motion.div
+                            key={recipient.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-800">{recipient.name}</p>
+                              <p className="text-xs text-gray-500">{recipient.phone}</p>
+                              {recipient.openTime && (
+                                <p className="text-xs text-green-600">
+                                  Aperto: {formatDateTime(recipient.openTime)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {recipient.clicked && <MousePointerClick className="w-4 h-4 text-yellow-500" />}
+                              {getRecipientStatusBadge(recipient.status)}
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500">Nessun destinatario trovato</p>
                         </div>
                       )}
-                      <div className="mt-1 bg-gray-200 text-gray-700 text-xs py-1 px-2 rounded-md inline-block">
-                        Opt-out
+                    </div>
+                  </div>
+
+                  {/* Recipients Summary */}
+                  <div className="bg-white rounded-3xl p-5 shadow-xl">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Riepilogo Destinatari</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">Aperti</p>
+                        <p className="text-lg font-bold text-green-600">
+                          {recipients.filter((r) => r.status === "opened").length}
+                        </p>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Metrics */}
-              <div className="bg-white rounded-3xl p-5 shadow-xl">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Performance Metrics</h3>
-
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Delivered</span>
-                      <span className="font-medium text-gray-800">
-                        {campaign.recipients - campaign.deliveryFailed} / {campaign.recipients}
-                      </span>
-                    </div>
-                    <Progress
-                      value={((campaign.recipients - campaign.deliveryFailed) / campaign.recipients) * 100}
-                      className="h-2 bg-gray-100"
-                      indicatorClassName="bg-blue-500 transition-all duration-700 ease-in-out"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Opened</span>
-                      <span className="font-medium text-gray-800">
-                        {campaign.openCount} / {campaign.recipients}
-                      </span>
-                    </div>
-                    <Progress
-                      value={(campaign.openCount / campaign.recipients) * 100}
-                      className="h-2 bg-gray-100"
-                      indicatorClassName="bg-green-500 transition-all duration-700 ease-in-out"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Clicked</span>
-                      <span className="font-medium text-gray-800">
-                        {campaign.clickCount} / {campaign.recipients}
-                      </span>
-                    </div>
-                    <Progress
-                      value={(campaign.clickCount / campaign.recipients) * 100}
-                      className="h-2 bg-gray-100"
-                      indicatorClassName="bg-yellow-500 transition-all duration-700 ease-in-out"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Responded</span>
-                      <span className="font-medium text-gray-800">
-                        {campaign.responseCount} / {campaign.recipients}
-                      </span>
-                    </div>
-                    <Progress
-                      value={(campaign.responseCount / campaign.recipients) * 100}
-                      className="h-2 bg-gray-100"
-                      indicatorClassName="bg-purple-500 transition-all duration-700 ease-in-out"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Insights */}
-              <div className="bg-white rounded-3xl p-5 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-800">Insights</h3>
-                  <div className="relative">
-                    <Image
-                      src={getExcitedMascotImage() || "/placeholder.svg"}
-                      alt="Excited Mascot"
-                      width={40}
-                      height={40}
-                      className="drop-shadow-lg"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-green-50 rounded-xl p-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-full bg-green-100 flex-shrink-0">
-                        <BarChart3 className="w-4 h-4 text-green-600" />
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">Click</p>
+                        <p className="text-lg font-bold text-yellow-600">
+                          {recipients.filter((r) => r.clicked).length}
+                        </p>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">Above Average Performance</p>
-                        <p className="text-xs text-gray-600">
-                          This campaign's open rate is 15% higher than your average. The promotional offer was
-                          particularly effective!
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">Solo Consegnati</p>
+                        <p className="text-lg font-bold text-blue-600">
+                          {recipients.filter((r) => r.status === "delivered").length}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 mb-1">Falliti</p>
+                        <p className="text-lg font-bold text-red-600">
+                          {recipients.filter((r) => r.status === "failed").length}
                         </p>
                       </div>
                     </div>
                   </div>
-
-                  <div className="bg-blue-50 rounded-xl p-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-full bg-blue-100 flex-shrink-0">
-                        <Clock className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">Best Time to Send</p>
-                        <p className="text-xs text-gray-600">
-                          Most of your customers opened this message within 30 minutes of receiving it. Consider sending
-                          future campaigns at similar times.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="recipients" className="space-y-4">
-              {/* Recipients List */}
-              <div className="bg-white rounded-3xl p-5 shadow-xl">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Recipients</h3>
-
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-                  {mockRecipients.map((recipient) => (
-                    <motion.div
-                      key={recipient.id}
-                      className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div>
-                        <p className="font-medium text-gray-800">{recipient.name}</p>
-                        <p className="text-sm text-gray-500">{recipient.phone}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="mb-1">{getRecipientStatusBadge(recipient.status)}</div>
-                        {recipient.clicked && (
-                          <span className="text-xs text-green-600 font-medium flex items-center justify-end">
-                            <MousePointerClick className="w-3 h-3 mr-1" /> Clicked
-                          </span>
-                        )}
-                        {recipient.openTime && (
-                          <p className="text-xs text-gray-400">{formatTime(recipient.openTime)}</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recipients Summary */}
-              <div className="bg-white rounded-3xl p-5 shadow-xl">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Summary</h3>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">Opened</p>
-                    <p className="text-lg font-bold text-green-600">
-                      {mockRecipients.filter((r) => r.status === "opened").length}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">Clicked</p>
-                    <p className="text-lg font-bold text-yellow-600">
-                      {mockRecipients.filter((r) => r.clicked).length}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">Delivered Only</p>
-                    <p className="text-lg font-bold text-blue-600">
-                      {mockRecipients.filter((r) => r.status === "delivered").length}
-                    </p>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-500 mb-1">Failed</p>
-                    <p className="text-lg font-bold text-red-600">
-                      {mockRecipients.filter((r) => r.status === "failed").length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </>
+        )}
       </div>
     </main>
   )
