@@ -390,30 +390,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                     <div className="bg-white rounded-xl p-4">
                       {/* Bolla del messaggio in stile WhatsApp */}
                       <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 relative max-w-[90%]">
-                        {/* Header per indicare campagna salvata */}
-                        <div className="absolute top-0 left-0 right-0 px-4 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-medium rounded-t-xl flex items-center justify-between">
-                          <div className="flex items-center">
-                            <CheckCircle2 className="w-3 h-3 mr-1.5" /> Campagna Salvata
-                          </div>
-                          <span className="text-xs opacity-75">
-                            {campaign.status === "sent" ? "Inviata" : campaign.status === "scheduled" ? "Programmata" : "Bozza"}
-                          </span>
-                        </div>
-                        
-                        {/* Compensazione per l'header */}
-                        <div className="mt-6"></div>
-                        
                         {/* Media in anteprima se presente */}
                         {campaign.templateParameters?.useImage && campaign.templateParameters?.imageUrl && (
                           <>
-                            {/* Media Header colorato quando c'è un media */}
-                            <div className="absolute left-0 right-0 top-[1.5rem] h-7 bg-[#65CB9B] rounded-t-none text-white text-xs font-medium flex items-center px-4">
-                              Media Messages
-                            </div>
-                            
-                            {/* Spazio extra per entrambi gli header */}
-                            <div className="mt-8"></div>
-                            
                             {/* Determina il tipo di media dall'URL */}
                             {campaign.templateParameters.imageUrl.includes('.pdf') ? (
                               <div className="mb-3 flex items-center bg-gray-100 p-2 rounded-md">
