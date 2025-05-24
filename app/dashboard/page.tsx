@@ -327,13 +327,13 @@ export default function Dashboard() {
   useEffect(() => {
     const hour = new Date().getHours()
     if (hour < 12) {
-      setGreeting("Good Morning")
+      setGreeting(t("dashboard.goodMorning"))
     } else if (hour < 18) {
-      setGreeting("Good Afternoon")
+      setGreeting(t("dashboard.goodAfternoon"))
     } else {
-      setGreeting("Good Evening")
+      setGreeting(t("dashboard.goodEvening"))
     }
-  }, [])
+  }, [t])
 
   const toggleActivityExpand = (id: number) => {
     setActivities(
@@ -471,7 +471,7 @@ export default function Dashboard() {
               >
                 <Phone className={`w-4 h-4 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
                 <span className={`text-sm font-bold ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`}>
-                  {isCustomNumber ? "Custom WhatsApp" : "Default WhatsApp"}
+                  {isCustomNumber ? t("dashboard.customWhatsapp") : t("dashboard.defaultWhatsapp")}
                 </span>
               </motion.div>
             </div>
@@ -488,7 +488,7 @@ export default function Dashboard() {
             transition={{ delay: 0.2 }}
           >
             <Calendar className="w-4 h-4 text-[#EF476F]" />
-            <span className="text-xs font-medium text-gray-700">{daysActive} days active</span>
+            <span className="text-xs font-medium text-gray-700">{daysActive} {t("dashboard.daysActive")}</span>
           </motion.div>
         </div>
 
@@ -513,25 +513,25 @@ export default function Dashboard() {
                 className={`p-3 cursor-pointer hover:bg-gray-50 ${timeFilter === "7days" ? "bg-gray-50" : ""}`}
                 onClick={() => handleFilterSelect("7days")}
               >
-                <span className="text-sm font-medium text-gray-700">Last 7 days</span>
+                <span className="text-sm font-medium text-gray-700">{t("dashboard.lastDays", { count: 7 })}</span>
               </div>
               <div
                 className={`p-3 cursor-pointer hover:bg-gray-50 ${timeFilter === "30days" ? "bg-gray-50" : ""}`}
                 onClick={() => handleFilterSelect("30days")}
               >
-                <span className="text-sm font-medium text-gray-700">Last 30 days</span>
+                <span className="text-sm font-medium text-gray-700">{t("dashboard.lastDays", { count: 30 })}</span>
               </div>
               <div
                 className={`p-3 cursor-pointer hover:bg-gray-50 ${timeFilter === "custom" ? "bg-gray-50" : ""}`}
                 onClick={() => handleFilterSelect("custom")}
               >
-                <span className="text-sm font-medium text-gray-700">Custom range</span>
+                <span className="text-sm font-medium text-gray-700">{t("dashboard.customRange")}</span>
               </div>
 
               {showDatePicker && (
                 <div className="p-3 border-t border-gray-100">
                   <div className="mb-3">
-                    <label className="text-xs text-gray-500 block mb-1">Start date</label>
+                    <label className="text-xs text-gray-500 block mb-1">{t("dashboard.startDate")}</label>
                     <input
                       type="date"
                       className="w-full p-2 border border-gray-200 rounded-md text-sm"
@@ -540,7 +540,7 @@ export default function Dashboard() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label className="text-xs text-gray-500 block mb-1">End date</label>
+                    <label className="text-xs text-gray-500 block mb-1">{t("dashboard.endDate")}</label>
                     <input
                       type="date"
                       className="w-full p-2 border border-gray-200 rounded-md text-sm"
@@ -552,7 +552,7 @@ export default function Dashboard() {
                     className="w-full bg-[#1B9AAA] text-white rounded-md py-2 text-sm font-medium"
                     onClick={applyCustomDateRange}
                   >
-                    Apply
+                    {t("common.apply")}
                   </button>
                 </div>
               )}
@@ -579,7 +579,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Restaurant Level</h3>
+                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.restaurantLevel")}</h3>
                 <p className={`text-2xl font-extrabold ${
                   getLevelInfo().level === "Newbie"
                     ? "text-blue-600"
@@ -640,7 +640,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Menus Sent</h3>
+                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.menusSent")}</h3>
                 <p className="text-3xl font-extrabold text-[#1B9AAA]">{menusSent}</p>
               </div>
               <div className="text-3xl">📋</div>
@@ -648,7 +648,7 @@ export default function Dashboard() {
 
             <div className="flex items-center text-sm text-green-600">
               <ArrowUp className="w-4 h-4 mr-1" />
-              <span>{trendMenus > 0 ? `+${trendMenus}%` : `${trendMenus}%`} this week</span>
+              <span>{trendMenus > 0 ? `+${trendMenus}%` : `${trendMenus}%`} {t("dashboard.thisWeek")}</span>
             </div>
           </motion.div>
 
@@ -662,7 +662,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Review Requests</h3>
+                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.reviewRequests")}</h3>
                 <p className="text-3xl font-extrabold text-[#EF476F]">{reviewRequests}</p>
               </div>
               <div className="text-3xl">📢</div>
@@ -679,7 +679,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Reviews Collected</h3>
+                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.reviewsCollected")}</h3>
                 <div className="flex items-center">
                   <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected || totalReviewsCollected}</p>
                   {newReviewsCollected > 0 && (
@@ -702,19 +702,19 @@ export default function Dashboard() {
                     <Star key={star} className="w-4 h-4 text-[#FFE14D] fill-[#FFE14D]" />
                   ))}
                 </div>
-                <span className="ml-2 text-sm font-medium text-gray-700">4.8 avg</span>
+                <span className="ml-2 text-sm font-medium text-gray-700">4.8 {t("dashboard.avgRating")}</span>
               </div>
 
               {isNewRecord && (
                 <div className="bg-[#F8FFE5] px-3 py-1 rounded-full text-xs font-bold text-[#06D6A0] flex items-center">
-                  <Trophy className="w-3 h-3 mr-1" /> New record!
+                  <Trophy className="w-3 h-3 mr-1" /> {t("dashboard.newRecord")}
                 </div>
               )}
             </div>
 
             <div className="flex justify-between items-center mb-2">
               <div className="text-xs text-gray-600">
-                Recensioni su Google: <span className="font-medium">{currentReviewCount}</span>
+                {t("dashboard.reviewsOnGoogle")}: <span className="font-medium">{currentReviewCount}</span>
               </div>
             </div>
             
@@ -739,7 +739,7 @@ export default function Dashboard() {
                 disabled={isSyncingReviews}
               >
                 <RefreshCw className={`w-3 h-3 ${isSyncingReviews ? 'animate-spin' : ''}`} /> 
-                {isSyncingReviews ? 'Syncing from Google...' : 'Sync Google reviews'}
+                {isSyncingReviews ? t("dashboard.syncingFromGoogle") : t("dashboard.syncGoogleReviewsButton")}
               </button>
             </div>
           </motion.div>
@@ -753,23 +753,23 @@ export default function Dashboard() {
           transition={{ delay: 0.6 }}
         >
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-bold text-gray-800">Weekly Goal</h3>
+            <h3 className="text-lg font-bold text-gray-800">{t("dashboard.weeklyGoal")}</h3>
             <div className="bg-[#FFE14D]/20 px-3 py-1 rounded-full text-xs font-bold text-gray-700">
-              {weeklyGoalDaysLeft} days left
+              {weeklyGoalDaysLeft} {t("dashboard.daysLeft")}
             </div>
           </div>
 
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm text-gray-600 mb-1">
-                Get {weeklyGoalTarget} new reviews this week
+                {t("dashboard.getNewReviews", { count: weeklyGoalTarget })}
               </p>
               <div className="flex items-center">
                 <span className="text-sm font-medium text-gray-700">
-                  {weeklyGoalCurrent}/{weeklyGoalTarget} completed
+                  {weeklyGoalCurrent}/{weeklyGoalTarget} {t("dashboard.completed")}
                 </span>
                 <span className="ml-2 text-xs text-green-600">
-                  ({weeklyGoalTarget - weeklyGoalCurrent} more to go!)
+                  ({weeklyGoalTarget - weeklyGoalCurrent} {t("dashboard.moreToGo")})
                 </span>
               </div>
             </div>
@@ -804,7 +804,7 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">{t("dashboard.recentActivity")}</h3>
 
           <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
             {activities.map((activity) => (
@@ -867,7 +867,7 @@ export default function Dashboard() {
               onClick={() => router.push("/campaign")}
             >
               <MessageSquare className="w-6 h-6 mb-1" />
-              Campaigns
+              {t("dashboard.campaigns")}
             </CustomButton>
 
             <CustomButton
@@ -875,7 +875,7 @@ export default function Dashboard() {
               onClick={() => router.push("/templates")}
             >
               <Edit3 className="w-6 h-6 mb-1" />
-              Edit Messages
+              {t("dashboard.editMessages")}
             </CustomButton>
 
             <CustomButton
@@ -883,7 +883,7 @@ export default function Dashboard() {
               onClick={() => {}}
             >
               <Share2 className="w-6 h-6 mb-1" />
-              Share Success
+              {t("dashboard.shareSuccess")}
             </CustomButton>
           </div>
         </div>
@@ -898,7 +898,7 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-gray-800">Impostazioni WhatsApp</h3>
+                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.whatsappSettings")}</h3>
                 <button 
                   className="text-gray-500 hover:text-gray-700" 
                   onClick={() => setShowWhatsappDialog(false)}
@@ -908,7 +908,7 @@ export default function Dashboard() {
               </div>
               
               <div className="mb-6 text-sm text-gray-600">
-                <p>Per impostazione predefinita, MenuChat utilizza il nostro numero WhatsApp. Puoi configurare il tuo numero personalizzato inserendo le informazioni richieste.</p>
+                <p>{t("dashboard.whatsappDescription")}</p>
               </div>
               
               {twilioError && (
@@ -919,14 +919,14 @@ export default function Dashboard() {
               
               {twilioSuccess && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">
-                  Impostazioni aggiornate con successo!
+                  {t("dashboard.settingsUpdated")}
                 </div>
               )}
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Numero WhatsApp (con prefisso)
+                    {t("dashboard.whatsappNumber")}
                   </label>
                   <input
                     type="text"
@@ -939,7 +939,7 @@ export default function Dashboard() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Messaging Service ID
+                    {t("dashboard.messagingServiceId")}
                   </label>
                   <input
                     type="text"
@@ -954,7 +954,7 @@ export default function Dashboard() {
                 {isCustomNumber && (
                   <div className="pt-3 border-t border-gray-200">
                     <p className="text-sm text-gray-600 mb-2">
-                      Stai utilizzando un numero WhatsApp personalizzato. Puoi tornare al numero predefinito di MenuChat:
+                      {t("dashboard.usingCustomNumber")}
                     </p>
                     <CustomButton
                       className="w-full h-10"
@@ -962,7 +962,7 @@ export default function Dashboard() {
                       onClick={restoreDefaultWhatsapp}
                       disabled={isSavingTwilio}
                     >
-                      Ripristina Numero Predefinito
+                      {t("dashboard.restoreDefault")}
                     </CustomButton>
                   </div>
                 )}
@@ -973,7 +973,7 @@ export default function Dashboard() {
                     onClick={() => setShowWhatsappDialog(false)}
                     variant="outline"
                   >
-                    Annulla
+                    {t("common.cancel")}
                   </CustomButton>
                   
                   <CustomButton
@@ -981,7 +981,7 @@ export default function Dashboard() {
                     disabled={isSavingTwilio}
                     onClick={saveCustomTwilioSettings}
                   >
-                    {isSavingTwilio ? "Salvataggio..." : "Salva Impostazioni"}
+                    {isSavingTwilio ? t("dashboard.saving") : t("dashboard.saveSettings")}
                   </CustomButton>
                 </div>
               </div>

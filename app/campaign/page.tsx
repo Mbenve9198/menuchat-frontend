@@ -36,31 +36,31 @@ interface Campaign {
 
 // Campaign status options
 const statusOptions = [
-  { value: "all", label: "All Campaigns" },
-  { value: "sent", label: "Sent" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "draft", label: "Draft" },
-  { value: "failed", label: "Failed" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "all", label: "campaigns.allCampaigns" },
+  { value: "sent", label: "campaigns.sent" },
+  { value: "scheduled", label: "campaigns.scheduled" },
+  { value: "in_progress", label: "campaigns.status.inProgress" },
+  { value: "draft", label: "campaigns.status.draft" },
+  { value: "failed", label: "campaigns.status.failed" },
+  { value: "cancelled", label: "campaigns.status.cancelled" },
 ]
 
 // Campaign type options
 const typeOptions = [
-  { value: "all", label: "All Types" },
-  { value: "promo", label: "Promotional" },
-  { value: "event", label: "Event" },
-  { value: "update", label: "Update" },
-  { value: "feedback", label: "Feedback" },
+  { value: "all", label: "campaigns.allTypes" },
+  { value: "promo", label: "campaigns.promotional" },
+  { value: "event", label: "campaigns.event" },
+  { value: "update", label: "campaigns.update" },
+  { value: "feedback", label: "campaigns.feedback" },
 ]
 
 // Sort options
 const sortOptions = [
-  { value: "date_desc", label: "Newest First" },
-  { value: "date_asc", label: "Oldest First" },
-  { value: "name_asc", label: "Name (A-Z)" },
-  { value: "name_desc", label: "Name (Z-A)" },
-  { value: "performance", label: "Best Performing" },
+  { value: "date_desc", label: "campaigns.newestFirst" },
+  { value: "date_asc", label: "campaigns.oldestFirst" },
+  { value: "name_asc", label: "campaigns.nameAZ" },
+  { value: "name_desc", label: "campaigns.nameZA" },
+  { value: "performance", label: "campaigns.bestPerforming" },
 ]
 
 export default function CampaignsPage() {
@@ -204,31 +204,31 @@ export default function CampaignsPage() {
       case "sent":
         return (
           <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1">
-            <span>✅</span> Sent
+            <span>✅</span> {t("campaigns.status.sent")}
           </Badge>
         )
       case "scheduled":
         return (
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1">
-            <span>📆</span> Scheduled
+            <span>📆</span> {t("campaigns.status.scheduled")}
           </Badge>
         )
       case "in_progress":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 flex items-center gap-1">
-            <span>⏳</span> In Progress
+            <span>⏳</span> {t("campaigns.status.inProgress")}
           </Badge>
         )
       case "draft":
         return (
           <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1">
-            <span>📝</span> Draft
+            <span>📝</span> {t("campaigns.status.draft")}
           </Badge>
         )
       case "failed":
         return (
           <Badge className="bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1">
-            <span>❌</span> Failed
+            <span>❌</span> {t("campaigns.status.failed")}
           </Badge>
         )
       default:
@@ -298,7 +298,7 @@ export default function CampaignsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search campaigns..."
+                placeholder={t("campaigns.searchCampaigns")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-white/80 border-gray-200 rounded-xl"
@@ -313,7 +313,7 @@ export default function CampaignsPage() {
                 <SelectContent>
                   {statusOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.label)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -326,7 +326,7 @@ export default function CampaignsPage() {
                 <SelectContent>
                   {typeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.label)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -339,7 +339,7 @@ export default function CampaignsPage() {
                 <SelectContent>
                   {sortOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.label)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -352,10 +352,10 @@ export default function CampaignsPage() {
         <div className="w-full max-w-md mb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-white/80 rounded-xl">
-              <TabsTrigger value="all" className="rounded-lg">All</TabsTrigger>
-              <TabsTrigger value="sent" className="rounded-lg">Sent</TabsTrigger>
-              <TabsTrigger value="scheduled" className="rounded-lg">Scheduled</TabsTrigger>
-              <TabsTrigger value="drafts" className="rounded-lg">Drafts</TabsTrigger>
+              <TabsTrigger value="all" className="rounded-lg">{t("common.all")}</TabsTrigger>
+              <TabsTrigger value="sent" className="rounded-lg">{t("campaigns.sent")}</TabsTrigger>
+              <TabsTrigger value="scheduled" className="rounded-lg">{t("campaigns.scheduled")}</TabsTrigger>
+              <TabsTrigger value="drafts" className="rounded-lg">{t("campaigns.drafts")}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -366,8 +366,8 @@ export default function CampaignsPage() {
             <div className="flex justify-center mb-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AAA]"></div>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Caricamento campagne...</h3>
-            <p className="text-gray-500">Stiamo recuperando le tue campagne dal database.</p>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.loadingCampaigns")}</h3>
+            <p className="text-gray-500">{t("campaigns.loadingDescription")}</p>
           </div>
         )}
 
@@ -377,13 +377,13 @@ export default function CampaignsPage() {
             <div className="flex justify-center mb-4">
               <span className="text-6xl">⚠️</span>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Errore nel caricamento</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.loadingError")}</h3>
             <p className="text-gray-500 mb-4">{error}</p>
             <CustomButton
               className="py-2 px-4 flex items-center justify-center mx-auto"
               onClick={fetchCampaigns}
             >
-              Riprova
+              {t("common.retry")}
             </CustomButton>
           </div>
         )}
@@ -410,10 +410,10 @@ export default function CampaignsPage() {
                           {getStatusBadge(campaign.status)}
                           <span className="text-xs text-gray-500">
                             {campaign.sentDate
-                              ? `Sent: ${formatDate(campaign.sentDate)}`
+                              ? `${t("campaigns.sent")}: ${formatDate(campaign.sentDate)}`
                               : campaign.scheduledDate
-                                ? `Scheduled: ${formatDate(campaign.scheduledDate)}`
-                                : "Not scheduled"}
+                                ? `${t("campaigns.scheduled")}: ${formatDate(campaign.scheduledDate)}`
+                                : t("campaigns.notScheduled")}
                           </span>
                         </div>
                       </div>
@@ -426,7 +426,7 @@ export default function CampaignsPage() {
                       <div className="flex items-center justify-center mb-1">
                         <span className="text-xl">👥</span>
                       </div>
-                      <p className="text-xs text-gray-500">Recipients</p>
+                      <p className="text-xs text-gray-500">{t("common.recipients")}</p>
                       <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
                     </div>
 
@@ -434,7 +434,7 @@ export default function CampaignsPage() {
                       <div className="flex items-center justify-center mb-1">
                         <span className="text-xl">👁️</span>
                       </div>
-                      <p className="text-xs text-gray-500">Open Rate</p>
+                      <p className="text-xs text-gray-500">{t("common.openRate")}</p>
                       <p className="text-sm font-bold text-gray-800">
                         {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
                       </p>
@@ -444,7 +444,7 @@ export default function CampaignsPage() {
                       <div className="flex items-center justify-center mb-1">
                         <span className="text-xl">👆</span>
                       </div>
-                      <p className="text-xs text-gray-500">Click Rate</p>
+                      <p className="text-xs text-gray-500">{t("common.clickRate")}</p>
                       <p className="text-sm font-bold text-gray-800">
                         {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
                       </p>
@@ -454,9 +454,9 @@ export default function CampaignsPage() {
                   {campaign.status === "sent" && campaign.openRate !== null && campaign.openRate !== undefined && (
                     <div className="space-y-1">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">Performance</span>
+                        <span className="text-gray-500">{t("common.performance")}</span>
                         <span className="font-medium text-gray-700">
-                          {campaign.openRate >= 75 ? "Excellent" : campaign.openRate >= 50 ? "Good" : "Average"}
+                          {campaign.openRate >= 75 ? t("common.excellent") : campaign.openRate >= 50 ? t("common.good") : t("common.average")}
                         </span>
                       </div>
                       <Progress
@@ -485,17 +485,17 @@ export default function CampaignsPage() {
                     className="opacity-50"
                   />
                 </div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2">Nessuna campagna trovata</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.noCampaignsFound")}</h3>
                 <p className="text-gray-500 mb-4">
                   {searchQuery || statusFilter !== "all" || typeFilter !== "all"
-                    ? "Prova a modificare i filtri per vedere più risultati."
-                    : "Crea la tua prima campagna per iniziare!"}
+                    ? t("campaigns.noCampaignsDescription")
+                    : t("campaigns.createFirstCampaign")}
                 </p>
                 <CustomButton
                   className="py-2 px-4 flex items-center justify-center mx-auto"
                   onClick={() => router.push("/campaign/create")}
                 >
-                  <Plus className="w-4 h-4 mr-2" /> Crea Campagna
+                  <Plus className="w-4 h-4 mr-2" /> {t("campaigns.create")}
                 </CustomButton>
               </div>
             )}
@@ -505,16 +505,16 @@ export default function CampaignsPage() {
         {/* Campaign Stats Summary */}
         {!isLoading && !error && filteredCampaigns.length > 0 && (
           <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Performance Campagne</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-4">{t("campaigns.performanceCampaigns")}</h3>
             <div className="flex items-center justify-between mb-4">
               <div className="text-center">
-                <p className="text-xs text-gray-500">Totale Inviate</p>
+                <p className="text-xs text-gray-500">{t("campaigns.totalSent")}</p>
                 <p className="text-2xl font-extrabold text-[#1B9AAA]">
                   {campaigns.filter((c) => c.status === "sent" || c.status === "in_progress").length}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-500">Tasso Apertura Medio</p>
+                <p className="text-xs text-gray-500">{t("campaigns.avgOpenRate")}</p>
                 <p className="text-2xl font-extrabold text-[#EF476F]">
                   {campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).length > 0 ? (
                     Math.round(
@@ -526,7 +526,7 @@ export default function CampaignsPage() {
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-500">Tasso Click Medio</p>
+                <p className="text-xs text-gray-500">{t("campaigns.avgClickRate")}</p>
                 <p className="text-2xl font-extrabold text-[#06D6A0]">
                   {campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).length > 0 ? (
                     Math.round(
@@ -544,10 +544,9 @@ export default function CampaignsPage() {
                   <span className="text-xl">💡</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Suggerimento</p>
+                  <p className="text-sm font-medium text-gray-800">{t("campaigns.tip")}</p>
                   <p className="text-xs text-gray-600">
-                    Le campagne inviate tra le 17:00 e le 19:00 hanno un tasso di apertura del 25% più alto. 
-                    Prova a programmare la tua prossima campagna in questo orario!
+                    {t("campaigns.tipDescription")}
                   </p>
                 </div>
               </div>
@@ -562,7 +561,7 @@ export default function CampaignsPage() {
               className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
               onClick={() => router.push("/campaign/create")}
             >
-              <Plus className="w-5 h-5 mr-2" /> Crea Nuova Campagna
+              <Plus className="w-5 h-5 mr-2" /> {t("campaigns.createNewCampaign")}
             </CustomButton>
           </div>
         )}

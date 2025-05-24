@@ -17,6 +17,8 @@ import {
   FileText,
   Video,
   RefreshCw,
+  Plus,
+  X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -68,21 +70,41 @@ interface CountryCode {
 
 // Campaign types
 const campaignTypes = [
-  { id: "promo", name: "Promotional Offer", description: "Special discounts and limited-time offers" },
-  { id: "event", name: "Event Invitation", description: "Invite customers to special events" },
-  { id: "update", name: "Menu Update", description: "Announce new items or menu changes" },
-  { id: "feedback", name: "Feedback Request", description: "Ask for customer opinions" },
+  {
+    id: "promo",
+    title: "Promotional Offer",
+    description: "Special discounts and limited-time offers",
+    emoji: "🎉",
+  },
+  {
+    id: "event",
+    title: "Event Invitation",
+    description: "Invite customers to special events",
+    emoji: "🎪",
+  },
+  {
+    id: "update",
+    title: "Menu Update",
+    description: "Announce new items or menu changes",
+    emoji: "📋",
+  },
+  {
+    id: "feedback",
+    title: "Feedback Request",
+    description: "Ask for customer opinions",
+    emoji: "💬",
+  },
 ]
 
 // Languages
 const languages = [
-  { code: "en", name: "English" },
-  { code: "es", name: "Spanish" },
-  { code: "it", name: "Italian" },
-  { code: "fr", name: "French" },
-  { code: "de", name: "German" },
-  { code: "zh", name: "Chinese" },
-  { code: "ar", name: "Arabic" },
+  { code: "en", name: "English", flag: "🇬🇧" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "it", name: "Italian", flag: "🇮🇹" },
+  { code: "fr", name: "French", flag: "🇫🇷" },
+  { code: "de", name: "German", flag: "🇩🇪" },
+  { code: "zh", name: "Chinese", flag: "🇨🇳" },
+  { code: "ar", name: "Arabic", flag: "🇸🇦" },
 ]
 
 // Update the steps array to include the new step
@@ -142,6 +164,21 @@ export default function CreateCampaign() {
   const [templateApprovalStatus, setTemplateApprovalStatus] = useState<string | null>(null);
   const [templateRejectionReason, setTemplateRejectionReason] = useState<string | null>(null);
   const [campaignCreated, setCampaignCreated] = useState<any>(null);
+  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([])
+  const [countryFilter, setCountryFilter] = useState("all")
+  const [selectedMedia, setSelectedMedia] = useState<{ type: string; url: string; name?: string } | null>(null)
+  const [showMediaOptions, setShowMediaOptions] = useState(false)
+  const [sendOption, setSendOption] = useState("now")
+  const [scheduledDate, setScheduledDate] = useState("")
+  const [generationStep, setGenerationStep] = useState(1)
+  const [promptMode, setPromptMode] = useState("auto")
+  const [customPrompt, setCustomPrompt] = useState("")
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
+  const [messageLanguage, setMessageLanguage] = useState("en")
+  const [primaryCTA, setPrimaryCTA] = useState({ type: "url", value: "" })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [error, setError] = useState("")
+  const [errorDetails, setErrorDetails] = useState("")
 
   // Fetch contacts from API
   useEffect(() => {
