@@ -275,78 +275,78 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         {/* Campaign Details */}
         {campaign && !isLoading && (
           <>
-            {/* Campaign Header */}
+          {/* Campaign Header */}
             <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-4">
-              <div className="flex items-start gap-4 mb-3">
-                <div className="p-3 rounded-full bg-gray-100">{getTypeIcon(campaign.type)}</div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-gray-800">{campaign.name}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getStatusBadge(campaign.status)}
-                    <span className="text-xs text-gray-500">
-                      {campaign.sentDate
+            <div className="flex items-start gap-4 mb-3">
+              <div className="p-3 rounded-full bg-gray-100">{getTypeIcon(campaign.type)}</div>
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-gray-800">{campaign.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  {getStatusBadge(campaign.status)}
+                  <span className="text-xs text-gray-500">
+                    {campaign.sentDate
                         ? `Inviata: ${formatDate(campaign.sentDate)}`
-                        : campaign.scheduledDate
+                      : campaign.scheduledDate
                           ? `Programmata: ${formatDate(campaign.scheduledDate)}`
                           : "Non programmata"}
-                    </span>
+                  </span>
                   </div>
-                </div>
               </div>
+            </div>
 
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Users className="w-4 h-4 text-gray-500" />
-                  </div>
+                <div className="flex items-center justify-center mb-1">
+                  <Users className="w-4 h-4 text-gray-500" />
+                </div>
                   <p className="text-xs text-gray-500">Destinatari</p>
-                  <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
-                </div>
+                <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
+              </div>
 
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Eye className="w-4 h-4 text-gray-500" />
-                  </div>
+                <div className="flex items-center justify-center mb-1">
+                  <Eye className="w-4 h-4 text-gray-500" />
+                </div>
                   <p className="text-xs text-gray-500">Tasso Apertura</p>
-                  <p className="text-sm font-bold text-gray-800">
+                <p className="text-sm font-bold text-gray-800">
                     {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
-                  </p>
-                </div>
+                </p>
+              </div>
 
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
+                <div className="flex items-center justify-center mb-1">
                     <Eye className="w-4 h-4 text-gray-500" />
                   </div>
                   <p className="text-xs text-gray-500">Tasso Click</p>
                   <p className="text-sm font-bold text-gray-800">
                     {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
                   </p>
-                </div>
               </div>
+            </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
-                <CustomButton
-                  className="flex-1 py-2 flex items-center justify-center text-xs"
+            <div className="flex gap-2">
+              <CustomButton
+                className="flex-1 py-2 flex items-center justify-center text-xs"
                   onClick={() => router.push(`/campaign/create?duplicate=${campaign.id}`)}
-                >
+              >
                   <Edit3 className="w-4 h-4 mr-1" /> Duplica
-                </CustomButton>
-                <CustomButton
+              </CustomButton>
+              <CustomButton
                   variant="outline"
-                  className="flex-1 py-2 flex items-center justify-center text-xs"
+                className="flex-1 py-2 flex items-center justify-center text-xs"
                   onClick={() => {
                     // TODO: Implementare condivisione
                     console.log("Condividi campagna")
                   }}
-                >
+              >
                   <Share2 className="w-4 h-4 mr-1" /> Condividi
-                </CustomButton>
-              </div>
+              </CustomButton>
             </div>
+          </div>
 
-            {/* Tabs */}
+          {/* Tabs */}
             <div className="w-full max-w-md mb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 bg-white/80 rounded-xl">
@@ -354,9 +354,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   <TabsTrigger value="recipients" className="rounded-lg">{t("campaignDetails.recipients")}</TabsTrigger>
                   <TabsTrigger value="analytics" className="rounded-lg">{t("campaignDetails.analytics")}</TabsTrigger>
                   <TabsTrigger value="preview" className="rounded-lg">{t("campaignDetails.messagePreview")}</TabsTrigger>
-                </TabsList>
+            </TabsList>
               </Tabs>
-            </div>
+                        </div>
 
             {/* Tab Content */}
             {activeTab === "overview" && (
@@ -386,16 +386,16 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                         <span className="text-sm text-gray-500">{t("campaignDetails.scheduledFor")}</span>
                         <span className="text-sm font-medium text-gray-800">
                           {formatDate(campaign.scheduledDate)}
-                        </span>
-                      </div>
+                      </span>
+                    </div>
                     )}
                     {campaign.sentDate && (
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-500">{t("campaignDetails.sentOn")}</span>
                         <span className="text-sm font-medium text-gray-800">
                           {formatDate(campaign.sentDate)}
-                        </span>
-                      </div>
+                      </span>
+                    </div>
                     )}
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   </div>
                 </div>
 
-                {/* Recipients List */}
+              {/* Recipients List */}
                 <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl text-center">
                   <span className="text-4xl mb-2 block">👥</span>
                   <p className="text-gray-500">{t("campaignDetails.noRecipientsFound")}</p>
@@ -535,19 +535,19 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                     <div className="flex justify-between">
                       <span className="text-gray-500">ID:</span>
                       <span className="font-mono text-gray-700">{campaign.id}</span>
-                    </div>
+              </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t("common.campaignType")}:</span>
                       <span className="text-gray-700">{campaign.type || "Unknown"}</span>
-                    </div>
+                  </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t("common.language")}:</span>
                       <span className="text-gray-700">{campaign.language || "Unknown"}</span>
-                    </div>
+                  </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t("common.includesMedia")}:</span>
                       <span className="text-gray-700">{campaign.mediaUrl ? t("common.yes") : t("common.no")}</span>
-                    </div>
+                  </div>
                   </div>
                 </div>
               </div>

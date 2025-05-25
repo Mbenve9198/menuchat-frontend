@@ -41,6 +41,15 @@ export default function Dashboard() {
   const [trendMenus, setTrendMenus] = useState(0)
   const [trendReviews, setTrendReviews] = useState(0)
 
+  // Nuovi stati per gamification
+  const [level, setLevel] = useState(1)
+  const [experience, setExperience] = useState(0)
+  const [reviewsToNextLevel, setReviewsToNextLevel] = useState(10)
+  const [weeklyStreak, setWeeklyStreak] = useState(0)
+  const [achievements, setAchievements] = useState<any[]>([])
+  const [showLevelUp, setShowLevelUp] = useState(false)
+  const [showNewAchievement, setShowNewAchievement] = useState<any>(null)
+
   // Stato per filtro tempo
   const [timeFilter, setTimeFilter] = useState<"7days" | "30days" | "custom">("7days")
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
@@ -136,6 +145,29 @@ export default function Dashboard() {
       // Aggiorna trend
       setTrendMenus(data.trends.menusSent)
       setTrendReviews(data.trends.reviewsCollected)
+      
+      // Aggiorna dati gamification
+      const previousLevel = level
+      setLevel(data.level || 1)
+      setExperience(data.totalExperience || 0)
+      setReviewsToNextLevel(data.reviewsToNextLevel || 10)
+      setWeeklyStreak(data.weeklyStreak || 0)
+      setAchievements(data.achievements || [])
+      
+      // Controlla se c'è stato un level up
+      if (data.level && data.level > previousLevel) {
+        setShowLevelUp(true)
+        setTimeout(() => setShowLevelUp(false), 3000)
+      }
+      
+      // Controlla nuovi achievement
+      const newAchievements = (data.achievements || []).filter(
+        (achievement: any) => !achievements.some((existing: any) => existing.id === achievement.id)
+      )
+      if (newAchievements.length > 0) {
+        setShowNewAchievement(newAchievements[0])
+        setTimeout(() => setShowNewAchievement(null), 4000)
+      }
       
       // Verifica record
       if (data.trends.reviewsCollected > 20) {
@@ -797,6 +829,77 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
+        {/* Gamification Card - Level & Streak */}
+        <motion.div
+          className="w-full max-w-md bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-5 shadow-xl mb-6 text-white"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65 }}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h3 className="text-lg font-bold">Livello {level}</h3>
+              <p className="text-purple-100 text-sm">
+                {reviewsToNextLevel} recensioni al prossimo livello
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {weeklyStreak > 0 && (
+                <div className="bg-white/20 px-3 py-1 rounded-full flex items-center">
+                  <span className="text-lg mr-1">🔥</span>
+                  <span className="text-sm font-bold">{weeklyStreak}</span>
+                </div>
+              )}
+              <div className="relative">
+                <Image 
+                  src={getMascotImage() || "/placeholder.svg"} 
+                  alt="Level Mascot" 
+                  width={40} 
+                  height={40} 
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Progress bar per il livello */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span>Esperienza</span>
+              <span>{experience} XP</span>
+            </div>
+            <div className="w-full bg-white/20 rounded-full h-3">
+              <div 
+                className="bg-white rounded-full h-3 transition-all duration-700"
+                style={{ 
+                  width: `${Math.min(((experience % (level * 100)) / (level * 100)) * 100, 100)}%` 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Achievement recenti */}
+          {achievements.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {achievements.slice(-3).map((achievement: any, index: number) => (
+                <div 
+                  key={achievement.id || index}
+                  className="bg-white/20 rounded-lg p-2 min-w-[60px] text-center"
+                >
+                  <div className="text-lg mb-1">{achievement.icon}</div>
+                  <div className="text-xs font-medium truncate">{achievement.name}</div>
+                </div>
+              ))}
+              <button
+                onClick={() => router.push('/achievements')}
+                className="bg-white/20 rounded-lg p-2 min-w-[60px] text-center hover:bg-white/30 transition-colors"
+              >
+                <div className="text-lg mb-1">🏆</div>
+                <div className="text-xs font-medium">Vedi tutti</div>
+              </button>
+            </div>
+          )}
+        </motion.div>
+
         {/* Recent Activity Feed */}
         <motion.div
           className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6"
@@ -989,6 +1092,56 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Level Up Notification */}
+      {showLevelUp && (
+        <motion.div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-8 text-white text-center shadow-2xl"
+            initial={{ scale: 0.5, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0.5, rotate: 10 }}
+            transition={{ type: "spring", damping: 15 }}
+          >
+            <motion.div
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ duration: 0.5, repeat: 2 }}
+            >
+              <div className="text-6xl mb-4">🎉</div>
+            </motion.div>
+            <h2 className="text-3xl font-bold mb-2">LEVEL UP!</h2>
+            <p className="text-xl">Hai raggiunto il livello {level}!</p>
+            <p className="text-sm mt-2 opacity-90">Continua così per sbloccare nuove funzionalità!</p>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* New Achievement Notification */}
+      {showNewAchievement && (
+        <motion.div
+          className="fixed top-4 right-4 z-50"
+          initial={{ x: 300, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 300, opacity: 0 }}
+          transition={{ type: "spring", damping: 20 }}
+        >
+          <div className="bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl p-4 text-white shadow-xl max-w-sm">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">{showNewAchievement.icon}</div>
+              <div>
+                <h3 className="font-bold">Nuovo Achievement!</h3>
+                <p className="text-sm">{showNewAchievement.name}</p>
+                <p className="text-xs opacity-90">{showNewAchievement.description}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </main>
   )
 }
