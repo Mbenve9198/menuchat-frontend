@@ -26,6 +26,7 @@ export default function AchievementsPage() {
   const { t } = useTranslation()
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [level, setLevel] = useState(1)
+  const [levelInfo, setLevelInfo] = useState<any>(null)
   const [weeklyStreak, setWeeklyStreak] = useState(0)
   const [totalReviews, setTotalReviews] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -43,6 +44,7 @@ export default function AchievementsPage() {
       
       if (data.success) {
         setLevel(data.level || 1)
+        setLevelInfo(data.levelInfo || null)
         setWeeklyStreak(data.weeklyStreak || 0)
         setTotalReviews(data.totalReviewsCollected || 0)
         
@@ -191,7 +193,7 @@ export default function AchievementsPage() {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-4 text-center shadow-lg">
             <div className="text-2xl font-bold text-[#EF476F]">{level}</div>
-            <div className="text-sm text-gray-600">Livello</div>
+            <div className="text-xs text-gray-600">{levelInfo?.level || "Newbie"}</div>
           </div>
           <div className="bg-white rounded-2xl p-4 text-center shadow-lg">
             <div className="text-2xl font-bold text-orange-500">{weeklyStreak}</div>

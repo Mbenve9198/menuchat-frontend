@@ -43,6 +43,7 @@ export default function Dashboard() {
 
   // Nuovi stati per gamification
   const [level, setLevel] = useState(1)
+  const [levelInfo, setLevelInfo] = useState<any>(null)
   const [experience, setExperience] = useState(0)
   const [reviewsToNextLevel, setReviewsToNextLevel] = useState(10)
   const [weeklyStreak, setWeeklyStreak] = useState(0)
@@ -149,13 +150,14 @@ export default function Dashboard() {
       // Aggiorna dati gamification
       const previousLevel = level
       setLevel(data.level || 1)
+      setLevelInfo(data.levelInfo || null)
       setExperience(data.totalExperience || 0)
       setReviewsToNextLevel(data.reviewsToNextLevel || 10)
       setWeeklyStreak(data.weeklyStreak || 0)
       setAchievements(data.achievements || [])
       
-      // Controlla se c'è stato un level up
-      if (data.level && data.level > previousLevel) {
+      // Controlla se c'è stato un level up (basato sul livello narrativo)
+      if (data.levelInfo && levelInfo && data.levelInfo.level !== levelInfo.level) {
         setShowLevelUp(true)
         setTimeout(() => setShowLevelUp(false), 3000)
       }
@@ -382,6 +384,12 @@ export default function Dashboard() {
   }
 
   const getLevelInfo = () => {
+    // Usa i dati dal backend se disponibili, altrimenti fallback
+    if (levelInfo) {
+      return levelInfo
+    }
+    
+    // Fallback per compatibilità
     if (totalReviewsCollected < 100) {
       return {
         level: "Newbie",
@@ -839,6 +847,9 @@ export default function Dashboard() {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-lg font-bold">Livello {level}</h3>
+              <p className="text-purple-100 text-lg font-semibold">
+                {levelInfo?.level || "Newbie"}
+              </p>
               <p className="text-purple-100 text-sm">
                 {reviewsToNextLevel} recensioni al prossimo livello
               </p>
@@ -1116,6 +1127,7 @@ export default function Dashboard() {
             </motion.div>
             <h2 className="text-3xl font-bold mb-2">LEVEL UP!</h2>
             <p className="text-xl">Hai raggiunto il livello {level}!</p>
+            <p className="text-lg font-semibold">{levelInfo?.level || "Newbie"}</p>
             <p className="text-sm mt-2 opacity-90">Continua così per sbloccare nuove funzionalità!</p>
           </motion.div>
         </motion.div>
