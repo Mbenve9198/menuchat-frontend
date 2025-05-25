@@ -35,8 +35,6 @@ import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { MediaUpload } from "@/components/ui/media-upload"
 import { useTranslation } from "react-i18next"
-// Rimuoviamo l'import del servizio
-// import { campaignService } from "@/lib/campaign-service"
 
 // Add this import for the dialog components
 import {
@@ -67,45 +65,6 @@ interface CountryCode {
   name: string
   flag: string
 }
-
-// Campaign types
-const campaignTypes = [
-  {
-    id: "promo",
-    title: "Promotional Offer",
-    description: "Special discounts and limited-time offers",
-    emoji: "🎉",
-  },
-  {
-    id: "event",
-    title: "Event Invitation",
-    description: "Invite customers to special events",
-    emoji: "🎪",
-  },
-  {
-    id: "update",
-    title: "Menu Update",
-    description: "Announce new items or menu changes",
-    emoji: "📋",
-  },
-  {
-    id: "feedback",
-    title: "Feedback Request",
-    description: "Ask for customer opinions",
-    emoji: "💬",
-  },
-]
-
-// Languages
-const languages = [
-  { code: "en", name: "English", flag: "🇬🇧" },
-  { code: "es", name: "Spanish", flag: "🇪🇸" },
-  { code: "it", name: "Italian", flag: "🇮🇹" },
-  { code: "fr", name: "French", flag: "🇫🇷" },
-  { code: "de", name: "German", flag: "🇩🇪" },
-  { code: "zh", name: "Chinese", flag: "🇨🇳" },
-  { code: "ar", name: "Arabic", flag: "🇸🇦" },
-]
 
 // Update the steps array to include the new step
 const steps = ["Select Contacts", "Campaign Setup", "Content Creation", "Schedule & Approve"]
@@ -179,6 +138,45 @@ export default function CreateCampaign() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [error, setError] = useState("")
   const [errorDetails, setErrorDetails] = useState("")
+
+  // Campaign types - moved inside component to use t()
+  const campaignTypes = [
+    {
+      id: "promo",
+      title: t("campaignCreate.types.promo"),
+      description: t("campaignCreate.typeDescriptions.promo"),
+      emoji: "🎉",
+    },
+    {
+      id: "event",
+      title: t("campaignCreate.types.event"),
+      description: t("campaignCreate.typeDescriptions.event"),
+      emoji: "🎪",
+    },
+    {
+      id: "update",
+      title: t("campaignCreate.types.update"),
+      description: t("campaignCreate.typeDescriptions.update"),
+      emoji: "📋",
+    },
+    {
+      id: "feedback",
+      title: t("campaignCreate.types.feedback"),
+      description: t("campaignCreate.typeDescriptions.feedback"),
+      emoji: "💬",
+    },
+  ]
+
+  // Languages - moved inside component to use t()
+  const languages = [
+    { code: "en", name: t("campaignCreate.languages.en"), flag: "🇬🇧" },
+    { code: "es", name: t("campaignCreate.languages.es"), flag: "🇪🇸" },
+    { code: "it", name: t("campaignCreate.languages.it"), flag: "🇮🇹" },
+    { code: "fr", name: t("campaignCreate.languages.fr"), flag: "🇫🇷" },
+    { code: "de", name: t("campaignCreate.languages.de"), flag: "🇩🇪" },
+    { code: "zh", name: t("campaignCreate.languages.zh"), flag: "🇨🇳" },
+    { code: "ar", name: t("campaignCreate.languages.ar"), flag: "🇸🇦" },
+  ]
 
   // Fetch contacts from API
   useEffect(() => {
@@ -731,7 +729,7 @@ export default function CreateCampaign() {
 
       // Create campaign object
       const campaignData = {
-        name: campaignType ? campaignTypes.find(t => t.id === campaignType)?.name || "Campaign" : "Campaign",
+        name: campaignType ? campaignTypes.find(t => t.id === campaignType)?.title || "Campaign" : "Campaign",
         description: campaignObjective,
         templateId: matchingTemplate._id, // Usa l'ID reale del template
         scheduledDate: scheduleOption === "now" ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : `${scheduleDate}T${scheduleTime}`,
@@ -1169,7 +1167,7 @@ export default function CreateCampaign() {
                           >
                             <RadioGroupItem value={type.id} id={type.id} className="mr-3 text-[#EF476F]" />
                             <div>
-                              <p className="font-medium text-gray-800">{type.name}</p>
+                              <p className="font-medium text-gray-800">{type.title}</p>
                               <p className="text-xs text-gray-500">{type.description}</p>
                             </div>
                           </Label>
@@ -1823,7 +1821,7 @@ export default function CreateCampaign() {
 
                         <div className="text-gray-600">Campaign type:</div>
                         <div className="font-medium text-gray-800">
-                          {campaignTypes.find((t) => t.id === campaignType)?.name || "Not selected"}
+                          {campaignTypes.find((t) => t.id === campaignType)?.title || "Not selected"}
                         </div>
 
                         <div className="text-gray-600">Language:</div>

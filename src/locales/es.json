@@ -308,15 +308,120 @@
     "backToCampaigns": "Volver a Campañas"
   },
   "setup": {
+    "title": "Configuración",
     "steps": {
-      "language": "Idioma",
-      "restaurant": "Restaurante",
-      "menu": "Menú",
-      "preview": "Vista previa"
+      "restaurantBasics": "Información del Restaurante",
+      "menuSetup": "Configuración del Menú",
+      "reviewLink": "Enlace de Reseñas",
+      "welcomeMessage": "Mensaje de Bienvenida",
+      "reviewRequest": "Solicitud de Reseñas",
+      "triggerWord": "Palabra Activadora",
+      "signUp": "Registro",
+      "success": "¡Éxito!"
     },
-    "language": {
-      "title": "Seleccionar idioma",
-      "description": "Elige el idioma principal para tu restaurante. Generaremos automáticamente mensajes en otros idiomas también."
+    "restaurantBasics": {
+      "title": "¡Conozcamos tu restaurante!",
+      "restaurantName": "¿Cuál es el nombre de tu restaurante?",
+      "restaurantNamePlaceholder": "ej. Sabores Deliciosos",
+      "restaurantAddress": "¿Cuál es la dirección de tu restaurante?"
+    },
+    "menuSetup": {
+      "title": "¡Configuremos tu menú en diferentes idiomas!",
+      "selectLanguages": "Selecciona idiomas para tus menús",
+      "languagesDescription": "Tus clientes recibirán automáticamente el menú en su idioma basado en el prefijo de su número de teléfono.",
+      "configureMenus": "Configura menús para cada idioma"
+    },
+    "reviewLink": {
+      "title": "¡Configura tu enlace de reseñas!",
+      "whereReviews": "¿Dónde quieres que los clientes dejen reseñas?",
+      "platforms": {
+        "google": "Reseñas de Google",
+        "yelp": "Yelp",
+        "tripadvisor": "TripAdvisor",
+        "custom": "Enlace Personalizado"
+      },
+      "reviewLink": "Tu enlace de reseñas",
+      "googleDescription": "Usaremos este enlace cuando los clientes quieran dejar una reseña."
+    },
+    "welcomeMessage": {
+      "title": "Mensaje de Bienvenida",
+      "generating": "Generando mensaje de bienvenida personalizado con Claude 3.7 Sonnet...",
+      "editMessage": "Editar Mensaje",
+      "regenerateAI": "Regenerar con IA",
+      "regenerating": "Regenerando...",
+      "customizeMessage": "Personalizar Mensaje",
+      "messagePlaceholder": "Ingresa tu mensaje de bienvenida...",
+      "autoTranslate": "Este mensaje será traducido automáticamente a todos los idiomas de los clientes.",
+      "typeMessage": "Escribe un mensaje",
+      "viewMenu": "Ver Menú",
+      "online": "en línea"
+    },
+    "reviewRequest": {
+      "title": "¡Configura solicitudes de reseñas!",
+      "generating": "Generando tu mensaje de reseña personalizado con Claude 3.7 Sonnet...",
+      "editMessage": "Editar Mensaje",
+      "regenerateAI": "Regenerar con IA",
+      "regenerating": "Regenerando...",
+      "customizeMessage": "Personalizar Mensaje",
+      "messagePlaceholder": "Ingresa tu mensaje de solicitud de reseña...",
+      "reviewLinkAdded": "El enlace de reseña se agregará automáticamente como un botón debajo de tu mensaje.",
+      "whenAskReview": "¿Cuándo deberíamos pedir una reseña?",
+      "afterOrder": "Después de completar el pedido",
+      "hours": "horas",
+      "optimalTiming": "Tiempo óptimo para mejores resultados",
+      "timingDescription": "Basado en nuestra investigación, 2 horas después de un pedido es el momento perfecto para solicitar una reseña. Tus clientes han terminado su comida y es probable que dejen comentarios positivos.",
+      "timingNote": "Nota: Por conveniencia del cliente, las solicitudes de reseña nunca se enviarán después de medianoche o antes de las 8 AM, independientemente de tu configuración de tiempo.",
+      "leaveReview": "Dejar una Reseña",
+      "orderCompleted": "¡Pedido completado! 🎉"
+    },
+    "triggerWord": {
+      "title": "¡Establece tu frase activadora!",
+      "chooseTrigger": "Elige la frase activadora de tu restaurante",
+      "triggerDescription": "Puede ser un saludo + el nombre de tu restaurante (ej. \"Hola Pizzería Italia\") o cualquier frase única. Cuando los clientes escaneen el código QR de tu mesa, WhatsApp se abrirá con tu frase activadora prellenada.",
+      "triggerPlaceholder": "Hola {{restaurantName}}",
+      "checking": "Verificando...",
+      "available": "¡Esta frase activadora está disponible!",
+      "alreadyUsed": "Esta frase activadora ya está en uso. Por favor elige otra.",
+      "errorChecking": "Error verificando disponibilidad. Por favor intenta de nuevo.",
+      "tooShort": "La frase activadora debe tener al menos 3 caracteres",
+      "tooLong": "Mantén tu frase activadora corta y memorable (se recomiendan menos de 30 caracteres).",
+      "important": "Importante: Tu frase activadora debe ser única en nuestro sistema. Esta frase es lo que conecta a los clientes con tu restaurante específico cuando escanean tu código QR, ya que nuestro número de WhatsApp sirve a muchos restaurantes en todo el mundo.",
+      "welcomePreview": "¡Bienvenido a {{restaurantName}}! Aquí está nuestro menú:"
+    },
+    "signUp": {
+      "title": "¡Crea tu cuenta!",
+      "almostThere": "¡Ya casi terminas!",
+      "almostDescription": "¡Solo un paso más! Crea tu cuenta ahora y en el siguiente paso podrás comenzar a usar tu servicio de WhatsApp Menu Bot de inmediato. Toda tu configuración se guardará con tu cuenta.",
+      "fullName": "Nombre Completo",
+      "fullNamePlaceholder": "Juan Pérez",
+      "emailAddress": "Dirección de Correo",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "••••••••",
+      "confirmPassword": "Confirmar Contraseña",
+      "passwordsNotMatch": "Las contraseñas no coinciden",
+      "termsAgreement": "Al crear una cuenta, aceptas nuestros Términos de Servicio y Política de Privacidad."
+    },
+    "success": {
+      "title": "¡Bien Hecho! 🎉",
+      "subtitle": "¡Tu WhatsApp Menu Bot está listo!",
+      "scanQR": "Escanea este código QR con tu teléfono",
+      "openWhatsApp": "Abrir en WhatsApp",
+      "qrNote": "Nota: Este código QR está configurado para usar nuestro número de WhatsApp predeterminado (+39 351 654 1218). En la aplicación, puedes solicitar activar tu propio número de teléfono comercial para una experiencia más personalizada.",
+      "earnedReviews": "¡Ganaste 200 reseñas potenciales!",
+      "unlockFeatures": "Continúa para desbloquear más funciones"
+    },
+    "navigation": {
+      "back": "Atrás",
+      "continue": "Continuar",
+      "finishSetup": "Finalizar Configuración",
+      "processing": "Procesando...",
+      "stepOf": "Paso {{current}} de {{total}}",
+      "youDidIt": "¡Lo lograste! 🎉"
+    },
+    "validation": {
+      "completeFields": "Por favor completa todos los campos requeridos",
+      "allFieldsRequired": "Todos los campos son requeridos para proceder al siguiente paso."
     },
     "completed": "¡Configuración completada!",
     "restart": "Reiniciar"

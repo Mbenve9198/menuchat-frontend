@@ -308,15 +308,120 @@
     "backToCampaigns": "Back to Campaigns"
   },
   "setup": {
+    "title": "Setup",
     "steps": {
-      "language": "Language",
-      "restaurant": "Restaurant",
-      "menu": "Menu",
-      "preview": "Preview"
+      "restaurantBasics": "Restaurant Basics",
+      "menuSetup": "Menu Setup",
+      "reviewLink": "Review Link",
+      "welcomeMessage": "Welcome Message",
+      "reviewRequest": "Review Request",
+      "triggerWord": "Trigger Word",
+      "signUp": "Sign Up",
+      "success": "Success!"
     },
-    "language": {
-      "title": "Select language",
-      "description": "Choose the main language for your restaurant. We'll automatically generate messages in other languages too."
+    "restaurantBasics": {
+      "title": "Let's get to know your restaurant!",
+      "restaurantName": "What's your restaurant name?",
+      "restaurantNamePlaceholder": "e.g. Tasty Bites",
+      "restaurantAddress": "What's your restaurant address?"
+    },
+    "menuSetup": {
+      "title": "Let's configure your menu in different languages!",
+      "selectLanguages": "Select languages for your menus",
+      "languagesDescription": "Your customers will automatically receive the menu in their language based on their phone number prefix.",
+      "configureMenus": "Configure menus for each language"
+    },
+    "reviewLink": {
+      "title": "Set up your review link!",
+      "whereReviews": "Where do you want customers to leave reviews?",
+      "platforms": {
+        "google": "Google Reviews",
+        "yelp": "Yelp",
+        "tripadvisor": "TripAdvisor",
+        "custom": "Custom Link"
+      },
+      "reviewLink": "Your review link",
+      "googleDescription": "We'll use this link when customers want to leave a review."
+    },
+    "welcomeMessage": {
+      "title": "Welcome Message",
+      "generating": "Generating personalized welcome message with Claude 3.7 Sonnet...",
+      "editMessage": "Edit Message",
+      "regenerateAI": "Regenerate with AI",
+      "regenerating": "Regenerating...",
+      "customizeMessage": "Customize Message",
+      "messagePlaceholder": "Enter your welcome message...",
+      "autoTranslate": "This message will be automatically translated into all customer languages.",
+      "typeMessage": "Type a message",
+      "viewMenu": "View Menu",
+      "online": "online"
+    },
+    "reviewRequest": {
+      "title": "Set up review requests!",
+      "generating": "Generating your personalized review message with Claude 3.7 Sonnet...",
+      "editMessage": "Edit Message",
+      "regenerateAI": "Regenerate with AI",
+      "regenerating": "Regenerating...",
+      "customizeMessage": "Customize Message",
+      "messagePlaceholder": "Enter your review request message...",
+      "reviewLinkAdded": "The review link will be automatically added as a button below your message.",
+      "whenAskReview": "When should we ask for a review?",
+      "afterOrder": "After order completion",
+      "hours": "hours",
+      "optimalTiming": "Optimal timing for best results",
+      "timingDescription": "Based on our research, 2 hours after an order is the perfect time to request a review. Your customers have finished their meal and are likely to leave positive feedback.",
+      "timingNote": "Note: For customer convenience, review requests will never be sent after midnight or before 8 AM, regardless of your timing settings.",
+      "leaveReview": "Leave a Review",
+      "orderCompleted": "Order completed! 🎉"
+    },
+    "triggerWord": {
+      "title": "Set your trigger phrase!",
+      "chooseTrigger": "Choose your restaurant's trigger phrase",
+      "triggerDescription": "This can be a greeting + your restaurant name (e.g. \"Hello Pizzeria Italia\") or any unique phrase. When customers scan your table QR code, WhatsApp will open with your trigger phrase pre-filled.",
+      "triggerPlaceholder": "Hello {{restaurantName}}",
+      "checking": "Checking...",
+      "available": "This trigger phrase is available!",
+      "alreadyUsed": "This trigger phrase is already in use. Please choose another one.",
+      "errorChecking": "Error checking availability. Please try again.",
+      "tooShort": "Trigger phrase must be at least 3 characters long",
+      "tooLong": "Keep your trigger phrase short and memorable (under 30 characters recommended).",
+      "important": "Important: Your trigger phrase must be unique across our system. This phrase is what connects customers to your specific restaurant when they scan your QR code, as our WhatsApp number serves many restaurants worldwide.",
+      "welcomePreview": "Welcome to {{restaurantName}}! Here's our menu:"
+    },
+    "signUp": {
+      "title": "Create your account!",
+      "almostThere": "You're almost there!",
+      "almostDescription": "Just one more step to go! Create your account now and in the next step, you'll be able to start using your WhatsApp Menu Bot service right away. All your configuration will be saved with your account.",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
+      "emailAddress": "Email Address",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "confirmPassword": "Confirm Password",
+      "passwordsNotMatch": "Passwords do not match",
+      "termsAgreement": "By creating an account, you agree to our Terms of Service and Privacy Policy."
+    },
+    "success": {
+      "title": "Well Done! 🎉",
+      "subtitle": "Your WhatsApp Menu Bot is ready to go!",
+      "scanQR": "Scan this QR code with your phone",
+      "openWhatsApp": "Open on WhatsApp",
+      "qrNote": "Note: This QR code is configured to use our default WhatsApp number (+39 351 654 1218). In the app, you can request to activate your own business phone number for a more personalized experience.",
+      "earnedReviews": "You earned 200 potential reviews!",
+      "unlockFeatures": "Keep going to unlock more features"
+    },
+    "navigation": {
+      "back": "Back",
+      "continue": "Continue",
+      "finishSetup": "Finish Setup",
+      "processing": "Processing...",
+      "stepOf": "Step {{current}} of {{total}}",
+      "youDidIt": "You did it! 🎉"
+    },
+    "validation": {
+      "completeFields": "Please complete all required fields",
+      "allFieldsRequired": "All fields are required to proceed to the next step."
     },
     "completed": "Setup completed!",
     "restart": "Restart"

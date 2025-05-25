@@ -18,17 +18,8 @@ import { RestaurantSearch } from "./restaurant-search"
 import LanguageSelector, { MenuLanguage } from "./language-selector"
 import MenuLanguageItem from "./menu-language-item"
 import { signIn } from "next-auth/react"
-
-const steps = [
-  "Restaurant Basics",
-  "Menu Setup",
-  "Review Link",
-  "Welcome Message",
-  "Review Request",
-  "Trigger Word",
-  "Sign Up",
-  "Success!",
-]
+import { useTranslation } from "react-i18next"
+import UILanguageSelector from "@/components/ui-language-selector"
 
 interface Restaurant {
   id: string;
@@ -85,6 +76,7 @@ interface WizardFormData {
 }
 
 export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardProps) {
+  const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isExploding, setIsExploding] = useState(false)
@@ -92,6 +84,18 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
   const [isEditingMessage, setIsEditingMessage] = useState(false)
   const { toast } = useToast()
+
+  // Steps array - moved inside component to use t()
+  const steps = [
+    t("setup.steps.restaurantBasics"),
+    t("setup.steps.menuSetup"),
+    t("setup.steps.reviewLink"),
+    t("setup.steps.welcomeMessage"),
+    t("setup.steps.reviewRequest"),
+    t("setup.steps.triggerWord"),
+    t("setup.steps.signUp"),
+    t("setup.steps.success"),
+  ]
 
   // Form state
   const [restaurantName, setRestaurantName] = useState("")
@@ -653,32 +657,37 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           <div>
             <h2 className="text-2xl font-extrabold text-[#EF476F]">{steps[currentStep]}</h2>
             <p className="text-gray-700">
-              {currentStep === steps.length - 1 ? "You did it! 🎉" : `Step ${currentStep + 1} of ${steps.length}`}
+              {currentStep === steps.length - 1 ? t("setup.navigation.youDidIt") : t("setup.navigation.stepOf", { current: currentStep + 1, total: steps.length })}
             </p>
           </div>
 
-          {/* Rimuovi la mascotte in alto a destra nell'ultimo step */}
-          {currentStep !== steps.length - 1 && (
-            <motion.div
-              animate={{
-                scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
-                rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
-              }}
-              transition={{
-                duration: 0.5,
-                repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
-                repeatType: "reverse",
-              }}
-            >
-              <Image
-                src={getMascotImage() || "/placeholder.svg"}
-                alt="Star Mascot"
-                width={80}
-                height={80}
-                className="drop-shadow-lg"
-              />
-            </motion.div>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Language Selector */}
+            <UILanguageSelector variant="compact" />
+            
+            {/* Rimuovi la mascotte in alto a destra nell'ultimo step */}
+            {currentStep !== steps.length - 1 && (
+              <motion.div
+                animate={{
+                  scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
+                  rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
+                }}
+                transition={{
+                  duration: 0.5,
+                  repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
+                  repeatType: "reverse",
+                }}
+              >
+                <Image
+                  src={getMascotImage() || "/placeholder.svg"}
+                  alt="Star Mascot"
+                  width={80}
+                  height={80}
+                  className="drop-shadow-lg"
+                />
+              </motion.div>
+            )}
+          </div>
         </div>
 
         <div className="mb-6">
@@ -706,16 +715,16 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Let's get to know your restaurant!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">{t("setup.restaurantBasics.title")}</span>
                 </div>
 
                 <div className="space-y-3">
                   <Label htmlFor="restaurant-name" className="text-gray-800 font-medium">
-                    What's your restaurant name?
+                    {t("setup.restaurantBasics.restaurantName")}
                   </Label>
                   <Input
                     id="restaurant-name"
-                    placeholder="e.g. Tasty Bites"
+                    placeholder={t("setup.restaurantBasics.restaurantNamePlaceholder")}
                     value={restaurantName}
                     onChange={(e) => setRestaurantName(e.target.value)}
                     className="rounded-xl border-purple-200 focus:border-purple-400 focus:ring-purple-400 transition-all"
@@ -729,7 +738,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   }} 
                   selectedRestaurant={selectedRestaurant}
                   restaurantName={restaurantName}
-                  labelText="What's your restaurant address?"
+                  labelText={t("setup.restaurantBasics.restaurantAddress")}
                 />
               </div>
             )}
@@ -739,15 +748,15 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Upload className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Let's configure your menu in different languages!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">{t("setup.menuSetup.title")}</span>
                 </div>
 
                 <div className="space-y-1">
                   <Label className="text-gray-800 font-medium">
-                    Select languages for your menus
+                    {t("setup.menuSetup.selectLanguages")}
                   </Label>
                   <p className="text-sm text-gray-500 mb-3">
-                    Your customers will automatically receive the menu in their language based on their phone number prefix.
+                    {t("setup.menuSetup.languagesDescription")}
                   </p>
                   
                   <LanguageSelector 
@@ -758,7 +767,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
                 <div className="border-t pt-4 mt-6">
                   <Label className="text-gray-800 font-medium mb-3 block">
-                    Configure menus for each language
+                    {t("setup.menuSetup.configureMenus")}
                   </Label>
                   
                   <div className="space-y-4">
@@ -780,13 +789,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <MessageSquare className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Welcome Message</span>
+                  <span className="text-sm font-medium text-[#EF476F]">{t("setup.welcomeMessage.title")}</span>
                 </div>
 
                 {isGeneratingMessage ? (
                   <div className="flex flex-col items-center justify-center p-8">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
-                    <p className="text-sm text-gray-700">Generating personalized welcome message with Claude 3.7 Sonnet...</p>
+                    <p className="text-sm text-gray-700">{t("setup.welcomeMessage.generating")}</p>
                   </div>
                 ) : (
                   <>
@@ -818,7 +827,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                               </div>
                               <div className="ml-3">
                                 <div className="text-base font-semibold truncate max-w-[180px]">{selectedRestaurant?.name || "Restaurant"}</div>
-                                <div className="text-xs opacity-80">online</div>
+                                <div className="text-xs opacity-80">{t("setup.welcomeMessage.online")}</div>
                               </div>
                               <div className="ml-auto flex gap-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -877,7 +886,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                                   {!menuLanguages.some(lang => lang.menuFile) && menuLanguages.some(lang => lang.menuUrl) && (
                                     <div className="mt-2 border-t pt-2">
                                       <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
-                                        View Menu
+                                        {t("setup.welcomeMessage.viewMenu")}
                                       </button>
                                     </div>
                                   )}
@@ -894,7 +903,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                           <div className="bg-[#F0F0F0] p-2">
                             <div className="flex items-center">
                               <div className="flex-grow bg-white rounded-full px-3 py-2 flex items-center">
-                                <span className="text-gray-400 text-sm">Type a message</span>
+                                <span className="text-gray-400 text-sm">{t("setup.welcomeMessage.typeMessage")}</span>
                               </div>
                               <div className="ml-2 w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -921,7 +930,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                        Edit Message
+                        {t("setup.welcomeMessage.editMessage")}
                       </CustomButton>
                       
                       <CustomButton
@@ -934,12 +943,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         {isGeneratingMessage ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                            Regenerating...
+                            {t("setup.welcomeMessage.regenerating")}
                           </>
                         ) : (
                           <>
                             <Sparkles className="mr-2 h-4 w-4" /> 
-                            Regenerate with AI
+                            {t("setup.welcomeMessage.regenerateAI")}
                           </>
                         )}
                       </CustomButton>
@@ -948,7 +957,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     {isEditingMessage && (
                       <div className="mt-4 space-y-2">
                         <label htmlFor="welcomeMessage" className="block text-sm font-medium text-gray-700">
-                          Customize Message
+                          {t("setup.welcomeMessage.customizeMessage")}
                         </label>
                         <div>
                           <textarea
@@ -957,12 +966,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                             className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                             value={welcomeMessage}
                             onChange={(e) => setWelcomeMessage(e.target.value)}
-                            placeholder="Enter your welcome message..."
+                            placeholder={t("setup.welcomeMessage.messagePlaceholder")}
                           />
                         </div>
                         <p className="text-xs text-gray-500">
                           <MessageSquare className="w-3 h-3 inline mr-1" />
-                          This message will be automatically translated into all customer languages.
+                          {t("setup.welcomeMessage.autoTranslate")}
                         </p>
                       </div>
                     )}
@@ -976,12 +985,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-[#EF476F] fill-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Set up your review link!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">{t("setup.reviewLink.title")}</span>
                 </div>
 
                 <div className="space-y-3">
                   <Label htmlFor="review-link" className="text-gray-800 font-medium">
-                    Where do you want customers to leave reviews?
+                    {t("setup.reviewLink.whereReviews")}
                   </Label>
                   <RadioGroup 
                     value={reviewPlatform} 
@@ -989,10 +998,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     className="space-y-2"
                   >
                     {[
-                      { value: "google", label: "Google Reviews" },
-                      { value: "yelp", label: "Yelp" },
-                      { value: "tripadvisor", label: "TripAdvisor" },
-                      { value: "custom", label: "Custom Link" },
+                      { value: "google", label: t("setup.reviewLink.platforms.google") },
+                      { value: "yelp", label: t("setup.reviewLink.platforms.yelp") },
+                      { value: "tripadvisor", label: t("setup.reviewLink.platforms.tripadvisor") },
+                      { value: "custom", label: t("setup.reviewLink.platforms.custom") },
                     ].map((option) => (
                       <Label
                         key={option.value}
@@ -1008,7 +1017,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
                 <div className="space-y-3">
                   <Label htmlFor="custom-review-link" className="text-gray-800 font-medium">
-                    Your review link
+                    {t("setup.reviewLink.reviewLink")}
                   </Label>
                   <Input
                     id="custom-review-link"
@@ -1022,7 +1031,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   />
                   {reviewPlatform === "google" && (
                     <p className="text-xs text-blue-600">
-                      We'll use this link when customers want to leave a review.
+                      {t("setup.reviewLink.googleDescription")}
                     </p>
                   )}
                 </div>
@@ -1034,13 +1043,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Clock className="w-5 h-5 text-[#EF476F]" />
-                  <span className="text-sm font-medium text-[#EF476F]">Set up review requests!</span>
+                  <span className="text-sm font-medium text-[#EF476F]">{t("setup.reviewRequest.title")}</span>
                 </div>
 
                 {isGeneratingTemplates ? (
                   <div className="flex flex-col items-center justify-center p-8">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mb-4"></div>
-                    <p className="text-sm text-gray-700">Generating your personalized review message with Claude 3.7 Sonnet...</p>
+                    <p className="text-sm text-gray-700">{t("setup.reviewRequest.generating")}</p>
                   </div>
                 ) : (
                   <>
@@ -1072,7 +1081,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                               </div>
                               <div className="ml-3">
                                 <div className="text-base font-semibold truncate max-w-[180px]">{selectedRestaurant?.name || "Restaurant"}</div>
-                                <div className="text-xs opacity-80">online</div>
+                                <div className="text-xs opacity-80">{t("setup.welcomeMessage.online")}</div>
                               </div>
                               <div className="ml-auto flex gap-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
