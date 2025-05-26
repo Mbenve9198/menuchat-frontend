@@ -492,8 +492,8 @@ export default function Dashboard() {
               <Image
                 src="/mascottes/mascotte_base.png"
                 alt="MenuChat Mascot"
-                width={80}
-                height={80}
+                width={120}
+                height={120}
                 className="object-contain"
               />
             </div>
