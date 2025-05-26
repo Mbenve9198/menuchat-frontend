@@ -480,38 +480,38 @@ export default function Dashboard() {
       <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
         {/* Header Section */}
         <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA]">{restaurantName}</h1>
-              <div className="relative w-8 h-8 ml-2">
-                <Image
-                  src={getMascotImage() || "/placeholder.svg"}
-                  alt="Mascot"
-                  width={32}
-                  height={32}
-                  className="absolute -top-1 -right-1"
-                />
-              </div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <h1 className="text-2xl font-extrabold text-[#1B9AAA] mb-1">{restaurantName}</h1>
+              <p className="text-lg text-gray-700">
+                {greeting}, {restaurantName}! 🌞
+              </p>
             </div>
 
             <div className="flex items-center">
-              <UILanguageSelector variant="compact" />
+              <Image
+                src="/mascottes/mascotte_base.png"
+                alt="MenuChat Mascot"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
             </div>
           </div>
 
-          <p className="text-lg text-gray-700 mb-4">
-            {greeting}, {restaurantName}! 🌞
-          </p>
+          <div className="flex items-center justify-between">
+            <motion.div
+              className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Calendar className="w-4 h-4 text-[#EF476F]" />
+              <span className="text-xs font-medium text-gray-700">{daysActive} {t("dashboard.daysActive")}</span>
+            </motion.div>
 
-          <motion.div
-            className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Calendar className="w-4 h-4 text-[#EF476F]" />
-            <span className="text-xs font-medium text-gray-700">{daysActive} {t("dashboard.daysActive")}</span>
-          </motion.div>
+            <UILanguageSelector variant="compact" />
+          </div>
         </div>
 
         {/* Time Period Filter */}
