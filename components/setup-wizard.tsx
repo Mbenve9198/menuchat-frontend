@@ -664,29 +664,29 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           <div className="flex items-center gap-2">
             {/* Language Selector */}
             <UILanguageSelector variant="compact" />
-            
-            {/* Rimuovi la mascotte in alto a destra nell'ultimo step */}
-            {currentStep !== steps.length - 1 && (
-              <motion.div
-                animate={{
-                  scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
-                  rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
-                }}
-                transition={{
-                  duration: 0.5,
-                  repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
-                  repeatType: "reverse",
-                }}
-              >
-                <Image
-                  src={getMascotImage() || "/placeholder.svg"}
-                  alt="Star Mascot"
-                  width={80}
-                  height={80}
-                  className="drop-shadow-lg"
-                />
-              </motion.div>
-            )}
+
+          {/* Rimuovi la mascotte in alto a destra nell'ultimo step */}
+          {currentStep !== steps.length - 1 && (
+            <motion.div
+              animate={{
+                scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
+                rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
+              }}
+              transition={{
+                duration: 0.5,
+                repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
+                repeatType: "reverse",
+              }}
+            >
+              <Image
+                src={getMascotImage() || "/placeholder.svg"}
+                alt="Star Mascot"
+                width={80}
+                height={80}
+                className="drop-shadow-lg"
+              />
+            </motion.div>
+          )}
           </div>
         </div>
 

@@ -306,47 +306,47 @@ export default function CampaignsPage() {
             </div>
 
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="flex-1 bg-white/80 border-gray-200 rounded-xl">
                   <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {t(option.label)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="flex-1 bg-white/80 border-gray-200 rounded-xl">
                   <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {typeOptions.map((option) => (
+                  </SelectTrigger>
+                  <SelectContent>
+                    {typeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {t(option.label)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-12 bg-white/80 border-gray-200 rounded-xl">
                   <ArrowUpDown className="w-4 h-4" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {t(option.label)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Tabs */}
         <div className="w-full max-w-md mb-6">
@@ -391,115 +391,115 @@ export default function CampaignsPage() {
         {/* Campaign List */}
         {!isLoading && !error && (
           <div className="w-full max-w-md space-y-4 mb-20">
-            {filteredCampaigns.length > 0 ? (
+          {filteredCampaigns.length > 0 ? (
               filteredCampaigns.map((campaign, index) => (
-                <motion.div
-                  key={campaign.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                key={campaign.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   className="bg-white rounded-3xl p-5 shadow-xl cursor-pointer hover:shadow-2xl transition-all duration-300"
                   onClick={() => router.push(`/campaign/${campaign.id}`)}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <div>{getTypeIcon(campaign.type)}</div>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getStatusBadge(campaign.status)}
-                          <span className="text-xs text-gray-500">
-                            {campaign.sentDate
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-2">
+                    <div>{getTypeIcon(campaign.type)}</div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        {getStatusBadge(campaign.status)}
+                        <span className="text-xs text-gray-500">
+                          {campaign.sentDate
                               ? `${t("campaigns.sent")}: ${formatDate(campaign.sentDate)}`
-                              : campaign.scheduledDate
+                            : campaign.scheduledDate
                                 ? `${t("campaigns.scheduled")}: ${formatDate(campaign.scheduledDate)}`
                                 : t("campaigns.notScheduled")}
-                          </span>
+                        </span>
                         </div>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
 
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">👥</span>
-                      </div>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <span className="text-xl">👥</span>
+                    </div>
                       <p className="text-xs text-gray-500">{t("common.recipients")}</p>
-                      <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">👁️</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{t("common.openRate")}</p>
-                      <p className="text-sm font-bold text-gray-800">
-                        {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
-                      </p>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">👆</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{t("common.clickRate")}</p>
-                      <p className="text-sm font-bold text-gray-800">
-                        {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
-                      </p>
-                    </div>
+                    <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
                   </div>
+
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <span className="text-xl">👁️</span>
+                    </div>
+                      <p className="text-xs text-gray-500">{t("common.openRate")}</p>
+                    <p className="text-sm font-bold text-gray-800">
+                        {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
+                    </p>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <span className="text-xl">👆</span>
+                    </div>
+                      <p className="text-xs text-gray-500">{t("common.clickRate")}</p>
+                    <p className="text-sm font-bold text-gray-800">
+                        {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
+                    </p>
+                  </div>
+                </div>
 
                   {campaign.status === "sent" && campaign.openRate !== null && campaign.openRate !== undefined && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center text-xs">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-500">{t("common.performance")}</span>
-                        <span className="font-medium text-gray-700">
+                      <span className="font-medium text-gray-700">
                           {campaign.openRate >= 75 ? t("common.excellent") : campaign.openRate >= 50 ? t("common.good") : t("common.average")}
-                        </span>
-                      </div>
-                      <Progress
-                        value={campaign.openRate}
-                        className="h-2 bg-gray-100"
-                        indicatorClassName={`transition-all duration-700 ease-in-out ${
-                          campaign.openRate >= 75
-                            ? "bg-green-500"
-                            : campaign.openRate >= 50
-                              ? "bg-yellow-500"
-                              : "bg-orange-500"
-                        }`}
-                      />
+                      </span>
                     </div>
-                  )}
-                </motion.div>
-              ))
-            ) : (
-              <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
-                <div className="flex justify-center mb-4">
-                  <Image
-                    src={getMascotImage() || "/placeholder.svg"}
-                    alt="Mascot"
-                    width={80}
-                    height={80}
-                    className="opacity-50"
-                  />
-                </div>
+                    <Progress
+                      value={campaign.openRate}
+                      className="h-2 bg-gray-100"
+                      indicatorClassName={`transition-all duration-700 ease-in-out ${
+                        campaign.openRate >= 75
+                          ? "bg-green-500"
+                          : campaign.openRate >= 50
+                            ? "bg-yellow-500"
+                            : "bg-orange-500"
+                      }`}
+                    />
+                  </div>
+                )}
+              </motion.div>
+            ))
+          ) : (
+            <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
+              <div className="flex justify-center mb-4">
+                <Image
+                  src={getMascotImage() || "/placeholder.svg"}
+                  alt="Mascot"
+                  width={80}
+                  height={80}
+                  className="opacity-50"
+                />
+              </div>
                 <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.noCampaignsFound")}</h3>
-                <p className="text-gray-500 mb-4">
-                  {searchQuery || statusFilter !== "all" || typeFilter !== "all"
+              <p className="text-gray-500 mb-4">
+                {searchQuery || statusFilter !== "all" || typeFilter !== "all"
                     ? t("campaigns.noCampaignsDescription")
                     : t("campaigns.createFirstCampaign")}
-                </p>
-                <CustomButton
-                  className="py-2 px-4 flex items-center justify-center mx-auto"
-                  onClick={() => router.push("/campaign/create")}
-                >
+              </p>
+              <CustomButton
+                className="py-2 px-4 flex items-center justify-center mx-auto"
+                onClick={() => router.push("/campaign/create")}
+              >
                   <Plus className="w-4 h-4 mr-2" /> {t("campaigns.create")}
-                </CustomButton>
-              </div>
-            )}
-          </div>
+              </CustomButton>
+            </div>
+          )}
+        </div>
         )}
 
         {/* Campaign Stats Summary */}
@@ -556,14 +556,14 @@ export default function CampaignsPage() {
 
         {/* Fixed Create Campaign Button */}
         {!isLoading && !error && (
-          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
-            <CustomButton
-              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
-              onClick={() => router.push("/campaign/create")}
-            >
+        <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
+          <CustomButton
+            className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+            onClick={() => router.push("/campaign/create")}
+          >
               <Plus className="w-5 h-5 mr-2" /> {t("campaigns.createNewCampaign")}
-            </CustomButton>
-          </div>
+          </CustomButton>
+        </div>
         )}
       </div>
     </main>

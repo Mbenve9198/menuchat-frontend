@@ -43,7 +43,6 @@ export default function Dashboard() {
 
   // Nuovi stati per gamification
   const [level, setLevel] = useState(1)
-  const [levelInfo, setLevelInfo] = useState<any>(null)
   const [experience, setExperience] = useState(0)
   const [reviewsToNextLevel, setReviewsToNextLevel] = useState(10)
   const [weeklyStreak, setWeeklyStreak] = useState(0)
@@ -150,14 +149,13 @@ export default function Dashboard() {
       // Aggiorna dati gamification
       const previousLevel = level
       setLevel(data.level || 1)
-      setLevelInfo(data.levelInfo || null)
       setExperience(data.totalExperience || 0)
       setReviewsToNextLevel(data.reviewsToNextLevel || 10)
       setWeeklyStreak(data.weeklyStreak || 0)
       setAchievements(data.achievements || [])
       
-      // Controlla se c'è stato un level up (basato sul livello narrativo)
-      if (data.levelInfo && levelInfo && data.levelInfo.level !== levelInfo.level) {
+      // Controlla se c'è stato un level up
+      if (data.level && data.level > previousLevel) {
         setShowLevelUp(true)
         setTimeout(() => setShowLevelUp(false), 3000)
       }
@@ -384,12 +382,6 @@ export default function Dashboard() {
   }
 
   const getLevelInfo = () => {
-    // Usa i dati dal backend se disponibili, altrimenti fallback
-    if (levelInfo) {
-      return levelInfo
-    }
-    
-    // Fallback per compatibilità
     if (totalReviewsCollected < 100) {
       return {
         level: "Newbie",
@@ -630,7 +622,15 @@ export default function Dashboard() {
                     : "text-emerald-600"
                 }`}>{getLevelInfo().level}</p>
               </div>
-              <div className="text-3xl">👨‍🍳</div>
+              <div className="flex items-center gap-2">
+                {weeklyStreak > 0 && (
+                  <div className="bg-white/30 px-3 py-1 rounded-full flex items-center">
+                    <span className="text-lg mr-1">🔥</span>
+                    <span className="text-sm font-bold text-gray-800">{weeklyStreak}</span>
+                  </div>
+                )}
+                <div className="text-3xl">👨‍🍳</div>
+              </div>
             </div>
 
             {getLevelInfo().nextLevel ? (
@@ -654,16 +654,55 @@ export default function Dashboard() {
                     }`}
                   />
                 </div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 mb-3">
                   <span className="font-medium">{getLevelInfo().remaining} more reviews</span> needed to reach{" "}
                   <span className="font-medium">{getLevelInfo().nextLevel}</span>
                 </p>
               </>
             ) : (
-              <p className="text-sm text-gray-700 mt-2">
+              <p className="text-sm text-gray-700 mt-2 mb-3">
                 Congratulations! You've reached the highest level. Keep collecting reviews to maintain your legendary
                 status!
               </p>
+            )}
+
+            {/* Experience Progress */}
+            <div className="mb-3">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-600">Esperienza</span>
+                <span className="text-gray-600">{experience} XP</span>
+              </div>
+              <div className="w-full bg-white/30 rounded-full h-2">
+                <div 
+                  className={`rounded-full h-2 transition-all duration-700 ${
+                    getLevelInfo().level === "Newbie"
+                      ? "bg-gradient-to-r from-blue-400 to-purple-400"
+                      : getLevelInfo().level === "Rising Star"
+                      ? "bg-gradient-to-r from-purple-400 to-pink-400"
+                      : getLevelInfo().level === "MasterChef"
+                      ? "bg-gradient-to-r from-amber-400 to-orange-400"
+                      : "bg-gradient-to-r from-emerald-400 to-teal-400"
+                  }`}
+                  style={{ 
+                    width: `${Math.min(((experience % (level * 100)) / (level * 100)) * 100, 100)}%` 
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Achievement recenti */}
+            {achievements.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {achievements.slice(-3).map((achievement: any, index: number) => (
+                  <div 
+                    key={achievement.id || index}
+                    className="bg-white/30 rounded-lg p-2 min-w-[60px] text-center flex-shrink-0"
+                  >
+                    <div className="text-lg mb-1">{achievement.icon}</div>
+                    <div className="text-xs font-medium truncate text-gray-700">{achievement.name}</div>
+                  </div>
+                ))}
+              </div>
             )}
           </motion.div>
         </div>
@@ -835,80 +874,6 @@ export default function Dashboard() {
               />
             </div>
           </div>
-        </motion.div>
-
-        {/* Gamification Card - Level & Streak */}
-        <motion.div
-          className="w-full max-w-md bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl p-5 shadow-xl mb-6 text-white"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65 }}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-lg font-bold">Livello {level}</h3>
-              <p className="text-purple-100 text-lg font-semibold">
-                {levelInfo?.level || "Newbie"}
-              </p>
-              <p className="text-purple-100 text-sm">
-                {reviewsToNextLevel} recensioni al prossimo livello
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {weeklyStreak > 0 && (
-                <div className="bg-white/20 px-3 py-1 rounded-full flex items-center">
-                  <span className="text-lg mr-1">🔥</span>
-                  <span className="text-sm font-bold">{weeklyStreak}</span>
-                </div>
-              )}
-              <div className="relative">
-                <Image 
-                  src={getMascotImage() || "/placeholder.svg"} 
-                  alt="Level Mascot" 
-                  width={40} 
-                  height={40} 
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Progress bar per il livello */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span>Esperienza</span>
-              <span>{experience} XP</span>
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-3">
-              <div 
-                className="bg-white rounded-full h-3 transition-all duration-700"
-                style={{ 
-                  width: `${Math.min(((experience % (level * 100)) / (level * 100)) * 100, 100)}%` 
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Achievement recenti */}
-          {achievements.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {achievements.slice(-3).map((achievement: any, index: number) => (
-                <div 
-                  key={achievement.id || index}
-                  className="bg-white/20 rounded-lg p-2 min-w-[60px] text-center"
-                >
-                  <div className="text-lg mb-1">{achievement.icon}</div>
-                  <div className="text-xs font-medium truncate">{achievement.name}</div>
-                </div>
-              ))}
-              <button
-                onClick={() => router.push('/achievements')}
-                className="bg-white/20 rounded-lg p-2 min-w-[60px] text-center hover:bg-white/30 transition-colors"
-              >
-                <div className="text-lg mb-1">🏆</div>
-                <div className="text-xs font-medium">Vedi tutti</div>
-              </button>
-            </div>
-          )}
         </motion.div>
 
         {/* Recent Activity Feed */}
@@ -1127,7 +1092,6 @@ export default function Dashboard() {
             </motion.div>
             <h2 className="text-3xl font-bold mb-2">LEVEL UP!</h2>
             <p className="text-xl">Hai raggiunto il livello {level}!</p>
-            <p className="text-lg font-semibold">{levelInfo?.level || "Newbie"}</p>
             <p className="text-sm mt-2 opacity-90">Continua così per sbloccare nuove funzionalità!</p>
           </motion.div>
         </motion.div>

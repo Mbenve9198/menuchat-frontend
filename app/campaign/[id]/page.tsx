@@ -290,7 +290,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                           ? `Programmata: ${formatDate(campaign.scheduledDate)}`
                           : "Non programmata"}
                   </span>
-                  </div>
+                </div>
               </div>
             </div>
 
@@ -317,11 +317,11 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                 <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
                     <Eye className="w-4 h-4 text-gray-500" />
-                  </div>
+                </div>
                   <p className="text-xs text-gray-500">Tasso Click</p>
-                  <p className="text-sm font-bold text-gray-800">
+                <p className="text-sm font-bold text-gray-800">
                     {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
-                  </p>
+                </p>
               </div>
             </div>
 
@@ -515,13 +515,13 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                               <span className="text-xs text-blue-600 font-medium">{t("campaignDetails.primary")}: </span>
                               <span className="text-xs text-gray-700">{campaign.primaryCTA}</span>
                             </div>
-                          )}
+                        )}
                           {campaign.secondaryCTA && (
                             <div className="bg-gray-50 rounded-lg p-2">
                               <span className="text-xs text-gray-600 font-medium">{t("campaignDetails.secondary")}: </span>
                               <span className="text-xs text-gray-700">{campaign.secondaryCTA}</span>
                             </div>
-                          )}
+                        )}
                         </div>
                       </div>
                     )}

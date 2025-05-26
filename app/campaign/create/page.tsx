@@ -969,14 +969,14 @@ export default function CreateCampaign() {
             </div>
             <div className="flex items-center gap-2">
               <UILanguageSelector variant="compact" />
-              <div className="relative w-10 h-10">
-                <Image
-                  src={getMascotImage() || "/placeholder.svg"}
-                  alt="Mascot"
-                  width={40}
-                  height={40}
-                  className="drop-shadow-lg"
-                />
+            <div className="relative w-10 h-10">
+              <Image
+                src={getMascotImage() || "/placeholder.svg"}
+                alt="Mascot"
+                width={40}
+                height={40}
+                className="drop-shadow-lg"
+              />
               </div>
             </div>
           </div>
