@@ -494,18 +494,8 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <UILanguageSelector variant="compact" />
-              <motion.div
-                className={`bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md border-2 ${isCustomNumber ? "border-green-500" : "border-[#1B9AAA]"} cursor-pointer`}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => setShowWhatsappDialog(true)}
-              >
-                <Phone className={`w-4 h-4 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
-                <span className={`text-sm font-bold ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`}>
-                  {isCustomNumber ? t("dashboard.customWhatsapp") : t("dashboard.defaultWhatsapp")}
-                </span>
-              </motion.div>
             </div>
           </div>
 
@@ -609,72 +599,49 @@ export default function Dashboard() {
             transition={{ delay: 0.25 }}
             whileHover={{ y: -5 }}
           >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.restaurantLevel")}</h3>
-                <p className={`text-2xl font-extrabold ${
-                  getLevelInfo().level === "Newbie"
-                    ? "text-blue-600"
-                    : getLevelInfo().level === "Rising Star"
-                    ? "text-purple-600"
-                    : getLevelInfo().level === "MasterChef"
-                    ? "text-amber-600"
-                    : "text-emerald-600"
-                }`}>{getLevelInfo().level}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {weeklyStreak > 0 && (
-                  <div className="bg-white/30 px-3 py-1 rounded-full flex items-center">
-                    <span className="text-lg mr-1">🔥</span>
-                    <span className="text-sm font-bold text-gray-800">{weeklyStreak}</span>
-                  </div>
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-800 mb-1">{t("dashboard.restaurantLevel")}</h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <p className={`text-3xl font-extrabold ${
+                    getLevelInfo().level === "Newbie"
+                      ? "text-blue-600"
+                      : getLevelInfo().level === "Rising Star"
+                      ? "text-purple-600"
+                      : getLevelInfo().level === "MasterChef"
+                      ? "text-amber-600"
+                      : "text-emerald-600"
+                  }`}>{getLevelInfo().level}</p>
+                  <div className="text-4xl">👨‍🍳</div>
+                </div>
+                {getLevelInfo().nextLevel && (
+                  <p className="text-sm text-gray-600">
+                    Prossimo: <span className="font-medium">{getLevelInfo().nextLevel}</span>
+                  </p>
                 )}
-                <div className="text-3xl">👨‍🍳</div>
               </div>
+              
+              {weeklyStreak > 0 && (
+                <div className="bg-white/40 px-3 py-2 rounded-full flex items-center">
+                  <span className="text-xl mr-1">🔥</span>
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-gray-800">{weeklyStreak}</div>
+                    <div className="text-xs text-gray-600">streak</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {getLevelInfo().nextLevel ? (
-              <>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">{getLevelInfo().current} reviews</span>
-                    <span className="text-gray-600">{getLevelInfo().target} reviews</span>
-                  </div>
-                  <Progress
-                    value={getLevelInfo().progress}
-                    className="h-2 bg-white/50"
-                    indicatorClassName={`transition-all duration-700 ease-in-out ${
-                      getLevelInfo().level === "Newbie"
-                        ? "bg-gradient-to-r from-blue-400 to-purple-400"
-                        : getLevelInfo().level === "Rising Star"
-                        ? "bg-gradient-to-r from-purple-400 to-pink-400"
-                        : getLevelInfo().level === "MasterChef"
-                        ? "bg-gradient-to-r from-amber-400 to-orange-400"
-                        : "bg-gradient-to-r from-emerald-400 to-teal-400"
-                    }`}
-                  />
+              <div className="mb-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Progresso livello</span>
+                  <span className="font-medium text-gray-700">{getLevelInfo().current}/{getLevelInfo().target}</span>
                 </div>
-                <p className="text-sm text-gray-700 mb-3">
-                  <span className="font-medium">{getLevelInfo().remaining} more reviews</span> needed to reach{" "}
-                  <span className="font-medium">{getLevelInfo().nextLevel}</span>
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-gray-700 mt-2 mb-3">
-                Congratulations! You've reached the highest level. Keep collecting reviews to maintain your legendary
-                status!
-              </p>
-            )}
-
-            {/* Experience Progress */}
-            <div className="mb-3">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">Esperienza</span>
-                <span className="text-gray-600">{experience} XP</span>
-              </div>
-              <div className="w-full bg-white/30 rounded-full h-2">
-                <div 
-                  className={`rounded-full h-2 transition-all duration-700 ${
+                <Progress
+                  value={getLevelInfo().progress}
+                  className="h-3 bg-white/50"
+                  indicatorClassName={`transition-all duration-700 ease-in-out ${
                     getLevelInfo().level === "Newbie"
                       ? "bg-gradient-to-r from-blue-400 to-purple-400"
                       : getLevelInfo().level === "Rising Star"
@@ -683,25 +650,39 @@ export default function Dashboard() {
                       ? "bg-gradient-to-r from-amber-400 to-orange-400"
                       : "bg-gradient-to-r from-emerald-400 to-teal-400"
                   }`}
-                  style={{ 
-                    width: `${Math.min(((experience % (level * 100)) / (level * 100)) * 100, 100)}%` 
-                  }}
                 />
+                <p className="text-sm text-gray-600 mt-2">
+                  <span className="font-medium text-gray-800">{getLevelInfo().remaining}</span> recensioni mancanti
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="mb-4">
+                <div className="bg-white/40 rounded-xl p-3 text-center">
+                  <p className="text-sm font-medium text-gray-700">
+                    🎉 Livello massimo raggiunto!
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Continua a raccogliere recensioni per mantenere il tuo status leggendario
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Achievement recenti */}
             {achievements.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                {achievements.slice(-3).map((achievement: any, index: number) => (
-                  <div 
-                    key={achievement.id || index}
-                    className="bg-white/30 rounded-lg p-2 min-w-[60px] text-center flex-shrink-0"
-                  >
-                    <div className="text-lg mb-1">{achievement.icon}</div>
-                    <div className="text-xs font-medium truncate text-gray-700">{achievement.name}</div>
-                  </div>
-                ))}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Achievement recenti</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {achievements.slice(-3).map((achievement: any, index: number) => (
+                    <div 
+                      key={achievement.id || index}
+                      className="bg-white/40 rounded-lg p-2 min-w-[60px] text-center flex-shrink-0"
+                    >
+                      <div className="text-lg mb-1">{achievement.icon}</div>
+                      <div className="text-xs font-medium truncate text-gray-700">{achievement.name}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>
@@ -936,6 +917,54 @@ export default function Dashboard() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+
+        {/* WhatsApp Settings Card */}
+        <motion.div
+          className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75 }}
+          whileHover={{ y: -5 }}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">{t("dashboard.whatsappSettings")}</h3>
+              <p className="text-sm text-gray-600">
+                {isCustomNumber ? t("dashboard.customWhatsapp") : t("dashboard.defaultWhatsapp")}
+              </p>
+            </div>
+            <div className="text-3xl">📱</div>
+          </div>
+
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
+              <Phone className={`w-5 h-5 mr-2 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
+              <span className="text-sm font-medium text-gray-700">
+                {isCustomNumber ? "Numero personalizzato" : "Numero predefinito"}
+              </span>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+              isCustomNumber 
+                ? "bg-green-100 text-green-700" 
+                : "bg-blue-100 text-blue-700"
+            }`}>
+              {isCustomNumber ? "CUSTOM" : "DEFAULT"}
+            </div>
+          </div>
+
+          <motion.button
+            className={`w-full py-3 px-4 rounded-xl font-medium text-sm transition-colors ${
+              isCustomNumber
+                ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
+                : "bg-[#1B9AAA] text-white hover:bg-[#158a99]"
+            }`}
+            onClick={() => setShowWhatsappDialog(true)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {isCustomNumber ? "Modifica impostazioni" : "Configura numero personalizzato"}
+          </motion.button>
         </motion.div>
 
         {/* Quick Actions */}
