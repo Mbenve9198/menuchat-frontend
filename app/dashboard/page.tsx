@@ -927,44 +927,35 @@ export default function Dashboard() {
           transition={{ delay: 0.75 }}
           whileHover={{ y: -5 }}
         >
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800">{t("dashboard.whatsappSettings")}</h3>
-              <p className="text-sm text-gray-600">
-                {isCustomNumber ? t("dashboard.customWhatsapp") : t("dashboard.defaultWhatsapp")}
-              </p>
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-800 mb-1">{t("dashboard.whatsappSettings")}</h3>
+              <div className="flex items-center">
+                <Phone className={`w-4 h-4 mr-2 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
+                <span className="text-sm text-gray-600">
+                  {isCustomNumber ? "Numero personalizzato attivo" : "Numero predefinito"}
+                </span>
+              </div>
             </div>
-            <div className="text-3xl">📱</div>
-          </div>
-
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center">
-              <Phone className={`w-5 h-5 mr-2 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
-              <span className="text-sm font-medium text-gray-700">
-                {isCustomNumber ? "Numero personalizzato" : "Numero predefinito"}
-              </span>
-            </div>
-            <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-              isCustomNumber 
-                ? "bg-green-100 text-green-700" 
-                : "bg-blue-100 text-blue-700"
-            }`}>
-              {isCustomNumber ? "CUSTOM" : "DEFAULT"}
+            <div className="flex items-center gap-2">
+              <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+                isCustomNumber 
+                  ? "bg-green-100 text-green-700" 
+                  : "bg-blue-100 text-blue-700"
+              }`}>
+                {isCustomNumber ? "CUSTOM" : "DEFAULT"}
+              </div>
+              <div className="text-3xl">📱</div>
             </div>
           </div>
 
-          <motion.button
-            className={`w-full py-3 px-4 rounded-xl font-medium text-sm transition-colors ${
-              isCustomNumber
-                ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
-                : "bg-[#1B9AAA] text-white hover:bg-[#158a99]"
-            }`}
+          <CustomButton
+            className="w-full h-12"
+            variant={isCustomNumber ? "outline" : "default"}
             onClick={() => setShowWhatsappDialog(true)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
-            {isCustomNumber ? "Modifica impostazioni" : "Configura numero personalizzato"}
-          </motion.button>
+            {isCustomNumber ? "Modifica" : "Configura numero personalizzato"}
+          </CustomButton>
         </motion.div>
 
         {/* Quick Actions */}
