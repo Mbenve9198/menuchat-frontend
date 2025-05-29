@@ -118,40 +118,6 @@ function LoginForm() {
                 transition: { duration: 0.2 }
               }}
             >
-              {/* Raggi di luce dal basso */}
-              <motion.div
-                className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
-                animate={{
-                  opacity: [0.4, 0.8, 0.4],
-                  scale: [0.8, 1.2, 0.8]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              >
-                <div className="w-20 h-10 bg-gradient-to-t from-yellow-300 via-yellow-200 to-transparent opacity-60 blur-sm rounded-full" />
-              </motion.div>
-              
-              {/* Raggi secondari */}
-              <motion.div
-                className="absolute bottom-1 left-1/2 transform -translate-x-1/2"
-                animate={{
-                  opacity: [0.2, 0.6, 0.2],
-                  scale: [1, 1.4, 1],
-                  rotate: [0, 10, -10, 0]
-                }}
-                transition={{
-                  duration: 1.8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.3
-                }}
-              >
-                <div className="w-16 h-8 bg-gradient-to-t from-orange-300 via-orange-200 to-transparent opacity-50 blur-sm rounded-full" />
-              </motion.div>
-              
               {/* Stella volante */}
               <motion.div
                 className="relative z-10"
