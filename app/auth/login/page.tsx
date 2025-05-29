@@ -95,20 +95,18 @@ function LoginForm() {
               animate={{ 
                 opacity: 1, 
                 scale: 1, 
-                y: 0,
-                x: [0, 10, -10, 5, -5, 0],
-                rotate: [0, 5, -5, 3, -3, 0]
+                y: [0, -8, 0],
+                x: [0, 5, -5, 0]
               }}
               transition={{ 
                 opacity: { duration: 0.8 },
                 scale: { duration: 0.8 },
-                y: { duration: 0.8 },
-                x: { 
-                  duration: 4,
+                y: { 
+                  duration: 2.5,
                   repeat: Infinity,
                   ease: "easeInOut"
                 },
-                rotate: {
+                x: { 
                   duration: 3,
                   repeat: Infinity,
                   ease: "easeInOut"
@@ -116,45 +114,66 @@ function LoginForm() {
               }}
               whileHover={{
                 scale: 1.1,
-                y: -5,
+                y: -10,
                 transition: { duration: 0.2 }
               }}
             >
-              {/* Effetto scia/trail */}
+              {/* Raggi di luce dal basso */}
               <motion.div
-                className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-200 to-orange-200 opacity-30 blur-md"
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
                 animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.3, 0.1, 0.3]
+                  opacity: [0.4, 0.8, 0.4],
+                  scale: [0.8, 1.2, 0.8]
                 }}
                 transition={{
                   duration: 2,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-              />
+              >
+                <div className="w-16 h-8 bg-gradient-to-t from-yellow-300 via-yellow-200 to-transparent opacity-60 blur-sm rounded-full" />
+              </motion.div>
+              
+              {/* Raggi secondari */}
+              <motion.div
+                className="absolute bottom-1 left-1/2 transform -translate-x-1/2"
+                animate={{
+                  opacity: [0.2, 0.6, 0.2],
+                  scale: [1, 1.4, 1],
+                  rotate: [0, 10, -10, 0]
+                }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.3
+                }}
+              >
+                <div className="w-12 h-6 bg-gradient-to-t from-orange-300 via-orange-200 to-transparent opacity-50 blur-sm rounded-full" />
+              </motion.div>
               
               {/* Stella volante */}
               <motion.div
+                className="relative z-10"
                 animate={{
-                  y: [0, -8, 0],
-                  rotate: [0, 360]
+                  y: [0, -3, 0],
+                  rotate: [0, 2, -2, 0]
                 }}
                 transition={{
                   y: {
-                    duration: 2.5,
+                    duration: 1.5,
                     repeat: Infinity,
                     ease: "easeInOut"
                   },
                   rotate: {
-                    duration: 8,
+                    duration: 2,
                     repeat: Infinity,
-                    ease: "linear"
+                    ease: "easeInOut"
                   }
                 }}
               >
                 <Image
-                  src="/mascottes/mascotte_running.png"
+                  src="/mascottes/mascotte_flying.png"
                   alt="Flying Star Mascot"
                   width={96}
                   height={96}
@@ -162,47 +181,61 @@ function LoginForm() {
                 />
               </motion.div>
               
-              {/* Particelle scintillanti */}
+              {/* Particelle scintillanti che seguono il movimento */}
               <motion.div
-                className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full"
+                className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full"
                 animate={{
                   scale: [0, 1, 0],
                   opacity: [0, 1, 0],
-                  x: [0, 15, 30],
-                  y: [0, -10, -20]
+                  x: [0, 8, 16],
+                  y: [0, -5, -10]
                 }}
                 transition={{
-                  duration: 1.5,
+                  duration: 1.2,
                   repeat: Infinity,
                   delay: 0
                 }}
               />
               <motion.div
-                className="absolute -bottom-2 -left-2 w-2 h-2 bg-orange-400 rounded-full"
+                className="absolute top-2 -left-1 w-1.5 h-1.5 bg-orange-400 rounded-full"
                 animate={{
                   scale: [0, 1, 0],
                   opacity: [0, 1, 0],
-                  x: [0, -10, -20],
-                  y: [0, 5, 10]
+                  x: [0, -6, -12],
+                  y: [0, 2, 4]
                 }}
                 transition={{
-                  duration: 1.2,
+                  duration: 1.5,
                   repeat: Infinity,
-                  delay: 0.3
+                  delay: 0.4
                 }}
               />
               <motion.div
-                className="absolute top-1/2 -right-3 w-2 h-2 bg-yellow-300 rounded-full"
+                className="absolute -top-2 right-2 w-1 h-1 bg-yellow-300 rounded-full"
                 animate={{
                   scale: [0, 1, 0],
                   opacity: [0, 1, 0],
-                  x: [0, 20, 40],
-                  y: [0, -5, -10]
+                  x: [0, 10, 20],
+                  y: [0, -3, -6]
                 }}
                 transition={{
                   duration: 1.8,
                   repeat: Infinity,
-                  delay: 0.6
+                  delay: 0.8
+                }}
+              />
+              
+              {/* Effetto scia luminosa */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-200 to-orange-200 opacity-20 blur-lg"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.2, 0.4, 0.2]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
                 }}
               />
             </motion.div>
