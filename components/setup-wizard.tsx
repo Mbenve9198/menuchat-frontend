@@ -429,9 +429,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   };
 
   const getMascotImage = () => {
-    // Only use the excited star with raised hands for the final success step
+    // Use the rock mascot for the final success step
     if (currentStep === steps.length - 1) {
-      return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
+      return "/mascottes/mascotte_rock.png"
     }
     // Use the setup wizard mascot for all other steps
     return "/mascottes/mascotte_setupwizard.png"
@@ -1472,24 +1472,175 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ 
-                    scale: [1, 1.1, 1], 
-                    rotate: [0, -5, 5, -5, 0],
+                    scale: 1,
                     opacity: 1 
                   }}
                   transition={{
-                    duration: 0.5,
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatType: "reverse",
-                    bounce: 0.5
+                    duration: 0.8,
+                    ease: "easeOut"
                   }}
-                  className="mx-auto mb-4"
+                  className="mx-auto mb-4 relative"
                 >
+                  {/* Effetti rock animati dietro */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {/* Onde sonore */}
+                    <motion.div
+                      className="absolute w-40 h-40 border-4 border-yellow-400 rounded-full opacity-30"
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [0.3, 0.1, 0.3]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                    <motion.div
+                      className="absolute w-32 h-32 border-4 border-orange-400 rounded-full opacity-40"
+                      animate={{
+                        scale: [1, 1.3, 1],
+                        opacity: [0.4, 0.1, 0.4]
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.3
+                      }}
+                    />
+                    <motion.div
+                      className="absolute w-24 h-24 border-4 border-red-400 rounded-full opacity-50"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.5, 0.1, 0.5]
+                      }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.6
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Particelle rock */}
+                  <motion.div
+                    className="absolute -top-4 -left-4 w-3 h-3 bg-yellow-400 rounded-full"
+                    animate={{
+                      y: [0, -20, 0],
+                      x: [0, -10, 0],
+                      scale: [1, 0.5, 1],
+                      opacity: [1, 0.3, 1]
+                    }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  <motion.div
+                    className="absolute -top-2 -right-6 w-2 h-2 bg-orange-400 rounded-full"
+                    animate={{
+                      y: [0, -15, 0],
+                      x: [0, 8, 0],
+                      scale: [1, 0.3, 1],
+                      opacity: [1, 0.2, 1]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.4
+                    }}
+                  />
+                  <motion.div
+                    className="absolute top-2 -left-6 w-2.5 h-2.5 bg-red-400 rounded-full"
+                    animate={{
+                      y: [0, -18, 0],
+                      x: [0, -12, 0],
+                      scale: [1, 0.4, 1],
+                      opacity: [1, 0.25, 1]
+                    }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.8
+                    }}
+                  />
+                  <motion.div
+                    className="absolute -bottom-2 -right-4 w-3 h-3 bg-purple-400 rounded-full"
+                    animate={{
+                      y: [0, -25, 0],
+                      x: [0, 15, 0],
+                      scale: [1, 0.6, 1],
+                      opacity: [1, 0.3, 1]
+                    }}
+                    transition={{
+                      duration: 1.3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.2
+                    }}
+                  />
+                  
+                  {/* Note musicali */}
+                  <motion.div
+                    className="absolute -top-6 right-2 text-2xl"
+                    animate={{
+                      y: [0, -30, 0],
+                      rotate: [0, 15, 0],
+                      opacity: [1, 0.2, 1]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    🎵
+                  </motion.div>
+                  <motion.div
+                    className="absolute top-4 -right-8 text-xl"
+                    animate={{
+                      y: [0, -25, 0],
+                      rotate: [0, -12, 0],
+                      opacity: [1, 0.3, 1]
+                    }}
+                    transition={{
+                      duration: 1.7,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.5
+                    }}
+                  >
+                    🎶
+                  </motion.div>
+                  <motion.div
+                    className="absolute -bottom-4 left-0 text-lg"
+                    animate={{
+                      y: [0, -20, 0],
+                      rotate: [0, 10, 0],
+                      opacity: [1, 0.25, 1]
+                    }}
+                    transition={{
+                      duration: 1.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 1
+                    }}
+                  >
+                    🎼
+                  </motion.div>
+
+                  {/* Mascotte rock statica */}
                   <Image
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
-                    alt="Excited Star Mascot"
-                    width={120}
-                    height={120}
-                    className="mx-auto drop-shadow-lg"
+                    src="/mascottes/mascotte_rock.png"
+                    alt="Rock Star Mascot"
+                    width={160}
+                    height={160}
+                    className="mx-auto drop-shadow-2xl relative z-10"
                   />
                 </motion.div>
 
