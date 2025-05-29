@@ -52,17 +52,153 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              className="mb-8"
+              className="mb-8 relative w-40 h-40 mx-auto"
               initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", bounce: 0.5 }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1,
+                y: [0, -12, 0],
+                x: [0, 8, -8, 0]
+              }}
+              transition={{ 
+                scale: { type: "spring", bounce: 0.5 },
+                opacity: { type: "spring", bounce: 0.5 },
+                y: { 
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                },
+                x: { 
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+              whileHover={{
+                scale: 1.1,
+                y: -15,
+                transition: { duration: 0.3 }
+              }}
             >
-              <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2818%29-XJ4yBbZlQkA3wHSnpTVZPryQut5K4p.png"
-                alt="Star Mascot"
-                width={150}
-                height={150}
-                className="mx-auto bounce-animation"
+              {/* Raggi di luce dal basso */}
+              <motion.div
+                className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
+                animate={{
+                  opacity: [0.4, 0.8, 0.4],
+                  scale: [0.8, 1.3, 0.8]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <div className="w-24 h-12 bg-gradient-to-t from-yellow-300 via-yellow-200 to-transparent opacity-60 blur-sm rounded-full" />
+              </motion.div>
+              
+              {/* Raggi secondari */}
+              <motion.div
+                className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+                animate={{
+                  opacity: [0.2, 0.6, 0.2],
+                  scale: [1, 1.5, 1],
+                  rotate: [0, 15, -15, 0]
+                }}
+                transition={{
+                  duration: 2.2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.4
+                }}
+              >
+                <div className="w-18 h-9 bg-gradient-to-t from-orange-300 via-orange-200 to-transparent opacity-50 blur-sm rounded-full" />
+              </motion.div>
+              
+              {/* Stella volante */}
+              <motion.div
+                className="relative z-10"
+                animate={{
+                  y: [0, -5, 0],
+                  rotate: [0, 3, -3, 0]
+                }}
+                transition={{
+                  y: {
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  },
+                  rotate: {
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }
+                }}
+              >
+                <Image
+                  src="/mascottes/mascotte_flying.png"
+                  alt="Flying Star Mascot"
+                  width={160}
+                  height={160}
+                  className="drop-shadow-2xl object-contain mx-auto"
+                />
+              </motion.div>
+              
+              {/* Particelle scintillanti più grandi */}
+              <motion.div
+                className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 12, 24],
+                  y: [0, -8, -16]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: 0
+                }}
+              />
+              <motion.div
+                className="absolute top-4 -left-2 w-3 h-3 bg-orange-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, -10, -20],
+                  y: [0, 3, 6]
+                }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  delay: 0.5
+                }}
+              />
+              <motion.div
+                className="absolute -top-4 right-4 w-2 h-2 bg-yellow-300 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 15, 30],
+                  y: [0, -5, -10]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: 1
+                }}
+              />
+              <motion.div
+                className="absolute bottom-8 -right-4 w-2.5 h-2.5 bg-pink-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 18, 36],
+                  y: [0, -6, -12]
+                }}
+                transition={{
+                  duration: 1.6,
+                  repeat: Infinity,
+                  delay: 0.8
+                }}
               />
             </motion.div>
 
