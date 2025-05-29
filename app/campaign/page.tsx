@@ -476,13 +476,13 @@ export default function CampaignsPage() {
             ))
           ) : (
             <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-6">
                 <Image
-                  src={getMascotImage() || "/placeholder.svg"}
-                  alt="Mascot"
-                  width={80}
-                  height={80}
-                  className="opacity-50"
+                  src="/mascottes/mascotte_nodata.png"
+                  alt="No Data Mascot"
+                  width={120}
+                  height={120}
+                  className="drop-shadow-lg"
                 />
               </div>
                 <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.noCampaignsFound")}</h3>
