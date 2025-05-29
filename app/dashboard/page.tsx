@@ -820,10 +820,11 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">
+            <div className="flex-1">
+              <p className="text-sm text-gray-600 mb-2">
                 {t("dashboard.getNewReviews", { count: weeklyGoalTarget })}
               </p>
+              <div className="text-4xl font-extrabold text-[#EF476F] mb-2">{weeklyGoalProgress}%</div>
               <div className="flex items-center">
                 <span className="text-sm font-medium text-gray-700">
                   {weeklyGoalCurrent}/{weeklyGoalTarget} {t("dashboard.completed")}
@@ -833,27 +834,24 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative ml-4">
               <Image 
-                src={getExcitedMascotImage() || "/placeholder.svg"} 
-                alt="Excited Mascot" 
-                width={50} 
-                height={50} 
+                src="/mascottes/mascotte_running.png" 
+                alt="Running Mascot" 
+                width={80} 
+                height={80}
+                className="object-contain"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-5xl font-extrabold text-[#EF476F]">{weeklyGoalProgress}%</div>
-            <div className="w-24 h-24">
-              <CircularProgressbar
-                value={weeklyGoalProgress}
-                styles={buildStyles({
-                  pathColor: "#EF476F",
-                  trailColor: "#f5f5f5",
-                })}
-              />
-            </div>
+          {/* Barra di progresso dritta */}
+          <div className="mt-4">
+            <Progress
+              value={weeklyGoalProgress}
+              className="h-4 bg-gray-100"
+              indicatorClassName="bg-gradient-to-r from-[#EF476F] to-[#FF6B9D] transition-all duration-700 ease-in-out"
+            />
           </div>
         </motion.div>
 
