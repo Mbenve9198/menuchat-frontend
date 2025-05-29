@@ -89,15 +89,123 @@ function LoginForm() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex flex-col items-center mb-8">
-            <div className="relative w-20 h-20 mb-4">
-              <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
-                alt="MenuChat Logo"
-                width={80}
-                height={80}
-                className="drop-shadow-lg"
+            <motion.div 
+              className="relative w-24 h-24 mb-4"
+              initial={{ opacity: 0, scale: 0.5, y: -50 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: 0,
+                x: [0, 10, -10, 5, -5, 0],
+                rotate: [0, 5, -5, 3, -3, 0]
+              }}
+              transition={{ 
+                opacity: { duration: 0.8 },
+                scale: { duration: 0.8 },
+                y: { duration: 0.8 },
+                x: { 
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                },
+                rotate: {
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+              whileHover={{
+                scale: 1.1,
+                y: -5,
+                transition: { duration: 0.2 }
+              }}
+            >
+              {/* Effetto scia/trail */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-200 to-orange-200 opacity-30 blur-md"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.1, 0.3]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
               />
-            </div>
+              
+              {/* Stella volante */}
+              <motion.div
+                animate={{
+                  y: [0, -8, 0],
+                  rotate: [0, 360]
+                }}
+                transition={{
+                  y: {
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  },
+                  rotate: {
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }
+                }}
+              >
+                <Image
+                  src="/mascottes/mascotte_running.png"
+                  alt="Flying Star Mascot"
+                  width={96}
+                  height={96}
+                  className="drop-shadow-2xl object-contain"
+                />
+              </motion.div>
+              
+              {/* Particelle scintillanti */}
+              <motion.div
+                className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 15, 30],
+                  y: [0, -10, -20]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: 0
+                }}
+              />
+              <motion.div
+                className="absolute -bottom-2 -left-2 w-2 h-2 bg-orange-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, -10, -20],
+                  y: [0, 5, 10]
+                }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Infinity,
+                  delay: 0.3
+                }}
+              />
+              <motion.div
+                className="absolute top-1/2 -right-3 w-2 h-2 bg-yellow-300 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 20, 40],
+                  y: [0, -5, -10]
+                }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  delay: 0.6
+                }}
+              />
+            </motion.div>
             <h1 className="text-3xl font-extrabold text-[#1B9AAA] mb-2">MenuChat</h1>
             <p className="text-gray-700 text-center max-w-xs">
               Accedi al tuo account per gestire i tuoi menu e template WhatsApp
