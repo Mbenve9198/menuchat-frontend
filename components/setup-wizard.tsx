@@ -681,8 +681,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               <Image
                 src={getMascotImage() || "/placeholder.svg"}
                 alt="Star Mascot"
-                width={80}
-                height={80}
+                width={160}
+                height={160}
                 className="drop-shadow-lg"
               />
             </motion.div>
