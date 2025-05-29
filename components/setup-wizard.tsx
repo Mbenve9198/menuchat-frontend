@@ -433,8 +433,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     if (currentStep === steps.length - 1) {
       return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
     }
-    // Use the cool star with crossed arms for all other steps
-    return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
+    // Use the setup wizard mascot for all other steps
+    return "/mascottes/mascotte_setupwizard.png"
   }
 
   // Function to update a language item in our array
