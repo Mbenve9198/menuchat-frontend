@@ -139,6 +139,14 @@ export default function CreateCampaign() {
   const [error, setError] = useState("")
   const [errorDetails, setErrorDetails] = useState("")
 
+  // Steps array using translations
+  const steps = [
+    t("campaignCreate.steps.selectContacts"),
+    t("campaignCreate.steps.campaignSetup"),
+    t("campaignCreate.steps.contentCreation"),
+    t("campaignCreate.steps.scheduleApprove")
+  ]
+
   // Campaign types - moved inside component to use t()
   const campaignTypes = [
     {
@@ -204,16 +212,16 @@ export default function CreateCampaign() {
           setRestaurant(data.restaurant);
         } else {
           toast({
-            title: "Errore",
-            description: data.error || "Impossibile caricare i contatti",
+            title: t("common.error"),
+            description: data.error || t("campaignCreate.errors.failedToLoadContacts"),
             variant: "destructive",
           });
         }
       } catch (error) {
         console.error("Error fetching contacts:", error);
         toast({
-          title: "Errore",
-          description: "Errore durante il caricamento dei contatti",
+          title: t("common.error"),
+          description: t("campaignCreate.errors.errorLoadingContacts"),
           variant: "destructive",
         });
       } finally {
@@ -224,7 +232,7 @@ export default function CreateCampaign() {
     if (currentStep === 0) {
       fetchContacts();
     }
-  }, [currentStep, toast]);
+  }, [currentStep, toast, t]);
 
   useEffect(() => {
     // Update progress based on current step
@@ -354,8 +362,8 @@ export default function CreateCampaign() {
         setPrimaryCtaType(data.data.cta.type || primaryCtaType)
         
         toast({
-          title: "Message regenerated",
-          description: "New content has been created for your campaign.",
+          title: t("campaignCreate.toasts.messageRegenerated"),
+          description: t("campaignCreate.toasts.newContentCreated"),
         });
       } else {
         throw new Error('Invalid response format')
@@ -363,8 +371,8 @@ export default function CreateCampaign() {
     } catch (error) {
       console.error('Error regenerating AI content:', error)
       toast({
-        title: "Error regenerating content",
-        description: "Failed to regenerate content. Please try again later.",
+        title: t("campaignCreate.toasts.errorRegeneratingContent"),
+        description: t("campaignCreate.toasts.failedToRegenerate"),
         variant: "destructive",
       })
       
@@ -1017,7 +1025,7 @@ export default function CreateCampaign() {
                 <div className="bg-white rounded-3xl p-6 shadow-xl">
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="w-5 h-5 text-[#EF476F]" />
-                    <span className="text-sm font-medium text-[#EF476F]">Select your audience</span>
+                    <span className="text-sm font-medium text-[#EF476F]">{t("campaignCreate.selectYourAudience")}</span>
                   </div>
 
                   <div className="space-y-4">
@@ -1025,7 +1033,7 @@ export default function CreateCampaign() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Search contacts..."
+                        placeholder={t("campaignCreate.searchContactsPlaceholder")}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 rounded-xl border-gray-200"
@@ -1036,14 +1044,14 @@ export default function CreateCampaign() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm text-gray-700 flex items-center">
-                          <Globe className="w-4 h-4 mr-1" /> Filter by country
+                          <Globe className="w-4 h-4 mr-1" /> {t("campaignCreate.filterByCountryLabel")}
                         </Label>
                         {selectedCountryCode && (
                           <button
                             onClick={() => setSelectedCountryCode(null)}
                             className="text-xs text-[#EF476F] font-medium"
                           >
-                            Clear filter
+                            {t("campaignCreate.clearFilterButton")}
                           </button>
                         )}
                       </div>
@@ -1076,7 +1084,7 @@ export default function CreateCampaign() {
                         className="mr-3 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
                       />
                       <Label htmlFor="select-all" className="text-sm font-medium text-gray-700 flex items-center">
-                        Select all contacts
+                        {t("campaignCreate.selectAllContactsLabel")}
                       </Label>
                     </div>
 
@@ -1085,7 +1093,7 @@ export default function CreateCampaign() {
                       {isLoadingContacts ? (
                         <div className="text-center py-8 flex flex-col items-center">
                           <Loader2 className="w-8 h-8 animate-spin text-[#EF476F] mb-2" />
-                          <p className="text-gray-500">Loading contacts...</p>
+                          <p className="text-gray-500">{t("campaignCreate.loadingContacts")}</p>
                         </div>
                       ) : filteredContacts.length > 0 ? (
                         filteredContacts.map((contact) => (
@@ -1104,14 +1112,14 @@ export default function CreateCampaign() {
                               <p className="font-medium text-gray-800">{contact.name}</p>
                               <div className="flex items-center justify-between">
                                 <p className="text-sm text-gray-500">{contact.phone}</p>
-                                <p className="text-xs text-gray-400">Last contact: {contact.lastOrder}</p>
+                                <p className="text-xs text-gray-400">{t("campaignCreate.lastContact")}: {contact.lastOrder}</p>
                               </div>
                             </div>
                           </motion.div>
                         ))
                       ) : (
                         <div className="text-center py-8">
-                          <p className="text-gray-500">No contacts found</p>
+                          <p className="text-gray-500">{t("campaignCreate.noContactsFound")}</p>
                         </div>
                       )}
                     </div>
@@ -1127,7 +1135,7 @@ export default function CreateCampaign() {
                   }}
                 >
                   <div>
-                    <p className="text-sm text-gray-700">Selected contacts</p>
+                    <p className="text-sm text-gray-700">{t("campaignCreate.selectedContacts")}</p>
                     <p className="text-2xl font-extrabold text-[#EF476F]">{selectedCount}</p>
                   </div>
                   {selectedCount > 0 && (
@@ -1151,13 +1159,13 @@ export default function CreateCampaign() {
                 <div className="bg-white rounded-3xl p-6 shadow-xl">
                   <div className="flex items-center gap-2 mb-4">
                     <MessageSquare className="w-5 h-5 text-[#EF476F]" />
-                    <span className="text-sm font-medium text-[#EF476F]">Campaign setup</span>
+                    <span className="text-sm font-medium text-[#EF476F]">{t("campaignCreate.campaignSetupLabel")}</span>
                   </div>
 
                   <div className="space-y-4">
                     {/* Campaign type */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Campaign type</Label>
+                      <Label className="text-sm font-medium text-gray-700">{t("campaignCreate.campaignTypeLabel")}</Label>
                       <RadioGroup value={campaignType} onValueChange={setCampaignType} className="space-y-2">
                         {campaignTypes.map((type) => (
                           <Label
@@ -1178,11 +1186,11 @@ export default function CreateCampaign() {
                     {/* Language */}
                     <div className="space-y-2">
                       <Label htmlFor="language" className="text-sm font-medium text-gray-700">
-                        Message language
+                        {t("campaignCreate.messageLanguage")}
                       </Label>
                       <Select value={language} onValueChange={setLanguage}>
                         <SelectTrigger id="language" className="rounded-xl border-gray-200">
-                          <SelectValue placeholder="Select language" />
+                          <SelectValue placeholder={t("campaignCreate.selectLanguage")} />
                         </SelectTrigger>
                         <SelectContent>
                           {languages.map((lang) => (
@@ -1197,11 +1205,11 @@ export default function CreateCampaign() {
                     {/* Campaign objective/details */}
                     <div className="space-y-2">
                       <Label htmlFor="campaign-objective" className="text-sm font-medium text-gray-700">
-                        Campaign details & objective
+                        {t("campaignCreate.campaignDetailsLabel")}
                       </Label>
                       <Textarea
                         id="campaign-objective"
-                        placeholder="Describe what you want to achieve with this campaign and any specific details to include..."
+                        placeholder={t("campaignCreate.campaignDetailsPlaceholder")}
                         value={campaignObjective}
                         onChange={(e) => setCampaignObjective(e.target.value)}
                         className="rounded-xl min-h-[120px] border-gray-200"

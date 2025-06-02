@@ -196,6 +196,20 @@
     "submitting": "Enviando...",
     "submittingTemplate": "Enviando plantilla...",
     "processing": "Procesando...",
+    "selectYourAudience": "Selecciona tu audiencia",
+    "searchContactsPlaceholder": "Buscar contactos...",
+    "filterByCountryLabel": "Filtrar por país",
+    "clearFilterButton": "Limpiar filtro",
+    "selectAllContactsLabel": "Seleccionar todos los contactos",
+    "loadingContacts": "Cargando contactos...",
+    "noContactsFound": "No se encontraron contactos",
+    "lastContact": "Último contacto",
+    "campaignSetupLabel": "Configuración de campaña",
+    "campaignTypeLabel": "Tipo de campaña",
+    "selectLanguage": "Seleccionar idioma",
+    "campaignDetailsLabel": "Detalles y objetivo de la campaña",
+    "date": "Fecha",
+    "time": "Hora",
     "types": {
       "promo": "Oferta Promocional",
       "event": "Invitación a Evento",
@@ -227,7 +241,15 @@
       "messageTextRequired": "Texto del mensaje requerido",
       "generateOrEnterMessage": "Por favor genera o ingresa el texto del mensaje",
       "invalidScheduleTime": "Hora de programación inválida",
-      "scheduleAtLeast10Minutes": "La hora de programación debe ser al menos 10 minutos desde ahora"
+      "scheduleAtLeast10Minutes": "La hora de programación debe ser al menos 10 minutos desde ahora",
+      "failedToLoadContacts": "Error al cargar contactos",
+      "errorLoadingContacts": "Error cargando contactos"
+    },
+    "toasts": {
+      "messageRegenerated": "Mensaje regenerado",
+      "newContentCreated": "Se ha creado nuevo contenido para tu campaña.",
+      "errorRegeneratingContent": "Error regenerando contenido",
+      "failedToRegenerate": "Error al regenerar contenido. Por favor intenta de nuevo más tarde."
     },
     "aiGenerated": "Generado por IA",
     "mediaMessages": "Mensajes de Media",

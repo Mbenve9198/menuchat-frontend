@@ -196,6 +196,20 @@
     "submitting": "Submitting...",
     "submittingTemplate": "Submitting template...",
     "processing": "Processing...",
+    "selectYourAudience": "Select your audience",
+    "searchContactsPlaceholder": "Search contacts...",
+    "filterByCountryLabel": "Filter by country",
+    "clearFilterButton": "Clear filter",
+    "selectAllContactsLabel": "Select all contacts",
+    "loadingContacts": "Loading contacts...",
+    "noContactsFound": "No contacts found",
+    "lastContact": "Last contact",
+    "campaignSetupLabel": "Campaign setup",
+    "campaignTypeLabel": "Campaign type",
+    "selectLanguage": "Select language",
+    "campaignDetailsLabel": "Campaign details & objective",
+    "date": "Date",
+    "time": "Time",
     "types": {
       "promo": "Promotional Offer",
       "event": "Event Invitation",
@@ -227,7 +241,15 @@
       "messageTextRequired": "Message text required",
       "generateOrEnterMessage": "Please generate or enter message text",
       "invalidScheduleTime": "Invalid schedule time",
-      "scheduleAtLeast10Minutes": "Schedule time must be at least 10 minutes from now"
+      "scheduleAtLeast10Minutes": "Schedule time must be at least 10 minutes from now",
+      "failedToLoadContacts": "Failed to load contacts",
+      "errorLoadingContacts": "Error loading contacts"
+    },
+    "toasts": {
+      "messageRegenerated": "Message regenerated",
+      "newContentCreated": "New content has been created for your campaign.",
+      "errorRegeneratingContent": "Error regenerating content",
+      "failedToRegenerate": "Failed to regenerate content. Please try again later."
     },
     "aiGenerated": "AI Generated",
     "mediaMessages": "Media Messages",
