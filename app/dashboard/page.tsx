@@ -33,10 +33,6 @@ export default function Dashboard() {
   const [initialReviewCount, setInitialReviewCount] = useState(0)
   const [currentReviewCount, setCurrentReviewCount] = useState(0)
   const [newReviewsCollected, setNewReviewsCollected] = useState(0)
-  const [weeklyGoalProgress, setWeeklyGoalProgress] = useState(0)
-  const [weeklyGoalTarget, setWeeklyGoalTarget] = useState(0)
-  const [weeklyGoalCurrent, setWeeklyGoalCurrent] = useState(0)
-  const [weeklyGoalDaysLeft, setWeeklyGoalDaysLeft] = useState(0)
   const [isNewRecord, setIsNewRecord] = useState(false)
   const [trendMenus, setTrendMenus] = useState(0)
   const [trendReviews, setTrendReviews] = useState(0)
@@ -135,12 +131,6 @@ export default function Dashboard() {
       
       // Assicura che il valore delle nuove recensioni sia sempre non negativo
       setNewReviewsCollected(Math.max(0, data.totalReviewsCollected))
-      
-      // Aggiorna dati weekly goal
-      setWeeklyGoalProgress(data.weeklyGoal.progress)
-      setWeeklyGoalTarget(data.weeklyGoal.target)
-      setWeeklyGoalCurrent(data.weeklyGoal.current)
-      setWeeklyGoalDaysLeft(data.weeklyGoal.daysLeft)
       
       // Aggiorna trend
       setTrendMenus(data.trends.menusSent)
@@ -804,56 +794,6 @@ export default function Dashboard() {
             </div>
           </motion.div>
         </div>
-
-        {/* Weekly Goal Progress */}
-        <motion.div
-          className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-bold text-gray-800">{t("dashboard.weeklyGoal")}</h3>
-            <div className="bg-[#FFE14D]/20 px-3 py-1 rounded-full text-xs font-bold text-gray-700">
-              {weeklyGoalDaysLeft} {t("dashboard.daysLeft")}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-2">
-                {t("dashboard.getNewReviews", { count: weeklyGoalTarget })}
-              </p>
-              <div className="text-4xl font-extrabold text-[#EF476F] mb-2">{weeklyGoalProgress}%</div>
-              <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-700">
-                  {weeklyGoalCurrent}/{weeklyGoalTarget} {t("dashboard.completed")}
-                </span>
-                <span className="ml-2 text-xs text-green-600">
-                  ({weeklyGoalTarget - weeklyGoalCurrent} {t("dashboard.moreToGo")})
-                </span>
-              </div>
-            </div>
-            <div className="relative ml-4">
-              <Image 
-                src="/mascottes/mascotte_running.png" 
-                alt="Running Mascot" 
-                width={80} 
-                height={80}
-                className="object-contain"
-              />
-            </div>
-          </div>
-
-          {/* Barra di progresso dritta */}
-          <div className="mt-4">
-            <Progress
-              value={weeklyGoalProgress}
-              className="h-4 bg-gray-100"
-              indicatorClassName="bg-gradient-to-r from-[#EF476F] to-[#FF6B9D] transition-all duration-700 ease-in-out"
-            />
-          </div>
-        </motion.div>
 
         {/* Recent Activity Feed */}
         <motion.div
