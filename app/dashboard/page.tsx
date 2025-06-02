@@ -553,6 +553,66 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Bacheca Trofei */}
+        {achievements.length > 0 && (
+          <div className="w-full max-w-md mb-6">
+            <motion.div
+              className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-5 shadow-xl border border-yellow-200"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="text-2xl">🏆</div>
+                  <h3 className="text-lg font-bold text-gray-800">Bacheca Trofei</h3>
+                </div>
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1 rounded-full text-xs font-bold">
+                  {achievements.length} {achievements.length === 1 ? 'Trofeo' : 'Trofei'}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-3">
+                {achievements.slice(-6).map((achievement: any, index: number) => (
+                  <motion.div 
+                    key={achievement.id || index}
+                    className="bg-white rounded-xl p-3 text-center shadow-sm border border-yellow-100 hover:shadow-md transition-shadow"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <div className="text-2xl mb-2">{achievement.icon}</div>
+                    <div className="text-xs font-medium text-gray-700 leading-tight">{achievement.name}</div>
+                    {achievement.rarity && (
+                      <div className={`text-xs mt-1 px-2 py-0.5 rounded-full ${
+                        achievement.rarity === 'legendary' ? 'bg-yellow-100 text-yellow-700' :
+                        achievement.rarity === 'epic' ? 'bg-purple-100 text-purple-700' :
+                        achievement.rarity === 'rare' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {achievement.rarity}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              
+              {achievements.length > 6 && (
+                <div className="mt-4 text-center">
+                  <button 
+                    className="text-sm text-orange-600 font-medium hover:text-orange-700 transition-colors"
+                    onClick={() => router.push('/achievements')}
+                  >
+                    Vedi tutti i {achievements.length} trofei →
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
         {/* Level Progress */}
         <div className="w-full max-w-md mb-6">
           <motion.div
@@ -635,24 +695,6 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-600 mt-1">
                     Continua a raccogliere recensioni per mantenere il tuo status leggendario
                   </p>
-                </div>
-              </div>
-            )}
-
-            {/* Achievement recenti */}
-            {achievements.length > 0 && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Achievement recenti</p>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {achievements.slice(-3).map((achievement: any, index: number) => (
-                    <div 
-                      key={achievement.id || index}
-                      className="bg-white/40 rounded-lg p-2 min-w-[60px] text-center flex-shrink-0"
-                    >
-                      <div className="text-lg mb-1">{achievement.icon}</div>
-                      <div className="text-xs font-medium truncate text-gray-700">{achievement.name}</div>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
