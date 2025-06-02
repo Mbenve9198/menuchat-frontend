@@ -142,21 +142,34 @@ export default function Dashboard() {
       setExperience(data.totalExperience || 0)
       setReviewsToNextLevel(data.reviewsToNextLevel || 10)
       setWeeklyStreak(data.weeklyStreak || 0)
-      setAchievements(data.achievements || [])
+      
+      // Gestione achievement con localStorage per evitare notifiche duplicate
+      const currentAchievements = data.achievements || []
+      const storageKey = `achievements_seen_${restaurantId}`
+      const seenAchievements = JSON.parse(localStorage.getItem(storageKey) || '[]')
+      
+      // Trova achievement veramente nuovi (non ancora visti)
+      const newAchievements = currentAchievements.filter(
+        (achievement: any) => !seenAchievements.includes(achievement.id)
+      )
+      
+      // Se ci sono nuovi achievement, mostra il più recente e aggiorna localStorage
+      if (newAchievements.length > 0) {
+        const newestAchievement = newAchievements[newAchievements.length - 1] // Prende l'ultimo (più alto)
+        setShowNewAchievement(newestAchievement)
+        setTimeout(() => setShowNewAchievement(null), 4000)
+        
+        // Aggiorna la lista degli achievement visti
+        const updatedSeenAchievements = [...seenAchievements, ...newAchievements.map((a: any) => a.id)]
+        localStorage.setItem(storageKey, JSON.stringify(updatedSeenAchievements))
+      }
+      
+      setAchievements(currentAchievements)
       
       // Controlla se c'è stato un level up
       if (data.level && data.level > previousLevel) {
         setShowLevelUp(true)
         setTimeout(() => setShowLevelUp(false), 3000)
-      }
-      
-      // Controlla nuovi achievement
-      const newAchievements = (data.achievements || []).filter(
-        (achievement: any) => !achievements.some((existing: any) => existing.id === achievement.id)
-      )
-      if (newAchievements.length > 0) {
-        setShowNewAchievement(newAchievements[0])
-        setTimeout(() => setShowNewAchievement(null), 4000)
       }
       
       // Verifica record
