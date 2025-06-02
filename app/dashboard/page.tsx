@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [achievements, setAchievements] = useState<any[]>([])
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [showNewAchievement, setShowNewAchievement] = useState<any>(null)
+  const [levelInfo, setLevelInfo] = useState<any>(null)
 
   // Stato per filtro tempo
   const [timeFilter, setTimeFilter] = useState<"7days" | "30days" | "custom">("7days")
@@ -142,6 +143,14 @@ export default function Dashboard() {
       setExperience(data.totalExperience || 0)
       setReviewsToNextLevel(data.reviewsToNextLevel || 10)
       setWeeklyStreak(data.weeklyStreak || 0)
+      setLevelInfo(data.levelInfo || {
+        level: "Newbie",
+        nextLevel: "Rising Star",
+        current: 0,
+        target: 100,
+        remaining: 100,
+        progress: 0
+      })
       
       // Gestione achievement con localStorage per evitare notifiche duplicate
       const currentAchievements = data.achievements || []
@@ -384,47 +393,6 @@ export default function Dashboard() {
     return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
   }
 
-  const getLevelInfo = () => {
-    if (totalReviewsCollected < 100) {
-      return {
-        level: "Newbie",
-        nextLevel: "Rising Star",
-        current: totalReviewsCollected,
-        target: 100,
-        remaining: 100 - totalReviewsCollected,
-        progress: (totalReviewsCollected / 100) * 100,
-      }
-    } else if (totalReviewsCollected < 500) {
-      return {
-        level: "Rising Star",
-        nextLevel: "MasterChef",
-        current: totalReviewsCollected,
-        target: 500,
-        remaining: 500 - totalReviewsCollected,
-        progress: ((totalReviewsCollected - 100) / 400) * 100,
-      }
-    } else if (totalReviewsCollected < 1000) {
-      return {
-        level: "MasterChef",
-        nextLevel: "Culinary Legend",
-        current: totalReviewsCollected,
-        target: 1000,
-        remaining: 1000 - totalReviewsCollected,
-        progress: ((totalReviewsCollected - 500) / 500) * 100,
-      }
-    } else {
-      return {
-        level: "Culinary Legend",
-        nextLevel: null,
-        current: totalReviewsCollected,
-        target: 10000,
-        remaining: totalReviewsCollected >= 10000 ? 0 : 10000 - totalReviewsCollected,
-        progress:
-          ((totalReviewsCollected - 1000) / 9000) * 100 > 100 ? 100 : ((totalReviewsCollected - 1000) / 9000) * 100,
-      }
-    }
-  }
-
   const getFilterLabel = () => {
     if (timeFilter === "7days") return "Last 7 days"
     if (timeFilter === "30days") return "Last 30 days"
@@ -589,11 +557,11 @@ export default function Dashboard() {
         <div className="w-full max-w-md mb-6">
           <motion.div
             className={`rounded-3xl p-5 shadow-xl ${
-              getLevelInfo().level === "Newbie"
+              levelInfo?.level === "Newbie"
                 ? "bg-gradient-to-br from-blue-100 to-purple-100 text-gray-800"
-                : getLevelInfo().level === "Rising Star"
+                : levelInfo?.level === "Rising Star"
                 ? "bg-gradient-to-br from-purple-100 to-pink-100 text-gray-800"
-                : getLevelInfo().level === "MasterChef"
+                : levelInfo?.level === "MasterChef"
                 ? "bg-gradient-to-br from-amber-100 to-orange-100 text-gray-800"
                 : "bg-gradient-to-br from-emerald-100 to-teal-100 text-gray-800"
             }`}
@@ -607,19 +575,19 @@ export default function Dashboard() {
                 <h3 className="text-lg font-bold text-gray-800 mb-1">{t("dashboard.restaurantLevel")}</h3>
                 <div className="flex items-center gap-3 mb-2">
                   <p className={`text-3xl font-extrabold ${
-                    getLevelInfo().level === "Newbie"
+                    levelInfo?.level === "Newbie"
                       ? "text-blue-600"
-                      : getLevelInfo().level === "Rising Star"
+                      : levelInfo?.level === "Rising Star"
                       ? "text-purple-600"
-                      : getLevelInfo().level === "MasterChef"
+                      : levelInfo?.level === "MasterChef"
                       ? "text-amber-600"
                       : "text-emerald-600"
-                  }`}>{getLevelInfo().level}</p>
+                  }`}>{levelInfo?.level || "Newbie"}</p>
                   <div className="text-4xl">👨‍🍳</div>
                 </div>
-                {getLevelInfo().nextLevel && (
+                {levelInfo?.nextLevel && (
                   <p className="text-sm text-gray-600">
-                    Prossimo: <span className="font-medium">{getLevelInfo().nextLevel}</span>
+                    Prossimo: <span className="font-medium">{levelInfo.nextLevel}</span>
                   </p>
                 )}
               </div>
@@ -635,27 +603,27 @@ export default function Dashboard() {
               )}
             </div>
 
-            {getLevelInfo().nextLevel ? (
+            {levelInfo?.nextLevel ? (
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-600">Progresso livello</span>
-                  <span className="font-medium text-gray-700">{getLevelInfo().current}/{getLevelInfo().target}</span>
+                  <span className="font-medium text-gray-700">{levelInfo.current}/{levelInfo.target}</span>
                 </div>
                 <Progress
-                  value={getLevelInfo().progress}
+                  value={levelInfo.progress}
                   className="h-3 bg-white/50"
                   indicatorClassName={`transition-all duration-700 ease-in-out ${
-                    getLevelInfo().level === "Newbie"
+                    levelInfo.level === "Newbie"
                       ? "bg-gradient-to-r from-blue-400 to-purple-400"
-                      : getLevelInfo().level === "Rising Star"
+                      : levelInfo.level === "Rising Star"
                       ? "bg-gradient-to-r from-purple-400 to-pink-400"
-                      : getLevelInfo().level === "MasterChef"
+                      : levelInfo.level === "MasterChef"
                       ? "bg-gradient-to-r from-amber-400 to-orange-400"
                       : "bg-gradient-to-r from-emerald-400 to-teal-400"
                   }`}
                 />
                 <p className="text-sm text-gray-600 mt-2">
-                  <span className="font-medium text-gray-800">{getLevelInfo().remaining}</span> recensioni mancanti
+                  <span className="font-medium text-gray-800">{levelInfo.remaining}</span> recensioni mancanti
                 </p>
               </div>
             ) : (
