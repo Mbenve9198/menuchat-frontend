@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
 
 // Lingue supportate con emoji delle bandiere
 const SUPPORTED_LANGUAGES = [
@@ -11,6 +12,13 @@ const SUPPORTED_LANGUAGES = [
   { code: "en", name: "English", flag: "🇬🇧" },
   { code: "es", name: "Español", flag: "🇪🇸" },
 ]
+
+// Mapping tra codici i18n e languagePreference del backend
+const LANGUAGE_MAPPING: Record<string, string> = {
+  "it": "italiano",
+  "en": "english", 
+  "es": "español"
+}
 
 interface UILanguageSelectorProps {
   className?: string
@@ -22,34 +30,99 @@ export default function UILanguageSelector({
   variant = "compact" 
 }: UILanguageSelectorProps) {
   const { i18n } = useTranslation()
+  const { data: session } = useSession()
   const [isOpen, setIsOpen] = useState(false)
-  const [currentLanguage, setCurrentLanguage] = useState(
-    SUPPORTED_LANGUAGES.find(lang => lang.code === i18n.language) || SUPPORTED_LANGUAGES[0]
-  )
+  const [isSaving, setIsSaving] = useState(false)
 
+  const currentLanguage = SUPPORTED_LANGUAGES.find(lang => lang.code === i18n.language) || SUPPORTED_LANGUAGES[0]
+
+  // Carica le preferenze utente al mount se l'utente è autenticato
+  useEffect(() => {
+    if (session?.user) {
+      loadUserPreferences()
+    }
+  }, [session])
+
+  const loadUserPreferences = async () => {
+    try {
+      const response = await fetch('/api/user/preferences')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data.languagePreference) {
+          // Trova il codice i18n corrispondente alla languagePreference
+          const i18nCode = Object.keys(LANGUAGE_MAPPING).find(
+            key => LANGUAGE_MAPPING[key] === data.data.languagePreference
+          )
+          if (i18nCode && i18nCode !== i18n.language) {
+            i18n.changeLanguage(i18nCode)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento preferenze utente:', error)
+    }
+  }
+
+  const saveLanguagePreference = async (languageCode: string) => {
+    if (!session?.user) return
+
+    try {
+      setIsSaving(true)
+      const languagePreference = LANGUAGE_MAPPING[languageCode]
+      
+      if (!languagePreference) {
+        throw new Error(`Lingua non supportata: ${languageCode}`)
+      }
+      
+      const response = await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          languagePreference
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Errore nel salvataggio della lingua')
+      }
+
+      console.log(`✅ Lingua salvata nel database: ${languagePreference}`)
+    } catch (error) {
+      console.error('Errore nel salvataggio della lingua:', error)
+      // Non mostriamo errori all'utente per non interrompere l'esperienza
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleLanguageChange = async (languageCode: string) => {
+    // Cambia immediatamente la lingua nell'interfaccia
+    i18n.changeLanguage(languageCode)
+    setIsOpen(false)
+    
+    // Salva la preferenza nel database se l'utente è autenticato
+    if (session?.user) {
+      await saveLanguagePreference(languageCode)
+    }
+  }
+
+  // Chiudi il dropdown quando si clicca fuori
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
+      const target = event.target as Element
       if (!target.closest('[data-language-selector]')) {
         setIsOpen(false)
       }
     }
 
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [])
-
-  useEffect(() => {
-    const newLanguage = SUPPORTED_LANGUAGES.find(lang => lang.code === i18n.language)
-    if (newLanguage) {
-      setCurrentLanguage(newLanguage)
+    if (isOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
     }
-  }, [i18n.language])
-
-  const handleLanguageChange = (languageCode: string) => {
-    i18n.changeLanguage(languageCode)
-    setIsOpen(false)
-  }
+  }, [isOpen])
 
   if (variant === "compact") {
     return (
@@ -97,7 +170,11 @@ export default function UILanguageSelector({
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors"
+        disabled={isSaving}
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors",
+          isSaving && "opacity-50 cursor-not-allowed"
+        )}
       >
         <span className="text-lg">{currentLanguage.flag}</span>
         <span className="text-sm font-medium text-gray-700">{currentLanguage.name}</span>
