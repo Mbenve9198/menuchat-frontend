@@ -243,7 +243,8 @@
       "invalidScheduleTime": "Invalid schedule time",
       "scheduleAtLeast10Minutes": "Schedule time must be at least 10 minutes from now",
       "failedToLoadContacts": "Failed to load contacts",
-      "errorLoadingContacts": "Error loading contacts"
+      "errorLoadingContacts": "Error loading contacts",
+      "failedToCreateCampaign": "Failed to create campaign. Please try again later."
     },
     "toasts": {
       "messageRegenerated": "Message regenerated",

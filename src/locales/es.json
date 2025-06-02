@@ -243,7 +243,8 @@
       "invalidScheduleTime": "Hora de programación inválida",
       "scheduleAtLeast10Minutes": "La hora de programación debe ser al menos 10 minutos desde ahora",
       "failedToLoadContacts": "Error al cargar contactos",
-      "errorLoadingContacts": "Error cargando contactos"
+      "errorLoadingContacts": "Error cargando contactos",
+      "failedToCreateCampaign": "Error al crear la campaña. Por favor intenta de nuevo más tarde."
     },
     "toasts": {
       "messageRegenerated": "Mensaje regenerado",

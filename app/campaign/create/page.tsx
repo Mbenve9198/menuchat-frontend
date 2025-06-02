@@ -67,7 +67,7 @@ interface CountryCode {
 }
 
 // Update the steps array to include the new step
-const steps = ["Select Contacts", "Campaign Setup", "Content Creation", "Schedule & Approve"]
+// const steps = ["Select Contacts", "Campaign Setup", "Content Creation", "Schedule & Approve"]
 
 export default function CreateCampaign() {
   const router = useRouter()
@@ -844,10 +844,11 @@ export default function CreateCampaign() {
       setIsApproved(true);
       
       toast({
-        title: "Campagna programmata!",
-        description: `La tua campagna sarà inviata a ${selectedCount} contatti ${
-          scheduleOption === "now" ? "tra circa 10 minuti" : "all'ora programmata"
-        }`,
+        title: t("campaigns.campaignScheduled"),
+        description: t("campaignCreate.campaignWillBeSent", {
+          count: selectedCount,
+          when: scheduleOption === "now" ? t("campaignCreate.inApproximately10Minutes") : t("campaignCreate.atScheduledTime")
+        }),
       });
       
       // Redirect alla dashboard dopo un breve ritardo
@@ -857,8 +858,8 @@ export default function CreateCampaign() {
     } catch (error: any) {
       console.error("Error creating campaign:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create campaign. Please try again.",
+        title: t("common.error"),
+        description: error.message || t("campaignCreate.errors.failedToCreateCampaign"),
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -935,10 +936,10 @@ export default function CreateCampaign() {
           <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center max-w-md mx-4">
             <Loader2 className="w-16 h-16 text-[#EF476F] animate-spin mb-4" />
             <h3 className="text-xl font-bold text-gray-800 mb-2">
-              Creating your campaign content...
+              {t("campaignCreate.creatingCampaignContent")}
             </h3>
             <p className="text-gray-600 text-center mb-4">
-              Our AI is crafting a personalized message based on your campaign details. This may take a few moments.
+              {t("campaignCreate.aiCraftingMessage")}
             </p>
             <div className="relative w-full h-2 bg-gray-100 rounded-full overflow-hidden">
               <motion.div 
@@ -955,7 +956,7 @@ export default function CreateCampaign() {
             <div className="mt-6 relative">
               <Image
                 src={getExcitedMascotImage() || "/placeholder.svg"}
-                alt="AI Working"
+                alt={t("campaignCreate.aiWorking")}
                 width={80}
                 height={80}
                 className="drop-shadow-lg"
@@ -1857,7 +1858,7 @@ export default function CreateCampaign() {
                           />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800">Ready to send your campaign?</p>
+                          <p className="font-medium text-gray-800">{t("campaignCreate.readyToSend")}</p>
                           <p className="text-sm text-gray-600">
                             Your campaign will be sent to {selectedCount} contacts at the scheduled time after approval.
                           </p>
@@ -1877,7 +1878,7 @@ export default function CreateCampaign() {
                       <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
                         <Check className="w-6 h-6 text-green-600" />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-800">Campaign Scheduled!</h3>
+                      <h3 className="text-lg font-bold text-gray-800">{t("campaignCreate.campaignScheduledSuccess")}</h3>
                       <p className="text-sm text-gray-600">
                         Your campaign has been approved and will be sent at the scheduled time.
                       </p>
@@ -1897,7 +1898,7 @@ export default function CreateCampaign() {
               onClick={handleNext}
               disabled={selectedCount === 0}
             >
-              Continue <ArrowRight className="ml-2 w-5 h-5" />
+              {t("common.continue")} <ArrowRight className="ml-2 w-5 h-5" />
             </CustomButton>
           </div>
         )}
@@ -1910,7 +1911,7 @@ export default function CreateCampaign() {
               onClick={handleNext}
               disabled={!campaignType || !campaignObjective.trim()}
             >
-              Continue <ArrowRight className="ml-2 w-5 h-5" />
+              {t("common.continue")} <ArrowRight className="ml-2 w-5 h-5" />
             </CustomButton>
           </div>
         )}
@@ -1923,7 +1924,7 @@ export default function CreateCampaign() {
               onClick={handleNext}
               disabled={!messageText || !primaryCta || !primaryCtaValue}
             >
-              Continue <ArrowRight className="ml-2 w-5 h-5" />
+              {t("common.continue")} <ArrowRight className="ml-2 w-5 h-5" />
             </CustomButton>
           </div>
         )}
@@ -1938,15 +1939,15 @@ export default function CreateCampaign() {
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" /> {t("campaignCreate.submitting")}
                 </>
               ) : isSubmittingTemplate ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" /> {templateApprovalStatus === "pending" ? "Submitting template..." : "Processing..."}
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" /> {templateApprovalStatus === "pending" ? t("campaignCreate.submittingTemplate") : t("campaignCreate.processing")}
                 </>
               ) : (
                 <>
-                  Schedule Campaign <ArrowRight className="ml-2 w-5 h-5" />
+                  {t("campaignCreate.scheduleCampaign")} <ArrowRight className="ml-2 w-5 h-5" />
                 </>
               )}
             </CustomButton>
