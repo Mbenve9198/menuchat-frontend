@@ -877,24 +877,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                     {t("setup.menuSetup.configureMenus")}
                   </Label>
                   
-                  <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <div className="flex items-start gap-2">
-                      <div className="mt-0.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm text-blue-700 font-medium mb-1">
-                          Requisiti URL del menu
-                        </p>
-                        <p className="text-xs text-blue-600">
-                          Gli URL del menu devono iniziare con <strong>https://</strong> o <strong>http://</strong> per garantire la sicurezza e il corretto funzionamento del servizio.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
                   <div className="space-y-4">
                     {menuLanguages.map(language => (
                       <MenuLanguageItem
