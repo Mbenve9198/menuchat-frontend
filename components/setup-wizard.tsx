@@ -347,41 +347,31 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         const responseData = await response.json();
         console.log("Setup success response:", responseData);
         
-        // Effettua l'auto-login dopo la registrazione
-        try {
-          // Tenta di effettuare il login automatico con le credenziali appena create
-          const loginResponse = await signIn('credentials', {
+        // Mostra il messaggio di successo per 2 secondi prima del redirect
+        setTimeout(() => {
+          // Effettua l'auto-login dopo la registrazione
+          signIn('credentials', {
             email: userEmail,
             password: userPassword,
             redirect: false,
             callbackUrl: `${window.location.origin}/dashboard`
-          });
-          
-          console.log("Auto-login response:", loginResponse);
-          
-          if (loginResponse?.error) {
-            console.error("Login error:", loginResponse.error);
-            // In caso di errore nel login, reindirizza comunque alla dashboard
-            setTimeout(() => {
-              onComplete();
+          }).then((loginResponse) => {
+            console.log("Auto-login response:", loginResponse);
+            
+            if (loginResponse?.error) {
+              console.error("Login error:", loginResponse.error);
+              // In caso di errore nel login, reindirizza comunque alla dashboard
               window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
-            }, 3000);
-          } else {
-            // Login effettuato con successo, reindirizzo con autenticazione
-            setTimeout(() => {
-              onComplete();
-              // Non è necessario forzare il parametro restaurantId poiché sarà nella sessione
+            } else {
+              // Login effettuato con successo, reindirizzo con autenticazione
               window.location.href = loginResponse?.url || "/dashboard";
-            }, 3000);
-          }
-        } catch (loginError) {
-          console.error("Auto-login error:", loginError);
-          // Se il login automatico fallisce, reindirizza comunque alla dashboard
-          setTimeout(() => {
-            onComplete();
+            }
+          }).catch((loginError) => {
+            console.error("Auto-login error:", loginError);
+            // Se il login automatico fallisce, reindirizza comunque alla dashboard
             window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
-          }, 3000);
-        }
+          });
+        }, 2000);
       } catch (fetchError: any) {
         console.error("Fetch error or timeout:", fetchError);
         
@@ -404,12 +394,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             console.error("Auto-login error during timeout recovery:", loginError);
           }
           
-          // Anche in caso di timeout, dopo un breve ritardo
-          setTimeout(() => {
-            onComplete();
-            // Reindirizza comunque alla dashboard dopo un timeout
-            window.location.href = "/dashboard";
-          }, 5000);
+          // Reindirizza direttamente alla dashboard
+          window.location.href = "/dashboard";
         } else {
           // Gestione di altri errori
           throw fetchError;
