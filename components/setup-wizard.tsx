@@ -20,6 +20,7 @@ import MenuLanguageItem from "./menu-language-item"
 import { signIn } from "next-auth/react"
 import { useTranslation } from "react-i18next"
 import UILanguageSelector from "@/components/ui-language-selector"
+import { useRouter } from "next/navigation"
 
 interface Restaurant {
   id: string;
@@ -85,6 +86,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false)
   const [isEditingMessage, setIsEditingMessage] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   // Steps array - moved inside component to use t()
   const steps = [
@@ -127,6 +129,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [isCheckingTrigger, setIsCheckingTrigger] = useState(false)
   const [triggerErrorMessage, setTriggerErrorMessage] = useState("")
   const [triggerTimeout, setTriggerTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [setupResponseData, setSetupResponseData] = useState<any>(null)
 
   // Step validation
   const hasAnyMenuContent = () => {
@@ -348,28 +351,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         const responseData = await response.json();
         console.log("Setup success response:", responseData);
         
-        // Effettua l'auto-login dopo la registrazione
-        signIn('credentials', {
-          email: userEmail,
-          password: userPassword,
-          redirect: false,
-          callbackUrl: `${window.location.origin}/dashboard`
-        }).then((loginResponse) => {
-          console.log("Auto-login response:", loginResponse);
-          
-          if (loginResponse?.error) {
-            console.error("Login error:", loginResponse.error);
-            // In caso di errore nel login, reindirizza comunque alla dashboard
-            window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
-          } else {
-            // Login effettuato con successo, reindirizzo con autenticazione
-            window.location.href = loginResponse?.url || "/dashboard";
-          }
-        }).catch((loginError) => {
-          console.error("Auto-login error:", loginError);
-          // Se il login automatico fallisce, reindirizza comunque alla dashboard
-          window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
-        });
+        // Invece di fare il redirect immediato, passiamo al passo successivo
+        setCurrentStep(steps.length - 1);
+        
+        // Salviamo i dati di risposta per il redirect successivo
+        setSetupResponseData(responseData);
       } catch (fetchError: any) {
         console.error("Fetch error or timeout:", fetchError);
         
@@ -392,8 +378,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             console.error("Auto-login error during timeout recovery:", loginError);
           }
           
-          // Reindirizza direttamente alla dashboard
-          window.location.href = "/dashboard";
+          // Passa al passo finale anche in caso di timeout
+          setCurrentStep(steps.length - 1);
+          setSetupResponseData({ restaurantId: 'unknown' });
         } else {
           // Gestione di altri errori
           throw fetchError;
@@ -636,6 +623,36 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       isMountedRef.current = false;
     };
   }, []);
+
+  // Funzione per gestire il redirect finale
+  const handleFinalRedirect = async () => {
+    if (!setupResponseData) return;
+    
+    try {
+      // Effettua l'auto-login dopo la registrazione
+      const loginResponse = await signIn('credentials', {
+        email: userEmail,
+        password: userPassword,
+        redirect: false,
+        callbackUrl: `${window.location.origin}/dashboard`
+      });
+      
+      console.log("Auto-login response:", loginResponse);
+      
+      if (loginResponse?.error) {
+        console.error("Login error:", loginResponse.error);
+        // In caso di errore nel login, reindirizza comunque alla dashboard
+        router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
+      } else {
+        // Login effettuato con successo, reindirizzo con autenticazione
+        router.push(loginResponse?.url || "/dashboard");
+      }
+    } catch (loginError) {
+      console.error("Auto-login error:", loginError);
+      // Se il login automatico fallisce, reindirizza comunque alla dashboard
+      router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
+    }
+  };
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
@@ -1742,7 +1759,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             </CustomButton>
           ) : (
             <CustomButton 
-              onClick={handleComplete} 
+              onClick={currentStep === steps.length - 1 ? handleFinalRedirect : handleComplete} 
               className="py-2 px-4"
               disabled={isSubmitting}
             >
@@ -1751,6 +1768,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                   Processing...
                 </>
+              ) : currentStep === steps.length - 1 ? (
+                "Go to Dashboard"
               ) : (
                 "Finish Setup"
               )}
