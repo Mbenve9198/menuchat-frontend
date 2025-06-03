@@ -28,7 +28,31 @@ export default function MenuLanguageItem({
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [urlError, setUrlError] = useState<string | null>(null)
   const { toast } = useToast()
+
+  // Funzione per validare l'URL
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) {
+      setUrlError(null)
+      return true // URL vuoto è valido (opzionale)
+    }
+    
+    if (!url.startsWith('https://') && !url.startsWith('http://')) {
+      setUrlError("L'URL deve iniziare con https:// o http://")
+      return false
+    }
+    
+    // Validazione aggiuntiva per formato URL
+    try {
+      new URL(url)
+      setUrlError(null)
+      return true
+    } catch {
+      setUrlError("Formato URL non valido")
+      return false
+    }
+  }
 
   const handleFileChange = async (file: File | null) => {
     if (!file) {
@@ -121,11 +145,19 @@ export default function MenuLanguageItem({
   }
 
   const handleUrlChange = (url: string) => {
+    // Valida l'URL prima di aggiornare lo stato
+    const isValid = validateUrl(url)
+    
+    // Aggiorna sempre il valore per permettere all'utente di digitare
     onLanguageChange({
       ...language,
       menuUrl: url
     })
-    if (url) setActiveTab("url")
+    
+    // Cambia tab solo se l'URL è valido e non vuoto
+    if (url && isValid) {
+      setActiveTab("url")
+    }
   }
 
   // Funzione per eliminare un file PDF caricato
@@ -204,8 +236,18 @@ export default function MenuLanguageItem({
             placeholder={`https://your-restaurant.com/${language.code}/menu`}
             value={language.menuUrl || ""}
             onChange={(e) => handleUrlChange(e.target.value)}
-            className="border-yellow-200 focus:border-yellow-400 focus:ring-yellow-400"
+            className={`transition-all ${
+              urlError 
+                ? "border-red-300 focus:border-red-500 focus:ring-red-500" 
+                : "border-yellow-200 focus:border-yellow-400 focus:ring-yellow-400"
+            }`}
           />
+          {urlError && (
+            <div className="flex items-center gap-1 text-red-500 text-xs mt-1">
+              <AlertCircle className="w-3 h-3" />
+              {urlError}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="file" className="space-y-3 mt-2">
