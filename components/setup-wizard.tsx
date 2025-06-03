@@ -131,6 +131,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [triggerTimeout, setTriggerTimeout] = useState<NodeJS.Timeout | null>(null)
   const [setupResponseData, setSetupResponseData] = useState<any>(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isSetupCompleted, setIsSetupCompleted] = useState(false)
 
   // Step validation
   const hasAnyMenuContent = () => {
@@ -169,8 +170,12 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
   useEffect(() => {
     // Update progress based on current step
-    setProgress(Math.round((currentStep / (steps.length - 1)) * 100))
-  }, [currentStep])
+    if (isSetupCompleted) {
+      setProgress(100);
+    } else {
+      setProgress(Math.round((currentStep / (steps.length - 1)) * 100));
+    }
+  }, [currentStep, isSetupCompleted])
 
   // Add this new function to check trigger phrase availability
   const checkTriggerAvailability = async (phrase: string): Promise<boolean> => {
@@ -353,8 +358,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         // Salviamo i dati di risposta per il redirect successivo
         setSetupResponseData(responseData);
         
-        // Procediamo al passo successivo
-        setCurrentStep((prev) => prev + 1);
+        // Invece di cambiare step, impostiamo il flag di completamento
+        if (isMountedRef.current) {
+          setIsSetupCompleted(true);
+        }
         
       } catch (error: any) {
         console.error("Setup error:", error);
@@ -664,9 +671,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       >
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-extrabold text-[#EF476F]">{steps[currentStep]}</h2>
+            <h2 className="text-2xl font-extrabold text-[#EF476F]">
+              {isSetupCompleted ? steps[steps.length - 1] : steps[currentStep]}
+            </h2>
             <p className="text-gray-700">
-              {currentStep === steps.length - 1 ? t("setup.navigation.youDidIt") : t("setup.navigation.stepOf", { current: currentStep + 1, total: steps.length })}
+              {(currentStep === steps.length - 1 || isSetupCompleted) ? t("setup.navigation.youDidIt") : t("setup.navigation.stepOf", { current: currentStep + 1, total: steps.length })}
             </p>
           </div>
 
@@ -1476,7 +1485,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* Step 7: Success */}
-            {currentStep === 7 && (
+            {(currentStep === 7 || isSetupCompleted) && (
               <div className="space-y-4 text-center">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -1743,7 +1752,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             <div></div>
           )}
 
-          {currentStep < steps.length - 1 ? (
+          {currentStep < steps.length - 1 && !isSetupCompleted ? (
             <CustomButton 
               onClick={handleNext} 
               className="py-2 px-4"
@@ -1760,7 +1769,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             </CustomButton>
           ) : (
             <CustomButton 
-              onClick={currentStep === steps.length - 1 ? handleFinalRedirect : handleComplete} 
+              onClick={(currentStep === steps.length - 1 || isSetupCompleted) ? handleFinalRedirect : handleComplete} 
               className="py-2 px-4"
               disabled={isSubmitting || isRedirecting}
             >
@@ -1774,7 +1783,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                   Redirecting...
                 </>
-              ) : currentStep === steps.length - 1 ? (
+              ) : (currentStep === steps.length - 1 || isSetupCompleted) ? (
                 "Go to Dashboard"
               ) : (
                 "Finish Setup"
