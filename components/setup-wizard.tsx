@@ -729,7 +729,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             className="bg-white rounded-3xl p-6 shadow-xl"
           >
             {/* Step 1: Restaurant Basics */}
-            {currentStep === 0 && (
+            {currentStep === 0 && !isSetupCompleted && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-[#EF476F]" />
@@ -762,7 +762,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* Step 2: Menu Setup */}
-            {currentStep === 1 && (
+            {currentStep === 1 && !isSetupCompleted && (
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Upload className="w-5 h-5 text-[#EF476F]" />
@@ -803,7 +803,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* Step 3: Welcome Message */}
-            {currentStep === 3 && (
+            {currentStep === 3 && !isSetupCompleted && (
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <MessageSquare className="w-5 h-5 text-[#EF476F]" />
@@ -999,7 +999,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* Step 4: Review Link */}
-            {currentStep === 2 && (
+            {currentStep === 2 && !isSetupCompleted && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-5 h-5 text-[#EF476F] fill-[#EF476F]" />
@@ -1057,7 +1057,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* Step 5: Review Request */}
-            {currentStep === 4 && (
+            {currentStep === 4 && !isSetupCompleted && (
               <div className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Clock className="w-5 h-5 text-[#EF476F]" />
@@ -1283,7 +1283,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* Step 6: Trigger Phrase */}
-            {currentStep === 5 && (
+            {currentStep === 5 && !isSetupCompleted && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Send className="w-5 h-5 text-[#EF476F]" />
@@ -1393,7 +1393,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             )}
 
             {/* New Step: Sign Up */}
-            {currentStep === 6 && (
+            {currentStep === 6 && !isSetupCompleted && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-[#EF476F]" />
