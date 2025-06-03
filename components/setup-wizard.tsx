@@ -130,6 +130,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const [triggerErrorMessage, setTriggerErrorMessage] = useState("")
   const [triggerTimeout, setTriggerTimeout] = useState<NodeJS.Timeout | null>(null)
   const [setupResponseData, setSetupResponseData] = useState<any>(null)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   // Step validation
   const hasAnyMenuContent = () => {
@@ -195,6 +196,30 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     }
   };
 
+  // Add this new function to check email availability
+  const checkEmailAvailability = async (email: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/check-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella verifica dell\'email');
+      }
+      
+      const data = await response.json();
+      return data.available;
+    } catch (error) {
+      console.error("Error checking email availability:", error);
+      return false;
+    }
+  };
+
   // Modify the handleNext function to check trigger availability
   const handleNext = async () => {
     if (!isStepValid()) {
@@ -220,127 +245,101 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       }
     }
 
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1)
-
-      // Award coins for completing a step
-      const coinsEarned = 25
-      onCoinEarned(coinsEarned)
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1)
-    }
-  }
-
-  const handleComplete = async () => {
-    if (currentStep !== steps.length - 1) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setIsExploding(true);
-
-    try {
-      const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
-      const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
+    // If we're on the signup step, verify email and submit data
+    if (currentStep === 6) {
+      // Check if email is available
+      const isEmailAvailable = await checkEmailAvailability(userEmail);
       
-      console.log("Menu languages:", menuLanguages);
-      console.log("Effective menu URL:", effectiveMenuUrl);
+      if (!isEmailAvailable) {
+        toast({
+          title: "Email already registered",
+          description: "This email is already in use. Please use a different email address.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
-        ? selectedRestaurant.photos[0] 
-        : selectedRestaurant?.photo || null;
-
-      const mapMenuLanguagesToBotConfig = () => {
-        return menuLanguages.map(lang => ({
-          language: {
-            code: lang.code,
-            name: lang.name,
-            phonePrefix: lang.phonePrefix || []
-          },
-          menuUrl: lang.menuUrl || '',
-          menuPdfUrl: lang.menuPdfUrl || '',
-          menuPdfName: lang.menuPdfName || ''
-        }));
-      };
-
-      const formData = {
-        restaurantName,
-        restaurantId: selectedRestaurant?.id,
-        address: {
-          formattedAddress: selectedRestaurant?.address || "",
-          latitude: selectedRestaurant?.location?.lat,
-          longitude: selectedRestaurant?.location?.lng
-        },
-        googlePlaceId: selectedRestaurant?.id,
-        googleMapsUrl: selectedRestaurant?.googleMapsUrl,
-        mainPhoto,
-        photos: selectedRestaurant?.photos || [],
-        googleRating: {
-          rating: selectedRestaurant?.rating,
-          reviewCount: selectedRestaurant?.ratingsTotal,
-          initialReviewCount: selectedRestaurant?.ratingsTotal
-        },
-        reviews: selectedRestaurant?.reviews?.map(review => ({
-          authorName: review.author_name,
-          rating: review.rating,
-          text: review.text,
-          time: review.time
-        })),
-        cuisineTypes: selectedRestaurant?.cuisineTypes || [],
-        priceLevel: selectedRestaurant?.priceLevel,
-        contact: {
-          phone: selectedRestaurant?.phoneNumber || "",
-          website: selectedRestaurant?.website || ""
-        },
-        operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
-          day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
-          rawText: hour
-        })) || [],
-        menuUrl: effectiveMenuUrl,
-        menuLanguages: mapMenuLanguagesToBotConfig(),
-        hasMenuFile,
-        reviewPlatform,
-        reviewLink,
-        welcomeMessage,
-        reviewTimer,
-        reviewTemplate: customReviewMessage,
-        triggerWord,
-        userEmail,
-        userPassword,
-        userFullName
-      };
-
-      console.log("Form data being sent:", formData);
-
-      // Impostiamo un timeout per rilevare se la risposta demora troppo
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Request timeout")), 8000)
-      );
-      
-      // Creazione di un AbortController per gestire il timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      // Submit data to backend
+      setIsSubmitting(true);
+      setIsExploding(true);
 
       try {
-        // Race tra la richiesta effettiva e il timeout
-        const response = await Promise.race([
-          fetch('/api/restaurants', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
+        const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
+        const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
+
+        const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
+          ? selectedRestaurant.photos[0] 
+          : selectedRestaurant?.photo || null;
+
+        const mapMenuLanguagesToBotConfig = () => {
+          return menuLanguages.map(lang => ({
+            language: {
+              code: lang.code,
+              name: lang.name,
+              phonePrefix: lang.phonePrefix || []
             },
-            body: JSON.stringify(formData),
-            signal: controller.signal
-          }),
-          timeoutPromise
-        ]) as Response; // Cast esplicito a Response
-        
-        // Pulisci il timeout una volta ottenuta la risposta
-        clearTimeout(timeoutId);
+            menuUrl: lang.menuUrl || '',
+            menuPdfUrl: lang.menuPdfUrl || '',
+            menuPdfName: lang.menuPdfName || ''
+          }));
+        };
+
+        const formData = {
+          restaurantName,
+          restaurantId: selectedRestaurant?.id,
+          address: {
+            formattedAddress: selectedRestaurant?.address || "",
+            latitude: selectedRestaurant?.location?.lat,
+            longitude: selectedRestaurant?.location?.lng
+          },
+          googlePlaceId: selectedRestaurant?.id,
+          googleMapsUrl: selectedRestaurant?.googleMapsUrl,
+          mainPhoto,
+          photos: selectedRestaurant?.photos || [],
+          googleRating: {
+            rating: selectedRestaurant?.rating,
+            reviewCount: selectedRestaurant?.ratingsTotal,
+            initialReviewCount: selectedRestaurant?.ratingsTotal
+          },
+          reviews: selectedRestaurant?.reviews?.map(review => ({
+            authorName: review.author_name,
+            rating: review.rating,
+            text: review.text,
+            time: review.time
+          })),
+          cuisineTypes: selectedRestaurant?.cuisineTypes || [],
+          priceLevel: selectedRestaurant?.priceLevel,
+          contact: {
+            phone: selectedRestaurant?.phoneNumber || "",
+            website: selectedRestaurant?.website || ""
+          },
+          operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
+            day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
+            rawText: hour
+          })) || [],
+          menuUrl: effectiveMenuUrl,
+          menuLanguages: mapMenuLanguagesToBotConfig(),
+          hasMenuFile,
+          reviewPlatform,
+          reviewLink,
+          welcomeMessage,
+          reviewTimer,
+          reviewTemplate: customReviewMessage,
+          triggerWord,
+          userEmail,
+          userPassword,
+          userFullName
+        };
+
+        console.log("Form data being sent:", formData);
+
+        const response = await fetch('/api/restaurants', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -351,59 +350,50 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         const responseData = await response.json();
         console.log("Setup success response:", responseData);
         
-        // Invece di fare il redirect immediato, passiamo al passo successivo
-        setCurrentStep(steps.length - 1);
-        
         // Salviamo i dati di risposta per il redirect successivo
         setSetupResponseData(responseData);
-      } catch (fetchError: any) {
-        console.error("Fetch error or timeout:", fetchError);
         
-        // Se è un timeout o un errore di abort, assumiamo che il setup possa essere stato completato comunque
-        if (fetchError.name === 'AbortError' || fetchError.message === 'Request timeout') {
+        // Procediamo al passo successivo
+        setCurrentStep((prev) => prev + 1);
+        
+      } catch (error: any) {
+        console.error("Setup error:", error);
+        
+        if (isMountedRef.current) {
           toast({
-            title: "Setup in corso",
-            description: "Il setup potrebbe richiedere più tempo del previsto. Sarai reindirizzato alla dashboard automaticamente.",
-            variant: "default",
+            title: "Error",
+            description: error.message || "There was an error saving your data. Please try again.",
+            variant: "destructive",
           });
-          
-          // Tenta comunque di effettuare l'autologin
-          try {
-            await signIn('credentials', {
-              email: userEmail,
-              password: userPassword,
-              redirect: false
-            });
-          } catch (loginError) {
-            console.error("Auto-login error during timeout recovery:", loginError);
-          }
-          
-          // Passa al passo finale anche in caso di timeout
-          setCurrentStep(steps.length - 1);
-          setSetupResponseData({ restaurantId: 'unknown' });
-        } else {
-          // Gestione di altri errori
-          throw fetchError;
+          setIsExploding(false);
+        }
+        return;
+      } finally {
+        if (isMountedRef.current) {
+          setIsSubmitting(false);
         }
       }
-    } catch (error: any) {
-      console.error("Setup error:", error);
-      
-      // Solo aggiorna lo stato se il componente è ancora montato
-      if (isMountedRef.current) {
-        toast({
-          title: "Error",
-          description: error.message || "There was an error saving your data. Please try again.",
-          variant: "destructive",
-        });
-        setIsExploding(false);
-      }
-    } finally {
-      // Solo aggiorna lo stato se il componente è ancora montato
-      if (isMountedRef.current) {
-        setIsSubmitting(false);
+    } else {
+      // Normal step progression
+      if (currentStep < steps.length - 1) {
+        setCurrentStep((prev) => prev + 1)
+
+        // Award coins for completing a step
+        const coinsEarned = 25
+        onCoinEarned(coinsEarned)
       }
     }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1)
+    }
+  }
+
+  const handleComplete = async () => {
+    // Questa funzione non dovrebbe più essere chiamata dato che i dati vengono inviati nello step 6
+    console.log("handleComplete called - this should not happen");
   };
 
   const getMascotImage = () => {
@@ -628,6 +618,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   const handleFinalRedirect = async () => {
     if (!setupResponseData) return;
     
+    setIsRedirecting(true);
+    
     try {
       // Effettua l'auto-login dopo la registrazione
       const loginResponse = await signIn('credentials', {
@@ -651,6 +643,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       console.error("Auto-login error:", loginError);
       // Se il login automatico fallisce, reindirizza comunque alla dashboard
       router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
+    } finally {
+      setIsRedirecting(false);
     }
   };
 
@@ -1753,20 +1747,32 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             <CustomButton 
               onClick={handleNext} 
               className="py-2 px-4"
-              disabled={!isStepValid()}
+              disabled={!isStepValid() || isSubmitting}
             >
-              Continue
+              {isSubmitting && currentStep === 6 ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Creating Account...
+                </>
+              ) : (
+                "Continue"
+              )}
             </CustomButton>
           ) : (
             <CustomButton 
               onClick={currentStep === steps.length - 1 ? handleFinalRedirect : handleComplete} 
               className="py-2 px-4"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isRedirecting}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
                   Processing...
+                </>
+              ) : isRedirecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                  Redirecting...
                 </>
               ) : currentStep === steps.length - 1 ? (
                 "Go to Dashboard"
