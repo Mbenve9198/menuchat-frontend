@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star, Award, Sparkles, Send, Upload, Clock, MessageSquare, Loader2, Check } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
@@ -77,6 +77,7 @@ interface WizardFormData {
 
 export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardProps) {
   const { t } = useTranslation()
+  const isMountedRef = useRef(true)
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isExploding, setIsExploding] = useState(false)
@@ -347,31 +348,28 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         const responseData = await response.json();
         console.log("Setup success response:", responseData);
         
-        // Mostra il messaggio di successo per 2 secondi prima del redirect
-        setTimeout(() => {
-          // Effettua l'auto-login dopo la registrazione
-          signIn('credentials', {
-            email: userEmail,
-            password: userPassword,
-            redirect: false,
-            callbackUrl: `${window.location.origin}/dashboard`
-          }).then((loginResponse) => {
-            console.log("Auto-login response:", loginResponse);
-            
-            if (loginResponse?.error) {
-              console.error("Login error:", loginResponse.error);
-              // In caso di errore nel login, reindirizza comunque alla dashboard
-              window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
-            } else {
-              // Login effettuato con successo, reindirizzo con autenticazione
-              window.location.href = loginResponse?.url || "/dashboard";
-            }
-          }).catch((loginError) => {
-            console.error("Auto-login error:", loginError);
-            // Se il login automatico fallisce, reindirizza comunque alla dashboard
+        // Effettua l'auto-login dopo la registrazione
+        signIn('credentials', {
+          email: userEmail,
+          password: userPassword,
+          redirect: false,
+          callbackUrl: `${window.location.origin}/dashboard`
+        }).then((loginResponse) => {
+          console.log("Auto-login response:", loginResponse);
+          
+          if (loginResponse?.error) {
+            console.error("Login error:", loginResponse.error);
+            // In caso di errore nel login, reindirizza comunque alla dashboard
             window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
-          });
-        }, 2000);
+          } else {
+            // Login effettuato con successo, reindirizzo con autenticazione
+            window.location.href = loginResponse?.url || "/dashboard";
+          }
+        }).catch((loginError) => {
+          console.error("Auto-login error:", loginError);
+          // Se il login automatico fallisce, reindirizza comunque alla dashboard
+          window.location.href = `/dashboard?restaurantId=${responseData.restaurantId}`;
+        });
       } catch (fetchError: any) {
         console.error("Fetch error or timeout:", fetchError);
         
@@ -403,14 +401,21 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       }
     } catch (error: any) {
       console.error("Setup error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "There was an error saving your data. Please try again.",
-        variant: "destructive",
-      });
-      setIsExploding(false);
+      
+      // Solo aggiorna lo stato se il componente è ancora montato
+      if (isMountedRef.current) {
+        toast({
+          title: "Error",
+          description: error.message || "There was an error saving your data. Please try again.",
+          variant: "destructive",
+        });
+        setIsExploding(false);
+      }
     } finally {
-      setIsSubmitting(false);
+      // Solo aggiorna lo stato se il componente è ancora montato
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -624,6 +629,13 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     
     setTriggerTimeout(newTimeout);
   };
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   return (
     <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">

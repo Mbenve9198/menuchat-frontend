@@ -195,21 +195,22 @@ export default function Home() {
         ) : (
           <SetupWizard
             onComplete={() => {
-              setShowSetup(false)
-              setCoins((prev) => prev + 200)
+              console.log("Setup completed callback called");
+              setShowSetup(false);
+              setCoins((prev) => prev + 200);
               toast({
                 title: "🎊 Achievement Unlocked!",
                 description: "Setup Complete: +200 coins awarded!",
                 variant: "default",
-              })
+              });
             }}
             onCoinEarned={(amount) => {
-              setCoins((prev) => prev + amount)
+              setCoins((prev) => prev + amount);
               toast({
                 title: `🌟 +${amount} coins awarded!`,
                 description: "Keep going to earn more rewards!",
                 variant: "default",
-              })
+              });
             }}
           />
         )}
