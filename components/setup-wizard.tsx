@@ -403,15 +403,6 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     console.log("handleComplete called - this should not happen");
   };
 
-  const getMascotImage = () => {
-    // Use the rock mascot for the final success step
-    if (currentStep === steps.length - 1) {
-      return "/mascottes/mascotte_rock.png"
-    }
-    // Use the setup wizard mascot for all other steps
-    return "/mascottes/mascotte_setupwizard.png"
-  }
-
   // Function to update a language item in our array
   const handleLanguageChange = (updatedLanguage: MenuLanguage) => {
     setMenuLanguages(prev => 
@@ -683,25 +674,108 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             {/* Language Selector */}
             <UILanguageSelector variant="compact" />
 
-          {/* Rimuovi la mascotte in alto a destra nell'ultimo step */}
-          {currentStep !== steps.length - 1 && (
-            <motion.div
-              animate={{
-                scale: currentStep === steps.length - 1 ? [1, 1.1, 1] : 1,
-                rotate: currentStep === steps.length - 1 ? [0, -5, 5, -5, 0] : 0,
+          {/* Animated Flying Star - only show for non-success steps */}
+          {currentStep !== steps.length - 1 && !isSetupCompleted && (
+            <motion.div 
+              className="relative w-48 h-48"
+              initial={{ opacity: 0, scale: 0.5, y: -50 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: [0, -8, 0],
+                x: [0, 5, -5, 0]
               }}
-              transition={{
-                duration: 0.5,
-                repeat: currentStep === steps.length - 1 ? Number.POSITIVE_INFINITY : 0,
-                repeatType: "reverse",
+              transition={{ 
+                opacity: { duration: 0.8 },
+                scale: { duration: 0.8 },
+                y: { 
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                },
+                x: { 
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+              whileHover={{
+                scale: 1.1,
+                y: -10,
+                transition: { duration: 0.2 }
               }}
             >
-              <Image
-                src={getMascotImage() || "/placeholder.svg"}
-                alt="Star Mascot"
-                width={160}
-                height={160}
-                className="drop-shadow-lg"
+              {/* Stella volante */}
+              <motion.div
+                className="relative z-10"
+                animate={{
+                  y: [0, -3, 0],
+                  rotate: [0, 2, -2, 0]
+                }}
+                transition={{
+                  y: {
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  },
+                  rotate: {
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }
+                }}
+              >
+                <Image
+                  src="/mascottes/mascotte_flying.png"
+                  alt="Flying Star Mascot"
+                  width={192}
+                  height={192}
+                  className="drop-shadow-2xl object-contain"
+                />
+              </motion.div>
+              
+              {/* Particelle scintillanti che seguono il movimento */}
+              <motion.div
+                className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 12, 24],
+                  y: [0, -8, -16]
+                }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Infinity,
+                  delay: 0
+                }}
+              />
+              <motion.div
+                className="absolute top-4 -left-2 w-2.5 h-2.5 bg-orange-400 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, -10, -20],
+                  y: [0, 3, 6]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: 0.4
+                }}
+              />
+              <motion.div
+                className="absolute -top-4 right-4 w-2 h-2 bg-yellow-300 rounded-full"
+                animate={{
+                  scale: [0, 1, 0],
+                  opacity: [0, 1, 0],
+                  x: [0, 15, 30],
+                  y: [0, -5, -10]
+                }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  delay: 0.8
+                }}
               />
             </motion.div>
           )}
