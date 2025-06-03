@@ -715,7 +715,11 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
             indicatorClassName="bg-gradient-to-r from-[#EF476F] to-[#FF8A9A] transition-all duration-700 ease-in-out"
           />
           <div className="mt-2 flex justify-between">
-            <StepIndicator steps={steps} currentStep={currentStep} onStepClick={setCurrentStep} />
+            <StepIndicator 
+              steps={steps} 
+              currentStep={isSetupCompleted ? steps.length - 1 : currentStep} 
+              onStepClick={isSetupCompleted ? () => {} : setCurrentStep} 
+            />
           </div>
         </div>
 
@@ -1744,7 +1748,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         </AnimatePresence>
 
         <div className="mt-6 flex justify-between">
-          {currentStep > 0 ? (
+          {currentStep > 0 && !isSetupCompleted ? (
             <CustomButton variant="outline" onClick={handlePrevious} className="text-gray-800 py-2 px-4">
               Back
             </CustomButton>
