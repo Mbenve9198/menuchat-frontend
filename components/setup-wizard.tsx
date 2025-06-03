@@ -677,7 +677,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           {/* Animated Flying Star - only show for non-success steps */}
           {currentStep !== steps.length - 1 && !isSetupCompleted && (
             <motion.div 
-              className="relative w-48 h-48"
+              className="relative w-32 h-32"
               initial={{ opacity: 0, scale: 0.5, y: -50 }}
               animate={{ 
                 opacity: 1, 
@@ -728,8 +728,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                 <Image
                   src="/mascottes/mascotte_flying.png"
                   alt="Flying Star Mascot"
-                  width={192}
-                  height={192}
+                  width={125}
+                  height={125}
                   className="drop-shadow-2xl object-contain"
                 />
               </motion.div>
