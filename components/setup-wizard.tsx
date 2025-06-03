@@ -358,13 +358,35 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error("Server response error:", errorData);
-          throw new Error(`Failed to save restaurant data: ${errorData.error || 'Unknown error'}`);
+          let errorMessage = 'Failed to save restaurant data';
+          let errorDetails = '';
+          
+          try {
+            const errorData = await response.json();
+            console.error("Server response error:", errorData);
+            errorMessage = errorData.error || errorMessage;
+            errorDetails = errorData.details || '';
+          } catch (jsonError) {
+            console.error("Failed to parse error response:", jsonError);
+            // Se non riusciamo a fare il parsing del JSON, gestiamo i casi specifici
+            if (response.status === 504) {
+              errorMessage = 'Il server ha impiegato troppo tempo per rispondere. I tuoi dati potrebbero essere stati salvati. Controlla la tua email o riprova tra qualche minuto.';
+            } else {
+              errorMessage = 'Errore del server. Riprova tra qualche minuto.';
+            }
+          }
+          
+          throw new Error(errorMessage + (errorDetails ? `: ${errorDetails}` : ''));
         }
 
-        const responseData = await response.json();
-        console.log("Setup success response:", responseData);
+        let responseData;
+        try {
+          responseData = await response.json();
+          console.log("Setup success response:", responseData);
+        } catch (jsonError) {
+          console.error("Failed to parse success response:", jsonError);
+          throw new Error('Il server ha risposto in modo non valido. I tuoi dati potrebbero essere stati salvati. Controlla la tua email.');
+        }
         
         // Salviamo i dati di risposta per il redirect successivo
         setSetupResponseData(responseData);
@@ -1848,10 +1870,15 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
               disabled={!isStepValid() || isSubmitting}
             >
               {isSubmitting && currentStep === 6 ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                  Creating Account...
-                </>
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center mb-1">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                    Creating Account...
+                  </div>
+                  <div className="text-xs opacity-75">
+                    This may take up to 2 minutes
+                  </div>
+                </div>
               ) : (
                 "Continue"
               )}
