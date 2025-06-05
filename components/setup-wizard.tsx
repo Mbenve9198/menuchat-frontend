@@ -663,20 +663,20 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         
         if (loginResponse?.error) {
           console.error("Login error:", loginResponse.error);
-          // In caso di errore nel login, reindirizza comunque alla dashboard
-          router.push("/dashboard");
+          // In caso di errore nel login, reindirizza alla pagina di login
+          router.push("/login");
         } else {
           // Login effettuato con successo, reindirizzo con autenticazione
           router.push(loginResponse?.url || "/dashboard");
         }
       } else {
-        // Se non abbiamo i dati dell'utente, reindirizza direttamente alla dashboard
-        router.push("/dashboard");
+        // Se non abbiamo i dati dell'utente, reindirizza alla pagina di login
+        router.push("/login");
       }
     } catch (loginError) {
       console.error("Auto-login error:", loginError);
-      // Se il login automatico fallisce, reindirizza comunque alla dashboard
-      router.push("/dashboard");
+      // Se il login automatico fallisce, reindirizza alla pagina di login
+      router.push("/login");
     } finally {
       setIsRedirecting(false);
     }
