@@ -650,67 +650,33 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
     setIsRedirecting(true);
     
     try {
-      // Se la registrazione è ancora in corso, aspettiamo un po'
-      if (isSubmitting) {
-        // Mostra un toast per informare l'utente
-        toast({
-          title: "Account creation in progress",
-          description: "Please wait while we finish setting up your account...",
+      // Se abbiamo i dati dell'utente, proviamo l'auto-login
+      if (userEmail && userPassword) {
+        const loginResponse = await signIn('credentials', {
+          email: userEmail,
+          password: userPassword,
+          redirect: false,
+          callbackUrl: `${window.location.origin}/dashboard`
         });
         
-        // Aspetta fino a 10 secondi per il completamento della registrazione
-        let attempts = 0;
-        while (isSubmitting && attempts < 20) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          attempts++;
-        }
-      }
-      
-      // Effettua l'auto-login dopo la registrazione
-      const loginResponse = await signIn('credentials', {
-        email: userEmail,
-        password: userPassword,
-        redirect: false,
-        callbackUrl: `${window.location.origin}/dashboard`
-      });
-      
-      console.log("Auto-login response:", loginResponse);
-      
-      if (loginResponse?.error) {
-        console.error("Login error:", loginResponse.error);
+        console.log("Auto-login response:", loginResponse);
         
-        // Se il login fallisce, potrebbe essere perché l'account non è ancora stato creato
-        if (loginResponse.error === 'CredentialsSignin') {
-          toast({
-            title: "Account setup still in progress",
-            description: "Your account is being created. Please try again in a few moments or check your email for confirmation.",
-            variant: "destructive",
-          });
-          setIsRedirecting(false);
-          return;
-        }
-        
-        // In caso di altri errori nel login, reindirizza comunque alla dashboard
-        if (setupResponseData?.restaurantId) {
-          router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
-        } else {
+        if (loginResponse?.error) {
+          console.error("Login error:", loginResponse.error);
+          // In caso di errore nel login, reindirizza comunque alla dashboard
           router.push("/dashboard");
+        } else {
+          // Login effettuato con successo, reindirizzo con autenticazione
+          router.push(loginResponse?.url || "/dashboard");
         }
       } else {
-        // Login effettuato con successo, reindirizzo con autenticazione
-        router.push(loginResponse?.url || "/dashboard");
+        // Se non abbiamo i dati dell'utente, reindirizza direttamente alla dashboard
+        router.push("/dashboard");
       }
     } catch (loginError) {
       console.error("Auto-login error:", loginError);
-      
-      toast({
-        title: "Login error",
-        description: "There was an issue logging you in automatically. Please try logging in manually from the login page.",
-        variant: "destructive",
-      });
-      
-      // Se il login automatico fallisce, reindirizza alla pagina di login
-      router.push("/auth/login");
+      // Se il login automatico fallisce, reindirizza comunque alla dashboard
+      router.push("/dashboard");
     } finally {
       setIsRedirecting(false);
     }
@@ -1866,7 +1832,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   
                   <div className="mt-4 text-left bg-blue-50 p-3 rounded-lg border border-blue-100">
                     <p className="text-xs text-blue-700">
-                      <strong>Note:</strong> This QR code is configured to use our default WhatsApp number (+39 351 651 218). 
+                      <strong>Note:</strong> This QR code is configured to use our default WhatsApp number (+39 351 654 1218). 
                       In the app, you can request to activate your own business phone number for a more personalized experience.
                     </p>
                   </div>
