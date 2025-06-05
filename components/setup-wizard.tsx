@@ -279,149 +279,27 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       setIsSubmitting(true);
       setIsExploding(true);
 
-      try {
-        const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
-        const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
-
-        const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
-          ? selectedRestaurant.photos[0] 
-          : selectedRestaurant?.photo || null;
-
-        const mapMenuLanguagesToBotConfig = () => {
-          return menuLanguages.map(lang => ({
-            language: {
-              code: lang.code,
-              name: lang.name,
-              phonePrefix: lang.phonePrefix || []
-            },
-            menuUrl: lang.menuUrl || '',
-            menuPdfUrl: lang.menuPdfUrl || '',
-            menuPdfName: lang.menuPdfName || ''
-          }));
-        };
-
-        const formData = {
-          restaurantName,
-          restaurantId: selectedRestaurant?.id,
-          address: {
-            formattedAddress: selectedRestaurant?.address || "",
-            latitude: selectedRestaurant?.location?.lat,
-            longitude: selectedRestaurant?.location?.lng
-          },
-          googlePlaceId: selectedRestaurant?.id,
-          googleMapsUrl: selectedRestaurant?.googleMapsUrl,
-          mainPhoto,
-          photos: selectedRestaurant?.photos || [],
-          googleRating: {
-            rating: selectedRestaurant?.rating,
-            reviewCount: selectedRestaurant?.ratingsTotal,
-            initialReviewCount: selectedRestaurant?.ratingsTotal
-          },
-          reviews: selectedRestaurant?.reviews?.map(review => ({
-            authorName: review.author_name,
-            rating: review.rating,
-            text: review.text,
-            time: review.time
-          })),
-          cuisineTypes: selectedRestaurant?.cuisineTypes || [],
-          priceLevel: selectedRestaurant?.priceLevel,
-          contact: {
-            phone: selectedRestaurant?.phoneNumber || "",
-            website: selectedRestaurant?.website || ""
-          },
-          operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
-            day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
-            rawText: hour
-          })) || [],
-          menuUrl: effectiveMenuUrl,
-          menuLanguages: mapMenuLanguagesToBotConfig(),
-          hasMenuFile,
-          reviewPlatform,
-          reviewLink,
-          welcomeMessage,
-          reviewTimer,
-          reviewTemplate: customReviewMessage,
-          triggerWord,
-          userEmail,
-          userPassword,
-          userFullName
-        };
-
-        console.log("Form data being sent:", formData);
-
-        const response = await fetch('/api/restaurants', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) {
-          let errorMessage = 'Failed to save restaurant data';
-          let errorDetails = '';
-          
-          try {
-            const errorData = await response.json();
-            console.error("Server response error:", errorData);
-            errorMessage = errorData.error || errorMessage;
-            errorDetails = errorData.details || '';
-          } catch (jsonError) {
-            console.error("Failed to parse error response:", jsonError);
-            // Se non riusciamo a fare il parsing del JSON, gestiamo i casi specifici
-            if (response.status === 504) {
-              errorMessage = 'Il server ha impiegato troppo tempo per rispondere. I tuoi dati potrebbero essere stati salvati. Controlla la tua email o riprova tra qualche minuto.';
-            } else {
-              errorMessage = 'Errore del server. Riprova tra qualche minuto.';
-            }
-          }
-          
-          throw new Error(errorMessage + (errorDetails ? `: ${errorDetails}` : ''));
-        }
-
-        let responseData;
-        try {
-          responseData = await response.json();
-          console.log("Setup success response:", responseData);
-        } catch (jsonError) {
-          console.error("Failed to parse success response:", jsonError);
-          throw new Error('Il server ha risposto in modo non valido. I tuoi dati potrebbero essere stati salvati. Controlla la tua email.');
-        }
-        
-        // Salviamo i dati di risposta per il redirect successivo
-        setSetupResponseData(responseData);
-        
-        // Invece di cambiare step, impostiamo il flag di completamento
-        if (isMountedRef.current) {
-          setIsSetupCompleted(true);
-        }
-        
-      } catch (error: any) {
-        console.error("Setup error:", error);
-        
-        if (isMountedRef.current) {
-          toast({
-            title: "Error",
-            description: error.message || "There was an error saving your data. Please try again.",
-            variant: "destructive",
-          });
-          setIsExploding(false);
-        }
-        return;
-      } finally {
-        if (isMountedRef.current) {
-          setIsSubmitting(false);
-        }
-      }
-    } else {
-      // Normal step progression
+      // Proceed to next step immediately
       if (currentStep < steps.length - 1) {
         setCurrentStep((prev) => prev + 1)
-
         // Award coins for completing a step
         const coinsEarned = 25
         onCoinEarned(coinsEarned)
       }
+
+      // Submit data in background without waiting for response
+      submitDataToBackend();
+      
+      return;
+    }
+
+    // Normal step progression
+    if (currentStep < steps.length - 1) {
+      setCurrentStep((prev) => prev + 1)
+
+      // Award coins for completing a step
+      const coinsEarned = 25
+      onCoinEarned(coinsEarned)
     }
   };
 
@@ -679,6 +557,143 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       router.push("/login");
     } finally {
       setIsRedirecting(false);
+    }
+  };
+
+  // New function to handle background submission
+  const submitDataToBackend = async () => {
+    try {
+      const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
+      const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
+
+      const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
+        ? selectedRestaurant.photos[0] 
+        : selectedRestaurant?.photo || null;
+
+      const mapMenuLanguagesToBotConfig = () => {
+        return menuLanguages.map(lang => ({
+          language: {
+            code: lang.code,
+            name: lang.name,
+            phonePrefix: lang.phonePrefix || []
+          },
+          menuUrl: lang.menuUrl || '',
+          menuPdfUrl: lang.menuPdfUrl || '',
+          menuPdfName: lang.menuPdfName || ''
+        }));
+      };
+
+      const formData = {
+        restaurantName,
+        restaurantId: selectedRestaurant?.id,
+        address: {
+          formattedAddress: selectedRestaurant?.address || "",
+          latitude: selectedRestaurant?.location?.lat,
+          longitude: selectedRestaurant?.location?.lng
+        },
+        googlePlaceId: selectedRestaurant?.id,
+        googleMapsUrl: selectedRestaurant?.googleMapsUrl,
+        mainPhoto,
+        photos: selectedRestaurant?.photos || [],
+        googleRating: {
+          rating: selectedRestaurant?.rating,
+          reviewCount: selectedRestaurant?.ratingsTotal,
+          initialReviewCount: selectedRestaurant?.ratingsTotal
+        },
+        reviews: selectedRestaurant?.reviews?.map(review => ({
+          authorName: review.author_name,
+          rating: review.rating,
+          text: review.text,
+          time: review.time
+        })),
+        cuisineTypes: selectedRestaurant?.cuisineTypes || [],
+        priceLevel: selectedRestaurant?.priceLevel,
+        contact: {
+          phone: selectedRestaurant?.phoneNumber || "",
+          website: selectedRestaurant?.website || ""
+        },
+        operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
+          day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
+          rawText: hour
+        })) || [],
+        menuUrl: effectiveMenuUrl,
+        menuLanguages: mapMenuLanguagesToBotConfig(),
+        hasMenuFile,
+        reviewPlatform,
+        reviewLink,
+        welcomeMessage,
+        reviewTimer,
+        reviewTemplate: customReviewMessage,
+        triggerWord,
+        userEmail,
+        userPassword,
+        userFullName
+      };
+
+      console.log("Form data being sent:", formData);
+
+      const response = await fetch('/api/restaurants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to save restaurant data';
+        let errorDetails = '';
+        
+        try {
+          const errorData = await response.json();
+          console.error("Server response error:", errorData);
+          errorMessage = errorData.error || errorMessage;
+          errorDetails = errorData.details || '';
+        } catch (jsonError) {
+          console.error("Failed to parse error response:", jsonError);
+          // Se non riusciamo a fare il parsing del JSON, gestiamo i casi specifici
+          if (response.status === 504) {
+            errorMessage = 'Il server ha impiegato troppo tempo per rispondere. I tuoi dati potrebbero essere stati salvati. Controlla la tua email o riprova tra qualche minuto.';
+          } else {
+            errorMessage = 'Errore del server. Riprova tra qualche minuto.';
+          }
+        }
+        
+        throw new Error(errorMessage + (errorDetails ? `: ${errorDetails}` : ''));
+      }
+
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log("Setup success response:", responseData);
+      } catch (jsonError) {
+        console.error("Failed to parse success response:", jsonError);
+        throw new Error('Il server ha risposto in modo non valido. I tuoi dati potrebbero essere stati salvati. Controlla la tua email.');
+      }
+      
+      // Salviamo i dati di risposta per il redirect successivo
+      setSetupResponseData(responseData);
+      
+      // Invece di cambiare step, impostiamo il flag di completamento
+      if (isMountedRef.current) {
+        setIsSetupCompleted(true);
+      }
+      
+    } catch (error: any) {
+      console.error("Setup error:", error);
+      
+      if (isMountedRef.current) {
+        toast({
+          title: "Error",
+          description: error.message || "There was an error saving your data. Please try again.",
+          variant: "destructive",
+        });
+        setIsExploding(false);
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
