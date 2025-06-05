@@ -275,167 +275,152 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         return;
       }
 
-      // Submit data to backend asynchronously without waiting for response
+      // Submit data to backend
       setIsSubmitting(true);
       setIsExploding(true);
 
-      // Proceed to next step immediately
+      try {
+        const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
+        const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
+
+        const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
+          ? selectedRestaurant.photos[0] 
+          : selectedRestaurant?.photo || null;
+
+        const mapMenuLanguagesToBotConfig = () => {
+          return menuLanguages.map(lang => ({
+            language: {
+              code: lang.code,
+              name: lang.name,
+              phonePrefix: lang.phonePrefix || []
+            },
+            menuUrl: lang.menuUrl || '',
+            menuPdfUrl: lang.menuPdfUrl || '',
+            menuPdfName: lang.menuPdfName || ''
+          }));
+        };
+
+        const formData = {
+          restaurantName,
+          restaurantId: selectedRestaurant?.id,
+          address: {
+            formattedAddress: selectedRestaurant?.address || "",
+            latitude: selectedRestaurant?.location?.lat,
+            longitude: selectedRestaurant?.location?.lng
+          },
+          googlePlaceId: selectedRestaurant?.id,
+          googleMapsUrl: selectedRestaurant?.googleMapsUrl,
+          mainPhoto,
+          photos: selectedRestaurant?.photos || [],
+          googleRating: {
+            rating: selectedRestaurant?.rating,
+            reviewCount: selectedRestaurant?.ratingsTotal,
+            initialReviewCount: selectedRestaurant?.ratingsTotal
+          },
+          reviews: selectedRestaurant?.reviews?.map(review => ({
+            authorName: review.author_name,
+            rating: review.rating,
+            text: review.text,
+            time: review.time
+          })),
+          cuisineTypes: selectedRestaurant?.cuisineTypes || [],
+          priceLevel: selectedRestaurant?.priceLevel,
+          contact: {
+            phone: selectedRestaurant?.phoneNumber || "",
+            website: selectedRestaurant?.website || ""
+          },
+          operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
+            day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
+            rawText: hour
+          })) || [],
+          menuUrl: effectiveMenuUrl,
+          menuLanguages: mapMenuLanguagesToBotConfig(),
+          hasMenuFile,
+          reviewPlatform,
+          reviewLink,
+          welcomeMessage,
+          reviewTimer,
+          reviewTemplate: customReviewMessage,
+          triggerWord,
+          userEmail,
+          userPassword,
+          userFullName
+        };
+
+        console.log("Form data being sent:", formData);
+
+        const response = await fetch('/api/restaurants', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+          let errorMessage = 'Failed to save restaurant data';
+          let errorDetails = '';
+          
+          try {
+            const errorData = await response.json();
+            console.error("Server response error:", errorData);
+            errorMessage = errorData.error || errorMessage;
+            errorDetails = errorData.details || '';
+          } catch (jsonError) {
+            console.error("Failed to parse error response:", jsonError);
+            // Se non riusciamo a fare il parsing del JSON, gestiamo i casi specifici
+            if (response.status === 504) {
+              errorMessage = 'Il server ha impiegato troppo tempo per rispondere. I tuoi dati potrebbero essere stati salvati. Controlla la tua email o riprova tra qualche minuto.';
+            } else {
+              errorMessage = 'Errore del server. Riprova tra qualche minuto.';
+            }
+          }
+          
+          throw new Error(errorMessage + (errorDetails ? `: ${errorDetails}` : ''));
+        }
+
+        let responseData;
+        try {
+          responseData = await response.json();
+          console.log("Setup success response:", responseData);
+        } catch (jsonError) {
+          console.error("Failed to parse success response:", jsonError);
+          throw new Error('Il server ha risposto in modo non valido. I tuoi dati potrebbero essere stati salvati. Controlla la tua email.');
+        }
+        
+        // Salviamo i dati di risposta per il redirect successivo
+        setSetupResponseData(responseData);
+        
+        // Invece di cambiare step, impostiamo il flag di completamento
+        if (isMountedRef.current) {
+          setIsSetupCompleted(true);
+        }
+        
+      } catch (error: any) {
+        console.error("Setup error:", error);
+        
+        if (isMountedRef.current) {
+          toast({
+            title: "Error",
+            description: error.message || "There was an error saving your data. Please try again.",
+            variant: "destructive",
+          });
+          setIsExploding(false);
+        }
+        return;
+      } finally {
+        if (isMountedRef.current) {
+          setIsSubmitting(false);
+        }
+      }
+    } else {
+      // Normal step progression
       if (currentStep < steps.length - 1) {
         setCurrentStep((prev) => prev + 1)
+
         // Award coins for completing a step
         const coinsEarned = 25
         onCoinEarned(coinsEarned)
-      }
-
-      // Submit data in background
-      submitDataToBackend();
-      
-      return;
-    }
-
-    // Normal step progression for all other steps
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1)
-
-      // Award coins for completing a step
-      const coinsEarned = 25
-      onCoinEarned(coinsEarned)
-    }
-  };
-
-  // New function to handle background submission
-  const submitDataToBackend = async () => {
-    try {
-      const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
-      const effectiveMenuUrl = firstMenuWithUrl?.menuUrl || "";
-
-      const mainPhoto = selectedRestaurant?.photos && selectedRestaurant.photos.length > 0 
-        ? selectedRestaurant.photos[0] 
-        : selectedRestaurant?.photo || null;
-
-      const mapMenuLanguagesToBotConfig = () => {
-        return menuLanguages.map(lang => ({
-          language: {
-            code: lang.code,
-            name: lang.name,
-            phonePrefix: lang.phonePrefix || []
-          },
-          menuUrl: lang.menuUrl || '',
-          menuPdfUrl: lang.menuPdfUrl || '',
-          menuPdfName: lang.menuPdfName || ''
-        }));
-      };
-
-      const formData = {
-        restaurantName,
-        restaurantId: selectedRestaurant?.id,
-        address: {
-          formattedAddress: selectedRestaurant?.address || "",
-          latitude: selectedRestaurant?.location?.lat,
-          longitude: selectedRestaurant?.location?.lng
-        },
-        googlePlaceId: selectedRestaurant?.id,
-        googleMapsUrl: selectedRestaurant?.googleMapsUrl,
-        mainPhoto,
-        photos: selectedRestaurant?.photos || [],
-        googleRating: {
-          rating: selectedRestaurant?.rating,
-          reviewCount: selectedRestaurant?.ratingsTotal,
-          initialReviewCount: selectedRestaurant?.ratingsTotal
-        },
-        reviews: selectedRestaurant?.reviews?.map(review => ({
-          authorName: review.author_name,
-          rating: review.rating,
-          text: review.text,
-          time: review.time
-        })),
-        cuisineTypes: selectedRestaurant?.cuisineTypes || [],
-        priceLevel: selectedRestaurant?.priceLevel,
-        contact: {
-          phone: selectedRestaurant?.phoneNumber || "",
-          website: selectedRestaurant?.website || ""
-        },
-        operatingHours: selectedRestaurant?.openingHours?.map((hour, index) => ({
-          day: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][index % 7],
-          rawText: hour
-        })) || [],
-        menuUrl: effectiveMenuUrl,
-        menuLanguages: mapMenuLanguagesToBotConfig(),
-        hasMenuFile,
-        reviewPlatform,
-        reviewLink,
-        welcomeMessage,
-        reviewTimer,
-        reviewTemplate: customReviewMessage,
-        triggerWord,
-        userEmail,
-        userPassword,
-        userFullName
-      };
-
-      console.log("Form data being sent:", formData);
-
-      const response = await fetch('/api/restaurants', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to save restaurant data';
-        let errorDetails = '';
-        
-        try {
-          const errorData = await response.json();
-          console.error("Server response error:", errorData);
-          errorMessage = errorData.error || errorMessage;
-          errorDetails = errorData.details || '';
-        } catch (jsonError) {
-          console.error("Failed to parse error response:", jsonError);
-          // Se non riusciamo a fare il parsing del JSON, gestiamo i casi specifici
-          if (response.status === 504) {
-            errorMessage = 'Il server ha impiegato troppo tempo per rispondere. I tuoi dati potrebbero essere stati salvati. Controlla la tua email o riprova tra qualche minuto.';
-          } else {
-            errorMessage = 'Errore del server. Riprova tra qualche minuto.';
-          }
-        }
-        
-        throw new Error(errorMessage + (errorDetails ? `: ${errorDetails}` : ''));
-      }
-
-      let responseData;
-      try {
-        responseData = await response.json();
-        console.log("Setup success response:", responseData);
-      } catch (jsonError) {
-        console.error("Failed to parse success response:", jsonError);
-        throw new Error('Il server ha risposto in modo non valido. I tuoi dati potrebbero essere stati salvati. Controlla la tua email.');
-      }
-      
-      // Salviamo i dati di risposta per il redirect successivo
-      setSetupResponseData(responseData);
-      
-      // Invece di cambiare step, impostiamo il flag di completamento
-      if (isMountedRef.current) {
-        setIsSetupCompleted(true);
-      }
-      
-    } catch (error: any) {
-      console.error("Setup error:", error);
-      
-      if (isMountedRef.current) {
-        toast({
-          title: "Error",
-          description: error.message || "There was an error saving your data. Please try again.",
-          variant: "destructive",
-        });
-        setIsExploding(false);
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsSubmitting(false);
       }
     }
   };
@@ -662,11 +647,25 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
   // Funzione per gestire il redirect finale
   const handleFinalRedirect = async () => {
-    if (!setupResponseData) return;
-    
     setIsRedirecting(true);
     
     try {
+      // Se la registrazione è ancora in corso, aspettiamo un po'
+      if (isSubmitting) {
+        // Mostra un toast per informare l'utente
+        toast({
+          title: "Account creation in progress",
+          description: "Please wait while we finish setting up your account...",
+        });
+        
+        // Aspetta fino a 10 secondi per il completamento della registrazione
+        let attempts = 0;
+        while (isSubmitting && attempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+      }
+      
       // Effettua l'auto-login dopo la registrazione
       const loginResponse = await signIn('credentials', {
         email: userEmail,
@@ -679,16 +678,39 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       
       if (loginResponse?.error) {
         console.error("Login error:", loginResponse.error);
-        // In caso di errore nel login, reindirizza comunque alla dashboard
-        router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
+        
+        // Se il login fallisce, potrebbe essere perché l'account non è ancora stato creato
+        if (loginResponse.error === 'CredentialsSignin') {
+          toast({
+            title: "Account setup still in progress",
+            description: "Your account is being created. Please try again in a few moments or check your email for confirmation.",
+            variant: "destructive",
+          });
+          setIsRedirecting(false);
+          return;
+        }
+        
+        // In caso di altri errori nel login, reindirizza comunque alla dashboard
+        if (setupResponseData?.restaurantId) {
+          router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         // Login effettuato con successo, reindirizzo con autenticazione
         router.push(loginResponse?.url || "/dashboard");
       }
     } catch (loginError) {
       console.error("Auto-login error:", loginError);
-      // Se il login automatico fallisce, reindirizza comunque alla dashboard
-      router.push(`/dashboard?restaurantId=${setupResponseData.restaurantId}`);
+      
+      toast({
+        title: "Login error",
+        description: "There was an issue logging you in automatically. Please try logging in manually from the login page.",
+        variant: "destructive",
+      });
+      
+      // Se il login automatico fallisce, reindirizza alla pagina di login
+      router.push("/auth/login");
     } finally {
       setIsRedirecting(false);
     }
@@ -1844,7 +1866,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                   
                   <div className="mt-4 text-left bg-blue-50 p-3 rounded-lg border border-blue-100">
                     <p className="text-xs text-blue-700">
-                      <strong>Note:</strong> This QR code is configured to use our default WhatsApp number (+39 351 654 1218). 
+                      <strong>Note:</strong> This QR code is configured to use our default WhatsApp number (+39 351 651 218). 
                       In the app, you can request to activate your own business phone number for a more personalized experience.
                     </p>
                   </div>
