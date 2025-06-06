@@ -977,8 +977,14 @@ export default function CreateCampaign() {
     
     toast({
       title: "Pagamento completato!",
-      description: "Ora puoi procedere con la programmazione della campagna",
+      description: "Procediamo ora con la programmazione della campagna",
     })
+
+    // Passa automaticamente al passo successivo dopo un breve delay
+    setTimeout(() => {
+      setCurrentStep(4) // Vai direttamente al passo di programmazione
+      window.scrollTo(0, 0)
+    }, 1500) // Delay di 1.5 secondi per permettere all'utente di vedere il messaggio di successo
   }
 
   const handlePaymentError = (error: string) => {
@@ -2041,24 +2047,12 @@ export default function CreateCampaign() {
         )}
 
         {/* Fixed Continue Button for Step 4 (Payment) */}
-        {currentStep === 3 && (
+        {currentStep === 3 && !isPaymentCompleted && (
           <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
-            <CustomButton
-              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
-              onClick={handleNext}
-              disabled={!isPaymentCompleted}
-            >
-              {isPaymentCompleted ? (
-                <>
-                  {t("common.continue")} <ArrowRight className="ml-2 w-5 h-5" />
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Completa il pagamento
-                </>
-              )}
-            </CustomButton>
+            <div className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%] bg-gray-100 rounded-xl">
+              <CreditCard className="w-5 h-5 mr-2 text-gray-500" />
+              <span className="text-gray-600">Completa il pagamento per continuare</span>
+            </div>
           </div>
         )}
 
