@@ -929,7 +929,10 @@ export default function Dashboard() {
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {newReviewsCollected} recensioni raccolte con MenuChat
+                  {/* Mostra informazioni più dettagliate sul periodo */}
+                  {timeFilter === "7days" ? "Ultimi 7 giorni" : 
+                   timeFilter === "30days" ? "Ultimi 30 giorni" : 
+                   "Periodo personalizzato"} • {reviewsCollected} raccolte con MenuChat
                 </p>
               </div>
               <div className="text-3xl">🏆</div>
@@ -956,7 +959,31 @@ export default function Dashboard() {
               <div className="text-xs text-gray-600">
                 {t("dashboard.reviewsOnGoogle")}: <span className="font-medium">{currentReviewCount}</span>
               </div>
+              {/* Aggiungo un indicatore del progresso delle recensioni */}
+              {initialReviewCount > 0 && (
+                <div className="text-xs text-gray-500">
+                  Baseline: {initialReviewCount}
+                </div>
+              )}
             </div>
+            
+            {/* Aggiungo una barra di progresso per le recensioni raccolte */}
+            {initialReviewCount > 0 && currentReviewCount > initialReviewCount && (
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Progresso recensioni</span>
+                  <span>{currentReviewCount - initialReviewCount} / {Math.max(currentReviewCount - initialReviewCount + 10, 50)}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-[#06D6A0] to-[#4ADE80] h-2 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${Math.min(((currentReviewCount - initialReviewCount) / Math.max(currentReviewCount - initialReviewCount + 10, 50)) * 100, 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
             
             <div className="flex justify-end">
               <button 
@@ -987,64 +1014,85 @@ export default function Dashboard() {
 
         {/* Recent Activity Feed */}
         <motion.div
-          className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6"
+          className="bg-white rounded-3xl p-6 shadow-xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.8 }}
         >
-          <h3 className="text-lg font-bold text-gray-800 mb-4">{t("dashboard.recentActivity")}</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-800">{t("dashboard.recentActivity")}</h3>
+            <div className="text-2xl">📊</div>
+          </div>
 
-          <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-            {activities.map((activity) => (
-              <motion.div
-                key={activity.id}
-                className={`bg-gray-50 rounded-xl p-3 cursor-pointer ${activity.expanded ? "bg-gray-100" : ""}`}
-                onClick={() => toggleActivityExpand(activity.id)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                layout
-              >
-                <div className="flex items-start">
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                    <span className="text-lg">{activity.emoji}</span>
+          {/* Sezione informativa sul sistema di tracking */}
+          {initialReviewCount > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <div className="flex items-start gap-2">
+                <div className="text-blue-500 mt-0.5">ℹ️</div>
+                <div className="text-xs text-blue-700">
+                  <p className="font-medium mb-1">Sistema di Tracking Avanzato</p>
+                  <p>
+                    Tracciamo le tue recensioni dal giorno di attivazione (baseline: {initialReviewCount} recensioni). 
+                    Ogni nuova recensione viene conteggiata automaticamente tramite sincronizzazione con Google Places.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{activity.message}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-
-                    {activity.expanded && (
-                      <motion.div
-                        className="mt-2 text-xs text-gray-600 bg-white p-2 rounded-lg"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                      >
-                        {activity.type === "menu_view" && (
-                          <>Customer viewed your full menu for 2 minutes and 15 seconds.</>
-                        )}
-                        {activity.type === "review_request" && (
-                          <>Review request sent to customer who ordered 1 hour ago.</>
-                        )}
-                        {activity.type === "new_review" && (
-                          <>
-                            <div className="flex mb-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star key={star} className="w-3 h-3 text-[#FFE14D] fill-[#FFE14D]" />
-                              ))}
-                            </div>
-                            "Great food and amazing service! Will definitely come back again."
-                          </>
-                        )}
-                        {activity.type === "menu_update" && <>You updated your menu with 3 new items.</>}
-                      </motion.div>
-                    )}
+                </div>
+              ))}
+            </div>
+          ) : activities.length > 0 ? (
+            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+              {activities.map((activity) => (
+                <motion.div
+                  key={activity.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => toggleActivityExpand(activity.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center flex-1">
+                    <div className="text-2xl mr-3">{activity.emoji}</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800">{activity.message}</p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                      {activity.expanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-2 pt-2 border-t border-gray-200"
+                        >
+                          <p className="text-xs text-gray-600">{activity.details}</p>
+                        </motion.div>
+                      )}
+                    </div>
                   </div>
                   <ChevronRight
                     className={`w-4 h-4 text-gray-400 transition-transform ${activity.expanded ? "rotate-90" : ""}`}
                   />
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">📝</div>
+              <p className="text-gray-500">{t("dashboard.noRecentActivity")}</p>
+            </div>
+          )}
         </motion.div>
 
         {/* WhatsApp Settings Card */}
