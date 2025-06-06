@@ -117,8 +117,8 @@ export function MediaUpload({
       // Per i video, specifichiamo che non vogliamo trasformazioni
       // nell'URL finale, ma vogliamo un file già compatibile con WhatsApp
       if (isVideo) {
-        formData.append('noTransformations', 'true')
         formData.append('optimizeForWhatsApp', 'true')
+        console.log('📹 Video rilevato - ottimizzazione WhatsApp abilitata')
       }
       
       if (campaignType) {
