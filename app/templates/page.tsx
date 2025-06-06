@@ -1603,17 +1603,31 @@ export default function TemplatesPage() {
                         </Label>
                         
                         {menuPdfUrl ? (
-                          <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
-                            <File className="w-8 h-8 text-green-500 mb-2" />
-                            <p className="text-sm text-green-700 mb-1">PDF caricato con successo</p>
-                            <a 
-                              href={menuPdfUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 underline"
-                            >
-                              Visualizza PDF
-                            </a>
+                          <div className="space-y-3">
+                            <div className="flex flex-col items-center p-3 border rounded-lg bg-gray-50">
+                              <File className="w-8 h-8 text-green-500 mb-2" />
+                              <p className="text-sm text-green-700 mb-1">PDF caricato con successo</p>
+                              <a 
+                                href={menuPdfUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 underline mb-2"
+                              >
+                                Visualizza PDF attuale
+                              </a>
+                              <CustomButton
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setMenuPdfUrl("");
+                                  setMenuFile(null);
+                                }}
+                                className="text-xs"
+                              >
+                                <Upload className="w-3 h-3 mr-1" />
+                                Sostituisci PDF
+                              </CustomButton>
+                            </div>
                           </div>
                         ) : (
                           <FileUpload
