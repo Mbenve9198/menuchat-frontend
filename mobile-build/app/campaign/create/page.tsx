@@ -19,7 +19,6 @@ import {
   RefreshCw,
   Plus,
   X,
-  CreditCard,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -36,7 +35,6 @@ import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { MediaUpload } from "@/components/ui/media-upload"
 import { useTranslation } from "react-i18next"
-import StripeCheckout from "@/components/stripe-checkout"
 
 // Add this import for the dialog components
 import {
@@ -140,17 +138,12 @@ export default function CreateCampaign() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [error, setError] = useState("")
   const [errorDetails, setErrorDetails] = useState("")
-  // Payment-related state variables
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
-  const [isPaymentCompleted, setIsPaymentCompleted] = useState(false)
-  const [paymentError, setPaymentError] = useState<string | null>(null)
 
-  // Steps array using translations - now includes payment
+  // Steps array using translations
   const steps = [
     t("campaignCreate.steps.selectContacts"),
     t("campaignCreate.steps.campaignSetup"),
     t("campaignCreate.steps.contentCreation"),
-    t("campaignCreate.steps.payment", { defaultValue: "Pagamento" }),
     t("campaignCreate.steps.scheduleApprove")
   ]
 
@@ -619,16 +612,6 @@ export default function CreateCampaign() {
       return
     }
 
-    // Check payment completion for step 3 (payment step)
-    if (currentStep === 3 && !isPaymentCompleted) {
-      toast({
-        title: "Pagamento richiesto",
-        description: "Completa il pagamento per procedere",
-        variant: "destructive",
-      })
-      return
-    }
-
     // Se passiamo dallo step 2 allo step 3, generiamo contenuti con AI
     if (currentStep === 1) {
       // Imposto loading state
@@ -702,16 +685,6 @@ export default function CreateCampaign() {
 
   // Update the handleSubmit function to use fetch directly
   const handleSubmit = async () => {
-    // Verify payment first
-    if (!paymentIntentId || !isPaymentCompleted) {
-      toast({
-        title: "Pagamento richiesto",
-        description: "Completa il pagamento prima di procedere",
-        variant: "destructive",
-      })
-      return
-    }
-
     // Validate date and time if scheduling for later
     if (scheduleOption === "later") {
       const now = new Date()
@@ -733,22 +706,7 @@ export default function CreateCampaign() {
     setIsSubmitting(true)
 
     try {
-      // 1. Verify payment status with Stripe
-      const paymentVerification = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payment/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ paymentIntentId })
-      })
-
-      const paymentData = await paymentVerification.json()
-
-      if (!paymentData.success || !paymentData.data.isSuccessful) {
-        throw new Error('Pagamento non verificato. Riprova o contatta il supporto.')
-      }
-
-      // 2. Prima creiamo/otteniamo i template predefiniti
+      // 1. Prima creiamo/otteniamo i template predefiniti
       const templateResponse = await fetch('/api/campaign-templates/create-defaults', {
         method: 'POST',
         headers: {
@@ -796,8 +754,7 @@ export default function CreateCampaign() {
           useImage: useGeneratedImage,
           imageUrl: generatedImageUrl || uploadedFileUrl,
           language: language // Aggiungi la lingua selezionata
-        },
-        paymentIntentId: paymentIntentId // Aggiungi l'ID del pagamento
+        }
       };
 
       // Crea la campagna con l'API
@@ -825,7 +782,7 @@ export default function CreateCampaign() {
         templateCategory = "UTILITY";
       }
       
-      // 3. Invia il template per approvazione e attendi la risposta
+      // 2. Invia il template per approvazione e attendi la risposta
       setIsSubmittingTemplate(true);
       setTemplateApprovalStatus("pending");
       
@@ -852,7 +809,7 @@ export default function CreateCampaign() {
         // Continuiamo comunque con lo scheduling
       }
       
-      // 4. Programma l'invio della campagna
+      // 3. Programma l'invio della campagna
       const scheduledDate = scheduleOption === "now" 
         ? new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minuti da ora
         : new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
@@ -967,29 +924,6 @@ export default function CreateCampaign() {
 
   const getExcitedMascotImage = () => {
     return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2817%29-ZdJLaKudJSCmadMl3MEbaV0XoM3hYt.png"
-  }
-
-  // Payment handling functions
-  const handlePaymentSuccess = (paymentIntentId: string) => {
-    setPaymentIntentId(paymentIntentId)
-    setIsPaymentCompleted(true)
-    setPaymentError(null)
-    
-    toast({
-      title: "Pagamento completato!",
-      description: "Ora puoi procedere con la programmazione della campagna",
-    })
-  }
-
-  const handlePaymentError = (error: string) => {
-    setPaymentError(error)
-    setIsPaymentCompleted(false)
-    
-    toast({
-      title: "Errore nel pagamento",
-      description: error,
-      variant: "destructive",
-    })
   }
 
   return (
@@ -1810,53 +1744,8 @@ export default function CreateCampaign() {
               </div>
             )}
 
-            {/* Step 4: Payment */}
+            {/* Step 4: Schedule & Approve */}
             {currentStep === 3 && (
-              <div className="space-y-4 pb-24">
-                <StripeCheckout
-                  contactCount={selectedCount}
-                  campaignName={campaignTypes.find(t => t.id === campaignType)?.title || "Campaign"}
-                  restaurantName={restaurant?.name}
-                  onPaymentSuccess={handlePaymentSuccess}
-                  onPaymentError={handlePaymentError}
-                />
-
-                {/* Payment status */}
-                {isPaymentCompleted && (
-                  <motion.div
-                    className="bg-white rounded-3xl p-6 shadow-xl"
-                    animate={{ scale: [1, 1.05, 1], transition: { duration: 0.5 } }}
-                  >
-                    <div className="text-center space-y-3">
-                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100">
-                        <Check className="w-6 h-6 text-green-600" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-800">Pagamento completato!</h3>
-                      <p className="text-sm text-gray-600">
-                        Il pagamento è stato elaborato con successo. Ora puoi procedere con la programmazione della campagna.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {paymentError && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                        <X className="w-4 h-4 text-red-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-red-800">Errore nel pagamento</h4>
-                        <p className="text-sm text-red-600">{paymentError}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Step 5: Schedule & Approve (previously Step 4) */}
-            {currentStep === 4 && (
               <div className="space-y-4 pb-24">
                 <div className="bg-white rounded-3xl p-6 shadow-xl">
                   <div className="flex items-center gap-2 mb-4">
@@ -2040,30 +1929,8 @@ export default function CreateCampaign() {
           </div>
         )}
 
-        {/* Fixed Continue Button for Step 4 (Payment) */}
-        {currentStep === 3 && (
-          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
-            <CustomButton
-              className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
-              onClick={handleNext}
-              disabled={!isPaymentCompleted}
-            >
-              {isPaymentCompleted ? (
-                <>
-                  {t("common.continue")} <ArrowRight className="ml-2 w-5 h-5" />
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Completa il pagamento
-                </>
-              )}
-            </CustomButton>
-          </div>
-        )}
-
-        {/* Fixed Schedule Campaign Button for Step 5 (previously Step 4) */}
-        {!isApproved && currentStep === 4 && (
+        {/* Fixed Schedule Campaign Button for Step 4 */}
+        {!isApproved && currentStep === 3 && (
           <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
             <CustomButton
               className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
