@@ -45,9 +45,12 @@ function CheckoutForm({ contactCount, campaignName, restaurantName, onPaymentSuc
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [isCreatingIntent, setIsCreatingIntent] = useState(true)
+  const [actualAmount, setActualAmount] = useState<number>(0)
+  const [wasAdjustedForMinimum, setWasAdjustedForMinimum] = useState(false)
+  const [originalAmount, setOriginalAmount] = useState<number>(0)
 
   const pricePerContact = getPricePerContact(contactCount)
-  const totalAmount = contactCount * pricePerContact
+  const calculatedAmount = contactCount * pricePerContact
 
   // Crea il Payment Intent quando il componente si monta
   useEffect(() => {
@@ -73,6 +76,9 @@ function CheckoutForm({ contactCount, campaignName, restaurantName, onPaymentSuc
         if (data.success) {
           setClientSecret(data.data.clientSecret)
           setPaymentIntentId(data.data.paymentIntentId)
+          setActualAmount(data.data.amount / 100) // Converti da centesimi a euro
+          setWasAdjustedForMinimum(data.data.wasAdjustedForMinimum || false)
+          setOriginalAmount(data.data.originalAmount / 100) // Converti da centesimi a euro
         } else {
           throw new Error(data.error || 'Errore nella creazione del pagamento')
         }
@@ -166,10 +172,27 @@ function CheckoutForm({ contactCount, campaignName, restaurantName, onPaymentSuc
           <span className="text-gray-600">Prezzo per contatto:</span>
           <span className="font-medium">€{pricePerContact.toFixed(2)}</span>
         </div>
+        {wasAdjustedForMinimum && (
+          <>
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>Importo calcolato:</span>
+              <span>€{originalAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-amber-600">
+              <span>Importo minimo Stripe:</span>
+              <span>€0.50</span>
+            </div>
+          </>
+        )}
         <div className="border-t border-gray-200 pt-2 flex justify-between">
           <span className="font-medium text-gray-800">Totale:</span>
-          <span className="font-bold text-[#EF476F] text-lg">€{totalAmount.toFixed(2)}</span>
+          <span className="font-bold text-[#EF476F] text-lg">€{actualAmount.toFixed(2)}</span>
         </div>
+        {wasAdjustedForMinimum && (
+          <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+            ℹ️ L'importo è stato aggiustato al minimo richiesto da Stripe (€0.50)
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -202,7 +225,7 @@ function CheckoutForm({ contactCount, campaignName, restaurantName, onPaymentSuc
           ) : (
             <>
               <CreditCard className="w-5 h-5 mr-2" />
-              Paga €{totalAmount.toFixed(2)}
+              Paga €{actualAmount.toFixed(2)}
             </>
           )}
         </CustomButton>
