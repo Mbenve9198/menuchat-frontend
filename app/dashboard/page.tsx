@@ -1100,27 +1100,33 @@ export default function Dashboard() {
         <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-transparent backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-20">
           <div className="grid grid-cols-3 gap-2">
             <CustomButton
-              className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
               onClick={() => router.push("/campaign")}
             >
-              <MessageSquare className="w-6 h-6 mb-1" />
-              {t("dashboard.campaigns")}
+              <MessageSquare className="w-5 h-5 mb-1 flex-shrink-0" />
+              <span className="text-center break-words hyphens-auto max-w-full">
+                {t("dashboard.campaigns")}
+              </span>
             </CustomButton>
 
             <CustomButton
-              className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
               onClick={() => router.push("/templates")}
             >
-              <Edit3 className="w-6 h-6 mb-1" />
-              {t("dashboard.editMessages")}
+              <Edit3 className="w-5 h-5 mb-1 flex-shrink-0" />
+              <span className="text-center break-words hyphens-auto max-w-full">
+                {t("dashboard.editMessages")}
+              </span>
             </CustomButton>
 
             <CustomButton
-              className="flex flex-col items-center justify-center h-20 py-2 px-1 text-xs"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
               onClick={() => {}}
             >
-              <Share2 className="w-6 h-6 mb-1" />
-              {t("dashboard.shareSuccess")}
+              <Share2 className="w-5 h-5 mb-1 flex-shrink-0" />
+              <span className="text-center break-words hyphens-auto max-w-full">
+                {t("dashboard.shareSuccess")}
+              </span>
             </CustomButton>
           </div>
         </div>
