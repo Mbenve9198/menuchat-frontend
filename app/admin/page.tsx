@@ -65,6 +65,39 @@ interface Summary {
   totalConversations: number;
 }
 
+interface TemplateStats {
+  templateId: string;
+  templateName: string;
+  templateType: string;
+  conversationType: string;
+  restaurantName: string;
+  userId: string;
+  language: string;
+  status: string;
+  usageCount: number;
+  estimatedCost: number;
+  costPerMessage: number;
+}
+
+interface TemplateStatsResponse {
+  templates: TemplateStats[];
+  summary: {
+    totalTemplates: number;
+    totalUsage: number;
+    totalEstimatedCost: number;
+    byType: {
+      MEDIA: number;
+      CALL_TO_ACTION: number;
+      REVIEW: number;
+    };
+    byConversationType: {
+      utility: number;
+      service: number;
+      marketing: number;
+    };
+  };
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function AdminPage() {
@@ -75,6 +108,7 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [users, setUsers] = useState<UserStats[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [templateStats, setTemplateStats] = useState<TemplateStatsResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Controlla se c'è un token salvato
@@ -83,6 +117,7 @@ export default function AdminPage() {
     if (token) {
       setIsAuthenticated(true);
       fetchUsersStats();
+      fetchTemplateStats();
     }
   }, []);
 
@@ -106,6 +141,7 @@ export default function AdminPage() {
         localStorage.setItem('adminToken', data.token);
         setIsAuthenticated(true);
         fetchUsersStats();
+        fetchTemplateStats();
       } else {
         setError(data.message || 'Errore nel login');
       }
@@ -138,6 +174,27 @@ export default function AdminPage() {
     }
   };
 
+  const fetchTemplateStats = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('/api/admin/template-stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setTemplateStats(data.data);
+      } else {
+        console.error('Errore nel caricamento statistiche template:', data.message);
+      }
+    } catch (err) {
+      console.error('Errore nel caricamento statistiche template:', err);
+    }
+  };
+
   const handleRefreshStats = async () => {
     setRefreshing(true);
     try {
@@ -153,6 +210,7 @@ export default function AdminPage() {
 
       if (data.success) {
         await fetchUsersStats();
+        await fetchTemplateStats();
         alert('Statistiche aggiornate con successo!');
       } else {
         setError(data.message || 'Errore nell\'aggiornamento');
@@ -169,6 +227,7 @@ export default function AdminPage() {
     setIsAuthenticated(false);
     setUsers([]);
     setSummary(null);
+    setTemplateStats(null);
   };
 
   const formatCurrency = (amount: number) => {
@@ -196,6 +255,13 @@ export default function AdminPage() {
     { name: 'Campagne', value: users.reduce((sum, u) => sum + u.messageStats.campaignMessages.cost, 0) },
     { name: 'Inbound', value: users.reduce((sum, u) => sum + u.messageStats.inboundMessages.cost, 0) },
   ].filter(item => item.value > 0);
+
+  // Prepara dati per i grafici dei tipi di conversazione
+  const conversationTypeData = templateStats ? [
+    { name: 'Utility ($0.035/msg)', value: templateStats.summary.byConversationType.utility, color: '#0088FE' },
+    { name: 'Service ($0.005/msg)', value: templateStats.summary.byConversationType.service, color: '#00C49F' },
+    { name: 'Marketing ($0.0741/msg)', value: templateStats.summary.byConversationType.marketing, color: '#FF8042' },
+  ].filter(item => item.value > 0) : [];
 
   if (!isAuthenticated) {
     return (
@@ -320,6 +386,7 @@ export default function AdminPage() {
           <TabsList>
             <TabsTrigger value="table">Tabella Utenti</TabsTrigger>
             <TabsTrigger value="charts">Grafici</TabsTrigger>
+            <TabsTrigger value="templates">Template & Costi</TabsTrigger>
           </TabsList>
 
           <TabsContent value="table">
@@ -335,10 +402,10 @@ export default function AdminPage() {
                         <TableHead>Utente</TableHead>
                         <TableHead>Ristorante</TableHead>
                         <TableHead>Registrato</TableHead>
-                        <TableHead>Menu</TableHead>
-                        <TableHead>Recensioni</TableHead>
-                        <TableHead>Campagne</TableHead>
-                        <TableHead>Inbound</TableHead>
+                        <TableHead>Menu (Utility)</TableHead>
+                        <TableHead>Recensioni (Service)</TableHead>
+                        <TableHead>Campagne (Marketing)</TableHead>
+                        <TableHead>Inbound (Service)</TableHead>
                         <TableHead>Totale</TableHead>
                         <TableHead>Costo</TableHead>
                       </TableRow>
@@ -355,24 +422,44 @@ export default function AdminPage() {
                           <TableCell>{user.restaurantName}</TableCell>
                           <TableCell>{formatDate(user.createdAt)}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {user.messageStats.menuMessages.messages}
-                            </Badge>
+                            <div>
+                              <Badge variant="secondary">
+                                {user.messageStats.menuMessages.messages}
+                              </Badge>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(user.messageStats.menuMessages.cost)}
+                              </p>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {user.messageStats.reviewMessages.messages}
-                            </Badge>
+                            <div>
+                              <Badge variant="secondary">
+                                {user.messageStats.reviewMessages.messages}
+                              </Badge>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(user.messageStats.reviewMessages.cost)}
+                              </p>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {user.messageStats.campaignMessages.messages}
-                            </Badge>
+                            <div>
+                              <Badge variant="secondary">
+                                {user.messageStats.campaignMessages.messages}
+                              </Badge>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(user.messageStats.campaignMessages.cost)}
+                              </p>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {user.messageStats.inboundMessages.messages}
-                            </Badge>
+                            <div>
+                              <Badge variant="secondary">
+                                {user.messageStats.inboundMessages.messages}
+                              </Badge>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(user.messageStats.inboundMessages.cost)}
+                              </p>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">
@@ -442,6 +529,161 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="templates">
+            {templateStats && (
+              <div className="space-y-6">
+                {/* Summary Cards per Template */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-600">Template Totali</p>
+                        <p className="text-2xl font-bold text-blue-600">{templateStats.summary.totalTemplates}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-600">Utilizzi Totali</p>
+                        <p className="text-2xl font-bold text-green-600">{templateStats.summary.totalUsage}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-600">Costo Stimato</p>
+                        <p className="text-2xl font-bold text-red-600">{formatCurrency(templateStats.summary.totalEstimatedCost)}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-600">Costo Medio/Msg</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {formatCurrency(templateStats.summary.totalEstimatedCost / Math.max(templateStats.summary.totalUsage, 1))}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Grafico Costi per Tipo di Conversazione */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Costi per Tipo di Conversazione</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={conversationTypeData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {conversationTypeData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Prezzi per Tipo di Conversazione</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+                          <span className="font-medium">Utility</span>
+                          <span className="text-blue-600 font-bold">$0.035/messaggio</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-green-50 rounded">
+                          <span className="font-medium">Service</span>
+                          <span className="text-green-600 font-bold">$0.005/messaggio</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-orange-50 rounded">
+                          <span className="font-medium">Marketing</span>
+                          <span className="text-orange-600 font-bold">$0.0741/messaggio</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-purple-50 rounded">
+                          <span className="font-medium">Authentication</span>
+                          <span className="text-purple-600 font-bold">$0.0428/messaggio</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tabella Template */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dettagli Template</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nome Template</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Conversazione</TableHead>
+                            <TableHead>Ristorante</TableHead>
+                            <TableHead>Lingua</TableHead>
+                            <TableHead>Utilizzi</TableHead>
+                            <TableHead>Costo/Msg</TableHead>
+                            <TableHead>Costo Totale</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {templateStats.templates.map((template) => (
+                            <TableRow key={template.templateId}>
+                              <TableCell className="font-medium">{template.templateName}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{template.templateType}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="secondary"
+                                  className={
+                                    template.conversationType === 'utility' ? 'bg-blue-100 text-blue-800' :
+                                    template.conversationType === 'service' ? 'bg-green-100 text-green-800' :
+                                    template.conversationType === 'marketing' ? 'bg-orange-100 text-orange-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }
+                                >
+                                  {template.conversationType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{template.restaurantName}</TableCell>
+                              <TableCell>{template.language.toUpperCase()}</TableCell>
+                              <TableCell>{template.usageCount}</TableCell>
+                              <TableCell>{formatCurrency(template.costPerMessage)}</TableCell>
+                              <TableCell className="font-medium text-red-600">
+                                {formatCurrency(template.estimatedCost)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
