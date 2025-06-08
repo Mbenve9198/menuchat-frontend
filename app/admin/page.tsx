@@ -98,6 +98,71 @@ interface TemplateStatsResponse {
   };
 }
 
+interface MonthlyUserStats {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  restaurantName: string;
+  restaurantId: string;
+  year: number;
+  month: number;
+  monthName: string;
+  messageStats: {
+    menuMessages: { conversations: number; messages: number; cost: number };
+    reviewMessages: { conversations: number; messages: number; cost: number };
+    campaignMessages: { conversations: number; messages: number; cost: number };
+    inboundMessages: { conversations: number; messages: number; cost: number };
+  };
+  totalStats: {
+    totalConversations: number;
+    totalMessages: number;
+    totalCost: number;
+  };
+}
+
+interface MonthlyStatsResponse {
+  users: MonthlyUserStats[];
+  summary: {
+    year: number;
+    month: number;
+    monthName: string;
+    totalUsers: number;
+    totalCost: number;
+    totalMessages: number;
+    totalConversations: number;
+  };
+}
+
+interface MonthlyTrend {
+  year: number;
+  month: number;
+  monthName: string;
+  totalUsers: number;
+  totalCost: number;
+  totalMessages: number;
+  totalConversations: number;
+  costBreakdown: {
+    menu: number;
+    reviews: number;
+    campaigns: number;
+    inbound: number;
+  };
+}
+
+interface MonthlyTrendsResponse {
+  trends: MonthlyTrend[];
+  summary: {
+    totalMonths: number;
+    averageMonthlyCost: number;
+    averageMonthlyMessages: number;
+    peakMonth: MonthlyTrend;
+    growth: {
+      costGrowth: number;
+      messageGrowth: number;
+    } | null;
+  };
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function AdminPage() {
@@ -110,6 +175,11 @@ export default function AdminPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [templateStats, setTemplateStats] = useState<TemplateStatsResponse | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatsResponse | null>(null);
+  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrendsResponse | null>(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [trendsMonths, setTrendsMonths] = useState(12);
 
   // Controlla se c'è un token salvato
   useEffect(() => {
@@ -118,6 +188,8 @@ export default function AdminPage() {
       setIsAuthenticated(true);
       fetchUsersStats();
       fetchTemplateStats();
+      fetchMonthlyStats();
+      fetchMonthlyTrends();
     }
   }, []);
 
@@ -142,6 +214,8 @@ export default function AdminPage() {
         setIsAuthenticated(true);
         fetchUsersStats();
         fetchTemplateStats();
+        fetchMonthlyStats();
+        fetchMonthlyTrends();
       } else {
         setError(data.message || 'Errore nel login');
       }
@@ -192,6 +266,53 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Errore nel caricamento statistiche template:', err);
+    }
+  };
+
+  const fetchMonthlyStats = async (year?: number, month?: number) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const targetYear = year || selectedYear;
+      const targetMonth = month || selectedMonth;
+      
+      const response = await fetch(`/api/admin/monthly-stats?year=${targetYear}&month=${targetMonth}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMonthlyStats(data.data);
+      } else {
+        console.error('Errore nel caricamento statistiche mensili:', data.message);
+      }
+    } catch (err) {
+      console.error('Errore nel caricamento statistiche mensili:', err);
+    }
+  };
+
+  const fetchMonthlyTrends = async (months?: number) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const targetMonths = months || trendsMonths;
+      
+      const response = await fetch(`/api/admin/monthly-trends?months=${targetMonths}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMonthlyTrends(data.data);
+      } else {
+        console.error('Errore nel caricamento trend mensili:', data.message);
+      }
+    } catch (err) {
+      console.error('Errore nel caricamento trend mensili:', err);
     }
   };
 
@@ -387,6 +508,7 @@ export default function AdminPage() {
             <TabsTrigger value="table">Tabella Utenti</TabsTrigger>
             <TabsTrigger value="charts">Grafici</TabsTrigger>
             <TabsTrigger value="templates">Template & Costi</TabsTrigger>
+            <TabsTrigger value="monthly">Mensile</TabsTrigger>
           </TabsList>
 
           <TabsContent value="table">
