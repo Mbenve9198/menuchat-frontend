@@ -48,7 +48,7 @@ export default function Dashboard() {
   const [levelInfo, setLevelInfo] = useState<any>(null)
 
   // Stato per filtro tempo
-  const [timeFilter, setTimeFilter] = useState<"7days" | "30days" | "custom">("7days")
+  const [timeFilter, setTimeFilter] = useState<"alltime" | "7days" | "30days" | "custom">("alltime")
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [startDate, setStartDate] = useState<Date>(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
   const [endDate, setEndDate] = useState<Date>(new Date())
@@ -394,6 +394,7 @@ export default function Dashboard() {
   }
 
   const getFilterLabel = () => {
+    if (timeFilter === "alltime") return "All time"
     if (timeFilter === "7days") return "Last 7 days"
     if (timeFilter === "30days") return "Last 30 days"
     if (timeFilter === "custom") {
@@ -402,7 +403,7 @@ export default function Dashboard() {
     return "Select period"
   }
 
-  const handleFilterSelect = (filter: "7days" | "30days" | "custom") => {
+  const handleFilterSelect = (filter: "alltime" | "7days" | "30days" | "custom") => {
     setTimeFilter(filter)
     if (filter === "7days") {
       setStartDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
@@ -411,6 +412,7 @@ export default function Dashboard() {
       setStartDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
       setEndDate(new Date())
     }
+    // Per "alltime" non impostiamo date specifiche, il backend gestirà tutto
 
     if (filter !== "custom") {
       setShowFilterDropdown(false)
@@ -669,6 +671,12 @@ export default function Dashboard() {
 
           {showFilterDropdown && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg z-30 overflow-hidden">
+              <div
+                className={`p-3 cursor-pointer hover:bg-gray-50 ${timeFilter === "alltime" ? "bg-gray-50" : ""}`}
+                onClick={() => handleFilterSelect("alltime")}
+              >
+                <span className="text-sm font-medium text-gray-700">All time</span>
+              </div>
               <div
                 className={`p-3 cursor-pointer hover:bg-gray-50 ${timeFilter === "7days" ? "bg-gray-50" : ""}`}
                 onClick={() => handleFilterSelect("7days")}
