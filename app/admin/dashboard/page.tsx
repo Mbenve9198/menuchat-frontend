@@ -97,10 +97,13 @@ export default function AdminDashboard() {
       }
 
       const data = await response.json();
+      console.log('Risposta API users-stats:', data); // Debug
 
       if (data.success) {
-        setUsersStats(data.users || []);
-        setSummary(data.summary || null);
+        // Il backend restituisce i dati in data.data
+        const responseData = data.data || {};
+        setUsersStats(responseData.users || []);
+        setSummary(responseData.summary || null);
       } else {
         setError(data.message || 'Errore nel caricamento dei dati');
       }
@@ -213,6 +216,25 @@ export default function AdminDashboard() {
             )}
             Aggiorna Statistiche
           </Button>
+          <Button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/admin/users-stats', {
+                  headers: getAuthHeaders(),
+                });
+                const data = await response.json();
+                console.log('🔍 Test API Response:', data);
+                alert(`Test API: ${data.success ? 'Successo' : 'Errore'}\nDettagli in console`);
+              } catch (error) {
+                console.error('❌ Test API Error:', error);
+                alert('Errore nel test API - vedi console');
+              }
+            }}
+            variant="outline"
+            size="sm"
+          >
+            Test API
+          </Button>
           <Button onClick={handleLogout} variant="outline">
             <LogOut className="h-4 w-4 mr-2" />
             Logout
@@ -272,6 +294,27 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Messaggio quando non ci sono dati */}
+      {!loading && (!usersStats || usersStats.length === 0) && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun dato disponibile</h3>
+            <p className="text-gray-500 mb-4">
+              Non sono stati trovati utenti o dati di messaggistica nel sistema.
+            </p>
+            <Button onClick={handleRefreshStats} disabled={refreshing}>
+              {refreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Aggiorna Dati
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="tabella" className="space-y-4">
         <TabsList>
           <TabsTrigger value="tabella">Tabella Utenti</TabsTrigger>
@@ -287,76 +330,82 @@ export default function AdminDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Utente</TableHead>
-                      <TableHead>Ristorante</TableHead>
-                      <TableHead>Registrato</TableHead>
-                      <TableHead className="text-center">Menu<br/>(Utility)</TableHead>
-                      <TableHead className="text-center">Recensioni<br/>(Service)</TableHead>
-                      <TableHead className="text-center">Campagne<br/>(Marketing)</TableHead>
-                      <TableHead className="text-center">Inbound<br/>(Service)</TableHead>
-                      <TableHead className="text-right">Totale</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usersStats.map((user) => (
-                      <TableRow key={user.userId}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{user.userName}</div>
-                            <div className="text-sm text-gray-500">{user.userEmail}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.restaurantName}</TableCell>
-                        <TableCell>{formatDate(user.createdAt)}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="text-sm">
-                            <div>{user.messageStats.menuMessages.messages} msg</div>
-                            <div className="text-green-600 font-medium">
-                              {formatCurrency(user.messageStats.menuMessages.cost)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="text-sm">
-                            <div>{user.messageStats.reviewMessages.messages} msg</div>
-                            <div className="text-blue-600 font-medium">
-                              {formatCurrency(user.messageStats.reviewMessages.cost)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="text-sm">
-                            <div>{user.messageStats.campaignMessages.messages} msg</div>
-                            <div className="text-orange-600 font-medium">
-                              {formatCurrency(user.messageStats.campaignMessages.cost)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="text-sm">
-                            <div>{user.messageStats.inboundMessages.messages} msg</div>
-                            <div className="text-purple-600 font-medium">
-                              {formatCurrency(user.messageStats.inboundMessages.cost)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div>
-                            <div className="font-medium">{user.totalStats.totalMessages} msg</div>
-                            <div className="text-lg font-bold">
-                              {formatCurrency(user.totalStats.totalCost)}
-                            </div>
-                          </div>
-                        </TableCell>
+              {usersStats && usersStats.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Utente</TableHead>
+                        <TableHead>Ristorante</TableHead>
+                        <TableHead>Registrato</TableHead>
+                        <TableHead className="text-center">Menu<br/>(Utility)</TableHead>
+                        <TableHead className="text-center">Recensioni<br/>(Service)</TableHead>
+                        <TableHead className="text-center">Campagne<br/>(Marketing)</TableHead>
+                        <TableHead className="text-center">Inbound<br/>(Service)</TableHead>
+                        <TableHead className="text-right">Totale</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {usersStats.map((user) => (
+                        <TableRow key={user.userId}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{user.userName}</div>
+                              <div className="text-sm text-gray-500">{user.userEmail}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{user.restaurantName}</TableCell>
+                          <TableCell>{formatDate(user.createdAt)}</TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.menuMessages.messages} msg</div>
+                              <div className="text-green-600 font-medium">
+                                {formatCurrency(user.messageStats.menuMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.reviewMessages.messages} msg</div>
+                              <div className="text-blue-600 font-medium">
+                                {formatCurrency(user.messageStats.reviewMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.campaignMessages.messages} msg</div>
+                              <div className="text-orange-600 font-medium">
+                                {formatCurrency(user.messageStats.campaignMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.inboundMessages.messages} msg</div>
+                              <div className="text-purple-600 font-medium">
+                                {formatCurrency(user.messageStats.inboundMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div>
+                              <div className="font-medium">{user.totalStats.totalMessages} msg</div>
+                              <div className="text-lg font-bold">
+                                {formatCurrency(user.totalStats.totalCost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Nessun utente trovato. Prova ad aggiornare i dati.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
