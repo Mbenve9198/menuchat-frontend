@@ -29,9 +29,9 @@ export async function POST(
       )
     }
 
-    if (!category || !['UTILITY', 'MARKETING', 'AUTHENTICATION'].includes(category)) {
+    if (!category || !['UTILITY', 'MARKETING', 'AUTHENTICATION', 'SERVICE'].includes(category)) {
       return NextResponse.json(
-        { success: false, error: 'Categoria non valida. Utilizzare UTILITY, MARKETING o AUTHENTICATION' },
+        { success: false, error: 'Categoria non valida. Utilizzare UTILITY, MARKETING, AUTHENTICATION o SERVICE' },
         { status: 400 }
       )
     }
