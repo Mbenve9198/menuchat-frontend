@@ -309,8 +309,8 @@ export default function AdminDashboard() {
     }));
 
   const pieData = [
-    { name: 'Menu (Utility)', value: usersStats.reduce((sum, user) => sum + user.messageStats.menuMessages.cost, 0), color: '#8884d8' },
-    { name: 'Recensioni (Service)', value: usersStats.reduce((sum, user) => sum + user.messageStats.reviewMessages.cost, 0), color: '#82ca9d' },
+    { name: 'Menu (Marketing)', value: usersStats.reduce((sum, user) => sum + user.messageStats.menuMessages.cost, 0), color: '#8884d8' },
+    { name: 'Recensioni (Utility)', value: usersStats.reduce((sum, user) => sum + user.messageStats.reviewMessages.cost, 0), color: '#82ca9d' },
     { name: 'Campagne (Marketing)', value: usersStats.reduce((sum, user) => sum + user.messageStats.campaignMessages.cost, 0), color: '#ffc658' },
     { name: 'Inbound (Service)', value: usersStats.reduce((sum, user) => sum + user.messageStats.inboundMessages.cost, 0), color: '#ff7300' },
   ].filter(item => item.value > 0);
@@ -473,8 +473,8 @@ export default function AdminDashboard() {
                         <TableHead>Utente</TableHead>
                         <TableHead>Ristorante</TableHead>
                         <TableHead>Registrato</TableHead>
-                        <TableHead className="text-center">Menu<br/>(Utility)</TableHead>
-                        <TableHead className="text-center">Recensioni<br/>(Service)</TableHead>
+                        <TableHead className="text-center">Menu<br/>(Marketing)</TableHead>
+                        <TableHead className="text-center">Recensioni<br/>(Utility)</TableHead>
                         <TableHead className="text-center">Campagne<br/>(Marketing)</TableHead>
                         <TableHead className="text-center">Inbound<br/>(Service)</TableHead>
                         <TableHead className="text-right">Totale</TableHead>
@@ -774,8 +774,8 @@ export default function AdminDashboard() {
                       <TableRow>
                         <TableHead>Utente</TableHead>
                         <TableHead>Ristorante</TableHead>
-                        <TableHead className="text-center">Menu<br/>(Utility)</TableHead>
-                        <TableHead className="text-center">Recensioni<br/>(Service)</TableHead>
+                        <TableHead className="text-center">Menu<br/>(Marketing)</TableHead>
+                        <TableHead className="text-center">Recensioni<br/>(Utility)</TableHead>
                         <TableHead className="text-center">Campagne<br/>(Marketing)</TableHead>
                         <TableHead className="text-center">Inbound<br/>(Service)</TableHead>
                         <TableHead className="text-right">Totale Mese</TableHead>
