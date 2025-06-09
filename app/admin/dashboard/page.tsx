@@ -49,12 +49,86 @@ interface Summary {
   totalConversations: number;
 }
 
+interface MonthlyUserStats {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  restaurantName: string;
+  restaurantId: string;
+  year: number;
+  month: number;
+  monthName: string;
+  messageStats: {
+    menuMessages: { conversations: number; messages: number; cost: number };
+    reviewMessages: { conversations: number; messages: number; cost: number };
+    campaignMessages: { conversations: number; messages: number; cost: number };
+    inboundMessages: { conversations: number; messages: number; cost: number };
+  };
+  totalStats: {
+    totalConversations: number;
+    totalMessages: number;
+    totalCost: number;
+  };
+}
+
+interface MonthlyStatsResponse {
+  users: MonthlyUserStats[];
+  summary: {
+    year: number;
+    month: number;
+    monthName: string;
+    totalUsers: number;
+    totalCost: number;
+    totalMessages: number;
+    totalConversations: number;
+  };
+}
+
+interface MonthlyTrend {
+  year: number;
+  month: number;
+  monthName: string;
+  totalUsers: number;
+  totalCost: number;
+  totalMessages: number;
+  totalConversations: number;
+  costBreakdown: {
+    menu: number;
+    reviews: number;
+    campaigns: number;
+    inbound: number;
+  };
+}
+
+interface MonthlyTrendsResponse {
+  trends: MonthlyTrend[];
+  summary: {
+    totalMonths: number;
+    averageMonthlyCost: number;
+    averageMonthlyMessages: number;
+    peakMonth: MonthlyTrend;
+    growth: {
+      costGrowth: number;
+      messageGrowth: number;
+    } | null;
+  };
+}
+
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [usersStats, setUsersStats] = useState<UserStats[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Stati per statistiche mensili
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatsResponse | null>(null);
+  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrendsResponse | null>(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [trendsMonths, setTrendsMonths] = useState(12);
+  const [loadingMonthly, setLoadingMonthly] = useState(false);
+  
   const router = useRouter();
 
   // Verifica autenticazione
@@ -112,6 +186,66 @@ export default function AdminDashboard() {
       setError('Errore di connessione. Riprova più tardi.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMonthlyStats = async (year: number, month: number) => {
+    try {
+      setLoadingMonthly(true);
+      setError('');
+
+      const response = await fetch(`/api/admin/monthly-stats?year=${year}&month=${month}`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Risposta API monthly-stats:', data);
+
+      if (data.success) {
+        setMonthlyStats(data.data);
+      } else {
+        setError(data.message || 'Errore nel caricamento delle statistiche mensili');
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento statistiche mensili:', error);
+      setError('Errore di connessione per le statistiche mensili.');
+    } finally {
+      setLoadingMonthly(false);
+    }
+  };
+
+  const fetchMonthlyTrends = async (months: number) => {
+    try {
+      setLoadingMonthly(true);
+      setError('');
+
+      const response = await fetch(`/api/admin/monthly-trends?months=${months}`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Risposta API monthly-trends:', data);
+
+      if (data.success) {
+        setMonthlyTrends(data.data);
+      } else {
+        setError(data.message || 'Errore nel caricamento dei trend mensili');
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento trend mensili:', error);
+      setError('Errore di connessione per i trend mensili.');
+    } finally {
+      setLoadingMonthly(false);
     }
   };
 
@@ -319,6 +453,7 @@ export default function AdminDashboard() {
         <TabsList>
           <TabsTrigger value="tabella">Tabella Utenti</TabsTrigger>
           <TabsTrigger value="grafici">Grafici</TabsTrigger>
+          <TabsTrigger value="mensili">Statistiche Mensili</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tabella" className="space-y-4">
@@ -470,6 +605,305 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="mensili" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Filtri per mese specifico */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Statistiche per Mese Specifico</CardTitle>
+                <CardDescription>Visualizza i costi per un mese particolare</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-2">Anno</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-2">Mese</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month}>
+                          {new Date(2024, month - 1, 1).toLocaleDateString('it-IT', { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => fetchMonthlyStats(selectedYear, selectedMonth)}
+                  disabled={loadingMonthly}
+                  className="w-full"
+                >
+                  {loadingMonthly ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Carica Statistiche Mensili
+                </Button>
+
+                {/* Riepilogo mensile */}
+                {monthlyStats?.summary && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold mb-2">{monthlyStats.summary.monthName}</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Utenti attivi:</span>
+                        <span className="font-medium ml-2">{monthlyStats.summary.totalUsers}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Messaggi:</span>
+                        <span className="font-medium ml-2">{monthlyStats.summary.totalMessages.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Conversazioni:</span>
+                        <span className="font-medium ml-2">{monthlyStats.summary.totalConversations.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Costo totale:</span>
+                        <span className="font-bold text-green-600 ml-2">{formatCurrency(monthlyStats.summary.totalCost)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Filtri per trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Trend Mensili</CardTitle>
+                <CardDescription>Visualizza l'andamento dei costi nel tempo</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Numero di mesi</label>
+                  <select
+                    value={trendsMonths}
+                    onChange={(e) => setTrendsMonths(parseInt(e.target.value))}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value={6}>Ultimi 6 mesi</option>
+                    <option value={12}>Ultimi 12 mesi</option>
+                    <option value={24}>Ultimi 24 mesi</option>
+                  </select>
+                </div>
+                <Button
+                  onClick={() => fetchMonthlyTrends(trendsMonths)}
+                  disabled={loadingMonthly}
+                  className="w-full"
+                >
+                  {loadingMonthly ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                  )}
+                  Carica Trend Mensili
+                </Button>
+
+                {/* Riepilogo trend */}
+                {monthlyTrends?.summary && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-semibold mb-2">Riepilogo Trend</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Costo medio mensile:</span>
+                        <span className="font-medium">{formatCurrency(monthlyTrends.summary.averageMonthlyCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Messaggi medi mensili:</span>
+                        <span className="font-medium">{Math.round(monthlyTrends.summary.averageMonthlyMessages).toLocaleString()}</span>
+                      </div>
+                      {monthlyTrends.summary.peakMonth && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Mese di picco:</span>
+                          <span className="font-medium">{monthlyTrends.summary.peakMonth.monthName}</span>
+                        </div>
+                      )}
+                      {monthlyTrends.summary.growth && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Crescita costi:</span>
+                            <span className={`font-medium ${monthlyTrends.summary.growth.costGrowth >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {monthlyTrends.summary.growth.costGrowth >= 0 ? '+' : ''}{monthlyTrends.summary.growth.costGrowth.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Crescita messaggi:</span>
+                            <span className={`font-medium ${monthlyTrends.summary.growth.messageGrowth >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                              {monthlyTrends.summary.growth.messageGrowth >= 0 ? '+' : ''}{monthlyTrends.summary.growth.messageGrowth.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabella utenti per mese specifico */}
+          {monthlyStats?.users && monthlyStats.users.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Dettaglio Utenti - {monthlyStats.summary.monthName}</CardTitle>
+                <CardDescription>
+                  Costi e volumi per ogni utente nel mese selezionato
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Utente</TableHead>
+                        <TableHead>Ristorante</TableHead>
+                        <TableHead className="text-center">Menu<br/>(Utility)</TableHead>
+                        <TableHead className="text-center">Recensioni<br/>(Service)</TableHead>
+                        <TableHead className="text-center">Campagne<br/>(Marketing)</TableHead>
+                        <TableHead className="text-center">Inbound<br/>(Service)</TableHead>
+                        <TableHead className="text-right">Totale Mese</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {monthlyStats.users
+                        .sort((a, b) => b.totalStats.totalCost - a.totalStats.totalCost)
+                        .map((user) => (
+                        <TableRow key={user.userId}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{user.userName}</div>
+                              <div className="text-sm text-gray-500">{user.userEmail}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{user.restaurantName}</TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.menuMessages.messages} msg</div>
+                              <div className="text-green-600 font-medium">
+                                {formatCurrency(user.messageStats.menuMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.reviewMessages.messages} msg</div>
+                              <div className="text-blue-600 font-medium">
+                                {formatCurrency(user.messageStats.reviewMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.campaignMessages.messages} msg</div>
+                              <div className="text-orange-600 font-medium">
+                                {formatCurrency(user.messageStats.campaignMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="text-sm">
+                              <div>{user.messageStats.inboundMessages.messages} msg</div>
+                              <div className="text-purple-600 font-medium">
+                                {formatCurrency(user.messageStats.inboundMessages.cost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div>
+                              <div className="font-medium">{user.totalStats.totalMessages} msg</div>
+                              <div className="text-lg font-bold">
+                                {formatCurrency(user.totalStats.totalCost)}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Grafico trend mensili */}
+          {monthlyTrends?.trends && monthlyTrends.trends.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Trend Costi Mensili</CardTitle>
+                  <CardDescription>Andamento dei costi nel tempo</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyTrends.trends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="monthName" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        fontSize={12}
+                      />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value) => formatCurrency(Number(value))}
+                        labelFormatter={(label) => `Mese: ${label}`}
+                      />
+                      <Legend />
+                      <Bar dataKey="totalCost" fill="#8884d8" name="Costo Totale" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Breakdown Costi per Tipo</CardTitle>
+                  <CardDescription>Distribuzione dei costi per categoria nel tempo</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyTrends.trends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="monthName" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        fontSize={12}
+                      />
+                      <YAxis />
+                      <Tooltip 
+                        formatter={(value) => formatCurrency(Number(value))}
+                      />
+                      <Legend />
+                      <Bar dataKey="costBreakdown.menu" stackId="a" fill="#8884d8" name="Menu" />
+                      <Bar dataKey="costBreakdown.reviews" stackId="a" fill="#82ca9d" name="Recensioni" />
+                      <Bar dataKey="costBreakdown.campaigns" stackId="a" fill="#ffc658" name="Campagne" />
+                      <Bar dataKey="costBreakdown.inbound" stackId="a" fill="#ff7300" name="Inbound" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
