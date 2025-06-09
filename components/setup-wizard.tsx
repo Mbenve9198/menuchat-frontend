@@ -1273,7 +1273,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                                   </p>
                                   <div className="mt-2 border-t pt-2">
                                     <button className="w-full text-center py-2 text-[#0277BD] text-sm font-medium hover:bg-gray-50 rounded transition-colors">
-                                      Leave a Review
+                                      Lascia Recensione
                                     </button>
                                   </div>
                                   <div className="text-right mt-1">

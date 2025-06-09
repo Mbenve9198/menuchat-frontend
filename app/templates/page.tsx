@@ -77,8 +77,8 @@ function WhatsAppMockup({
   showMenuPdf = false,
   showMenuUrl = false,
   showReviewCta = false,
-  reviewButtonText = "Leave a Review",
-  menuButtonText = "View Menu"
+  reviewButtonText = "Leave Review",
+  menuButtonText = "Menu"
 }: { 
   message: string, 
   userMessage?: string, 
@@ -292,14 +292,14 @@ function TemplateCard({
     
     // Valori di default in base alla lingua
     const defaultTexts: Record<string, string> = {
-      'it': isMenuUrl ? 'Vedi Menu' : 'Lascia una recensione',
-      'en': isMenuUrl ? 'View Menu' : 'Leave a review',
-      'es': isMenuUrl ? 'Ver Menú' : 'Dejar una reseña',
-      'de': isMenuUrl ? 'Menü anzeigen' : 'Bewertung abgeben',
-      'fr': isMenuUrl ? 'Voir le Menu' : 'Laisser un avis'
+      'it': isMenuUrl ? 'Menu' : 'Lascia Recensione',
+      'en': isMenuUrl ? 'Menu' : 'Leave Review',
+      'es': isMenuUrl ? 'Menú' : 'Dejar Reseña',
+      'de': isMenuUrl ? 'Menü' : 'Bewertung abgeben',
+      'fr': isMenuUrl ? 'Menu' : 'Laisser Avis'
     };
     
-    return defaultTexts[template.language] || (isMenuUrl ? 'View Menu' : 'Leave a review');
+    return defaultTexts[template.language] || (isMenuUrl ? 'Menu' : 'Leave Review');
   };
   
   return (
@@ -352,8 +352,8 @@ function TemplateCard({
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
         showReviewCta={isReview}
-        reviewButtonText={isReview ? getButtonText() : "Leave a review"}
-        menuButtonText={isMenuUrl ? getButtonText() : "View Menu"}
+        reviewButtonText={isReview ? getButtonText() : "Leave Review"}
+        menuButtonText={isMenuUrl ? getButtonText() : "Menu"}
       />
     </div>
   );
