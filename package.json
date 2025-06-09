@@ -61,6 +61,7 @@
     "i18next": "^25.1.1",
     "i18next-browser-languagedetector": "^8.1.0",
     "input-otp": "1.4.1",
+    "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.454.0",
     "mongoose": "^8.12.1",
@@ -86,6 +87,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/formidable": "^3.4.5",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^22",
     "@types/react": "^19",
