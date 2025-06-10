@@ -365,32 +365,57 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
     setIsGeneratingMessage(true)
     try {
-      const response = await fetch('/api/setup/generate-welcome', {
+      // Determina il tipo di menu
+      const hasAnyFile = menuLanguages.some(lang => lang.menuFile !== null);
+      const menuType = hasAnyFile ? 'pdf' : 'url';
+
+      // Prepara i dettagli del ristorante
+      const restaurantDetails = {
+        name: restaurantName,
+        address: selectedRestaurant?.address || "",
+        rating: selectedRestaurant?.rating || 4.5,
+        ratingsTotal: selectedRestaurant?.ratingsTotal || 0,
+        cuisineTypes: selectedRestaurant?.cuisineTypes || ["restaurant"],
+        reviews: selectedRestaurant?.reviews?.map(review => ({
+          author_name: review.author_name,
+          rating: review.rating,
+          text: review.text,
+          time: review.time
+        })) || []
+      };
+
+      const response = await fetch('/api/welcome', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          restaurantName: restaurantName,
-          restaurantAddress: selectedRestaurant?.address,
-          // Non serve più specificare il tipo di menu poiché i messaggi normali gestiscono tutto automaticamente
+          restaurantId: selectedRestaurant?.id,
+          language: "it", // Forza italiano come da regola utente
+          forceLanguage: true,
+          menuType: menuType,
+          restaurantDetails: restaurantDetails,
           languageData: menuLanguages
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Errore nella generazione del messaggio')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella generazione del messaggio')
       }
 
       const data = await response.json()
       
       // Aggiorna il messaggio di benvenuto generato
-      setWelcomeMessage(data.message)
-
-      toast({
-        title: "Messaggio generato!",
-        description: "Il messaggio di benvenuto è stato creato con successo",
-      })
+      if (data.success && data.message) {
+        setWelcomeMessage(data.message)
+        toast({
+          title: "Messaggio generato!",
+          description: "Il messaggio di benvenuto è stato creato con successo",
+        })
+      } else {
+        throw new Error(data.error || 'Risposta non valida dal server')
+      }
     } catch (error) {
       console.error('Errore nella generazione del messaggio:', error)
       toast({
@@ -415,31 +440,54 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
     setIsGeneratingTemplates(true)
     try {
-      const response = await fetch('/api/setup/generate-review-message', {
+      // Prepara i dettagli del ristorante
+      const restaurantDetails = {
+        name: restaurantName,
+        address: selectedRestaurant?.address || "",
+        rating: selectedRestaurant?.rating || 4.5,
+        ratingsTotal: selectedRestaurant?.ratingsTotal || 0,
+        cuisineTypes: selectedRestaurant?.cuisineTypes || ["restaurant"],
+        reviews: selectedRestaurant?.reviews?.map(review => ({
+          author_name: review.author_name,
+          rating: review.rating,
+          text: review.text,
+          time: review.time
+        })) || []
+      };
+
+      const response = await fetch('/api/review', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          restaurantId: selectedRestaurant?.id,
           restaurantName: restaurantName,
+          language: "it", // Forza italiano come da regola utente
+          forceLanguage: true,
+          restaurantDetails: restaurantDetails,
           reviewLink: reviewLink,
           reviewPlatform: reviewPlatform
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Errore nella generazione del messaggio di recensione')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore nella generazione del messaggio di recensione')
       }
 
       const data = await response.json()
       
       // Aggiorna il messaggio di recensione generato
-      setCustomReviewMessage(data.message)
-
-      toast({
-        title: "Messaggio recensione generato!",
-        description: "Il messaggio per le recensioni è stato creato",
-      })
+      if (data.success && data.templates && data.templates.length > 0) {
+        setCustomReviewMessage(data.templates[0]) // Usa il primo template
+        toast({
+          title: "Messaggio recensione generato!",
+          description: "Il messaggio per le recensioni è stato creato",
+        })
+      } else {
+        throw new Error(data.error || 'Nessun template generato')
+      }
     } catch (error) {
       console.error('Errore nella generazione del messaggio recensione:', error)
       toast({
