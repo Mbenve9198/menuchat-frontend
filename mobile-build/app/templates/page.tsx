@@ -78,7 +78,9 @@ function WhatsAppMockup({
   showMenuUrl = false,
   showReviewCta = false,
   reviewButtonText = "Leave Review",
-  menuButtonText = "Menu"
+  menuButtonText = "Menu",
+  menuUrl = "",
+  reviewUrl = ""
 }: { 
   message: string, 
   userMessage?: string, 
@@ -88,11 +90,27 @@ function WhatsAppMockup({
   showMenuUrl?: boolean,
   showReviewCta?: boolean,
   reviewButtonText?: string,
-  menuButtonText?: string
+  menuButtonText?: string,
+  menuUrl?: string,
+  reviewUrl?: string
 }) {
-  // Determina il testo del pulsante corretto in base al tipo
-  const buttonText = showMenuUrl ? menuButtonText : reviewButtonText;
-  
+  // Funzione per formattare il messaggio con gli URL come fa il backend
+  const formatMessageWithUrls = () => {
+    let formattedMessage = message.replace('{customerName}', 'Marco');
+    
+    // Per i template URL, aggiungi l'URL al messaggio come fa il backend
+    if (showMenuUrl && menuUrl) {
+      formattedMessage += `\n\n🔗 ${menuButtonText}: ${menuUrl}`;
+    }
+    
+    // Per i template recensioni, aggiungi l'URL di recensione come fa il backend
+    if (showReviewCta && reviewUrl) {
+      formattedMessage += `\n\n⭐ ${reviewButtonText}: ${reviewUrl}`;
+    }
+    
+    return formattedMessage;
+  };
+
   return (
     <div className="flex flex-col gap-3 py-4">
       {/* Data */}
@@ -167,18 +185,7 @@ function WhatsAppMockup({
             </div>
           )}
           
-          <p className="text-sm md:text-base whitespace-pre-wrap">{message.replace('{customerName}', 'Marco')}</p>
-          
-          {/* Se il menu è un URL o è una recensione con CTA, mostra il pulsante appropriato */}
-          {(showMenuUrl || showReviewCta) && (
-            <div className="mt-3 border-t pt-2 border-gray-200">
-              <div className="flex justify-center w-full">
-                <button className="bg-[#e9f2fd] text-[#127def] text-xs sm:text-sm py-2 px-4 rounded-3xl font-medium">
-                  {buttonText}
-                </button>
-              </div>
-            </div>
-          )}
+          <p className="text-sm md:text-base whitespace-pre-wrap">{formatMessageWithUrls()}</p>
           
           <div className="text-right mt-2">
             <span className="text-[10px] md:text-xs text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
@@ -354,6 +361,8 @@ function TemplateCard({
         showReviewCta={isReview}
         reviewButtonText={isReview ? getButtonText() : "Leave Review"}
         menuButtonText={isMenuUrl ? getButtonText() : "Menu"}
+        menuUrl={isMenuUrl ? template.components.buttons?.[0]?.url || "" : ""}
+        reviewUrl={isReview ? template.components.buttons?.[0]?.url || "" : ""}
       />
     </div>
   );
