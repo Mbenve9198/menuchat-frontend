@@ -699,162 +699,76 @@ export default function TemplatesPage() {
       setIsSaving(true);
       setSaveDialogOpen(false);
       
-      const template = templateToSave;
-      const isTypeChanged = 
-        (menuType === "url" && template.type === "MEDIA") || 
-        (menuType === "file" && template.type === "CALL_TO_ACTION");
+      const menuData = menuType === "file" ? { 
+        menuPdfUrl,
+        menuFile: menuFile ? {
+          name: menuFile.name,
+          type: menuFile.type,
+          size: menuFile.size
+        } : null
+      } : { menuUrl };
       
-      // Se è cambiato il tipo di template (da PDF a URL o viceversa), dobbiamo creare un nuovo template
-      if (isTypeChanged && template.type !== 'REVIEW') {
-        // Creiamo un nuovo template con il tipo corretto
-        const newTemplateType = menuType === "url" ? "CALL_TO_ACTION" : "MEDIA";
-        
-        toast({
-          title: "Cambio tipo template",
-          description: `Conversione da ${template.type} a ${newTemplateType} in corso...`,
-        });
-        
-        const requestBody: any = {
-          message: editedMessage,
-          newType: newTemplateType,
-          updateAllLanguages: updateAllLanguages
-        };
-        
-        // Aggiungi i dati specifici per il tipo di menu
-        if (menuType === "url" && menuUrl) {
-          requestBody.menuUrl = menuUrl;
-        } else if (menuType === "file" && menuPdfUrl) {
-          requestBody.menuPdfUrl = menuPdfUrl;
-        }
-        
-        // Invia richiesta per creare nuovo template
-        const response = await fetch(`/api/templates/${template._id}/convert`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to convert template');
-        }
-        
-        if (!data.success) {
-          throw new Error('Invalid response format');
-        }
-        
-        // Imposta il messaggio di successo e mostra l'animazione
-        setSuccessMessage(updateAllLanguages 
-          ? "Template convertito in tutte le lingue!" 
-          : "Template convertito con successo!");
-        setShowSuccessAnimation(true);
-        
-        // Refresh templates
-        await fetchTemplates();
-        setIsEditorOpen(false);
-        setSelectedTemplate(null);
-        setMenuFile(null);
-        setMenuUrl("");
-        setMenuPdfUrl("");
-        setIsSaving(false);
-        setTemplateToSave(null);
-        return;
-      }
-      
-      // Se è un template di recensione
-      if (template.type === 'REVIEW') {
-      const response = await fetch(`/api/templates/${template._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            message: editedMessage,
-            buttonText: editedButtonText,
-            updateAllLanguages: updateAllLanguages
-        })
-      })
-
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update template')
-      }
-
-      if (!data.success) {
-        throw new Error('Invalid response format')
-      }
-
-        // Imposta il messaggio di successo e mostra l'animazione
-        setSuccessMessage(updateAllLanguages 
-          ? "Template aggiornato in tutte le lingue!" 
-          : "Template aggiornato con successo!");
-        setShowSuccessAnimation(true);
-
-      // Refresh templates
-      await fetchTemplates()
-        setIsEditorOpen(false);
-        setSelectedTemplate(null);
-        return
-      }
-      
-      // Per i template di menu
-      let requestBody: any = {
-        message: editedMessage,
-        updateAllLanguages: updateAllLanguages
+      // Per messaggi normali, creiamo la struttura del messaggio
+      const messageData = {
+        messageBody: editedMessage,
+        messageType: templateToSave.type === 'MEDIA' ? 'media' : 
+                    templateToSave.type === 'CALL_TO_ACTION' ? 'menu_url' : 'review',
+        menuUrl: menuType === "url" ? menuUrl : "",
+        mediaUrl: menuType === "file" ? menuPdfUrl : "",
+        language: templateToSave.language,
+        restaurantId,
+        ...(templateToSave.type === 'REVIEW' && { reviewButtonText: editedButtonText })
       };
       
-      // Aggiungi i dati specifici per il tipo di menu
-      if (menuType === "url" && menuUrl) {
-        requestBody.menuUrl = menuUrl;
-      } else if (menuType === "file" && menuPdfUrl) {
-        requestBody.menuPdfUrl = menuPdfUrl;
-      }
-
-      const response = await fetch(`/api/templates/${template._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      })
-
-      const data = await response.json()
+      // Per la gestione multi-lingua, se updateAllLanguages è true
+      const languagesToUpdate = updateAllLanguages ? 
+        availableLanguages() : 
+        [templateToSave.language];
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update template')
+      // Aggiorna i messaggi per tutte le lingue selezionate
+      for (const langCode of languagesToUpdate) {
+        const response = await fetch(`/api/templates/${templateToSave._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...messageData,
+            language: langCode,
+            updateAllLanguages: updateAllLanguages && langCode === templateToSave.language
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Errore nel salvare il messaggio per ${langCode}`);
+        }
       }
-
-      if (!data.success) {
-        throw new Error('Invalid response format')
-      }
-
-      // Imposta il messaggio di successo e mostra l'animazione
-      setSuccessMessage(updateAllLanguages 
-        ? "Template aggiornato in tutte le lingue!" 
-        : "Template aggiornato con successo!");
-      setShowSuccessAnimation(true);
-
-      // Refresh templates
+      
+      toast({
+        title: "Messaggio salvato!",
+        description: updateAllLanguages ? 
+          "Il messaggio è stato aggiornato per tutte le lingue" : 
+          "Il messaggio è stato aggiornato con successo",
+      });
+      
+      // Ricarica i template aggiornati
       await fetchTemplates();
+      
+      // Chiudi l'editor
       setIsEditorOpen(false);
       setSelectedTemplate(null);
+      
     } catch (error) {
-      console.error('Error updating template:', error)
+      console.error('Error saving template:', error);
       toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile aggiornare il template",
+        title: "Errore nel salvare",
+        description: error instanceof Error ? error.message : "Impossibile salvare il messaggio",
         variant: "destructive",
-      })
+      });
     } finally {
       setIsSaving(false);
       setTemplateToSave(null);
-      setMenuFile(null);
-      setMenuUrl("");
-      setMenuPdfUrl("");
     }
   }
 
@@ -862,69 +776,60 @@ export default function TemplatesPage() {
     try {
       setIsGenerating(true)
       
-      // Debug info
-      console.log("Regenerating with language:", currentLanguage);
-      console.log("Template original language:", template.language);
-      
-      // Prima otteniamo i dettagli del ristorante
-      const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${template.restaurant}`);
-      const restaurantData = await restaurantResponse.json();
-      
-      if (!restaurantResponse.ok || !restaurantData.success) {
-        throw new Error('Impossibile recuperare i dettagli del ristorante');
+      // Prepara i dati per la rigenerazione del messaggio
+      const regenerationData: any = {
+        restaurantId,
+        language: template.language,
+        messageType: template.type === 'MEDIA' ? 'media' : 
+                    template.type === 'CALL_TO_ACTION' ? 'menu_url' : 'review'
       }
       
-      const restaurant = restaurantData.restaurant;
-      
-      const endpoint = template.type === 'REVIEW' 
-        ? '/api/review'
-        : '/api/welcome'
-
-      // Ora usiamo i dati corretti del ristorante
-      const requestData = {
-        restaurantId: template.restaurant,
-        restaurantName: restaurant.name,
-        restaurantDetails: {
-          name: restaurant.name,
-          rating: restaurant.googleRating?.rating || 4.5,
-          ratingsTotal: restaurant.googleRating?.reviewCount || 100,
-          cuisineTypes: restaurant.cuisineTypes || ['Italian'],
-          reviews: restaurant.reviews || []
-        },
-        type: template.type === 'MEDIA' ? 'pdf' : 'url',
-        menuType: template.type === 'MEDIA' ? 'pdf' : 'url',
-        language: currentLanguage,
-        forceLanguage: true // Aggiungiamo questo flag per forzare l'uso della lingua corrente
+      // Se è un messaggio di menu, aggiungi i dati del menu
+      if (template.type === 'MEDIA' || template.type === 'CALL_TO_ACTION') {
+        if (template.type === 'MEDIA' && template.components.header?.example) {
+          regenerationData.menuPdfUrl = template.components.header.example
+        } else if (template.type === 'CALL_TO_ACTION' && template.components.buttons?.[0]?.url) {
+          regenerationData.menuUrl = template.components.buttons[0].url
+        }
       }
-
-      console.log("Request data:", requestData);
-
-      const response = await fetch(endpoint, {
+      
+      // Se è un messaggio di recensione, aggiungi i dati della recensione
+      if (template.type === 'REVIEW') {
+        regenerationData.reviewLink = reviewSettings.reviewLink
+        regenerationData.reviewPlatform = reviewSettings.reviewPlatform
+      }
+      
+      const response = await fetch(`/api/templates/${template._id}/regenerate`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(regenerationData),
       })
-
-      if (!response.ok) {
-        throw new Error('Impossibile generare il messaggio')
-      }
-
-      const data = await response.json()
-      console.log("Response from API:", data);
       
-      // Gestisce sia i template di menu che quelli di recensione
-      if (template.type === 'REVIEW') {
-        setEditedMessage(data.templates?.[0] || '')
-      } else {
-        setEditedMessage(data.message || '')
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Errore nella rigenerazione del messaggio')
       }
-    } catch (error) {
-      console.error('Error generating message:', error)
+      
+      if (!data.success) {
+        throw new Error('Formato di risposta non valido')
+      }
+      
       toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile generare il messaggio",
+        title: "Messaggio rigenerato!",
+        description: "Il messaggio è stato ricreato con IA",
+      })
+      
+      // Ricarica i template per mostrare il messaggio aggiornato
+      await fetchTemplates()
+      
+    } catch (error) {
+      console.error('Error regenerating message:', error)
+      toast({
+        title: "Errore nella rigenerazione",
+        description: error instanceof Error ? error.message : "Impossibile rigenerare il messaggio",
         variant: "destructive",
       })
     } finally {
@@ -1274,8 +1179,8 @@ export default function TemplatesPage() {
         <div className="w-full max-w-md mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA]">WhatsApp Templates</h1>
-              <p className="text-sm sm:text-base text-gray-700">Manage your message templates</p>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA]">Messaggi Menu e Recensioni</h1>
+              <p className="text-sm sm:text-base text-gray-700">Gestisci i tuoi messaggi automatici</p>
             </div>
             <div className="relative w-8 h-8">
               <Image
@@ -1293,18 +1198,18 @@ export default function TemplatesPage() {
             <TabsList className="grid grid-cols-2 mb-2 w-full">
               <TabsTrigger value="menu" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm">
                 <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Menu Template</span>
+                <span>Messaggi Menu</span>
               </TabsTrigger>
               <TabsTrigger value="review" className="flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm">
                 <Star className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span>Review Template</span>
+                <span>Messaggi Recensioni</span>
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="menu" className="space-y-3 sm:space-y-4">
               {menuTemplates.length === 0 ? (
                 <div className="bg-white rounded-xl p-4 sm:p-6 text-center">
-                  <p className="text-gray-500 text-sm sm:text-base">No menu templates available</p>
+                  <p className="text-gray-500 text-sm sm:text-base">Nessun messaggio di menu disponibile</p>
                 </div>
               ) : (
                 <>
@@ -1361,7 +1266,7 @@ export default function TemplatesPage() {
             <TabsContent value="review" className="space-y-3 sm:space-y-4">
               {reviewTemplates.length === 0 ? (
                 <div className="bg-white rounded-xl p-4 sm:p-6 text-center">
-                  <p className="text-gray-500 text-sm sm:text-base">No review templates available</p>
+                  <p className="text-gray-500 text-sm sm:text-base">Nessun messaggio di recensione disponibile</p>
                 </div>
               ) : (
                 <>

@@ -354,115 +354,103 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
   }, [currentStep, selectedRestaurant]);
 
   const generateWelcomeMessage = async () => {
+    if (!restaurantName) {
+      toast({
+        title: "Errore",
+        description: "Nome del ristorante richiesto per generare il messaggio",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsGeneratingMessage(true)
     try {
-      setIsGeneratingMessage(true);
-      
-      if (!selectedRestaurant) {
-        throw new Error("No restaurant selected");
-      }
-
-      // Determine menu type
-      const firstMenuWithFile = menuLanguages.find(lang => lang.menuFile !== null);
-      const firstMenuWithUrl = menuLanguages.find(lang => lang.menuUrl && lang.menuUrl.trim() !== "");
-      const menuType = firstMenuWithFile ? 'pdf' : 'url';
-
-      const response = await fetch("/api/welcome", {
-        method: "POST",
+      const response = await fetch('/api/setup/generate-welcome', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          restaurantId: selectedRestaurant.id,
-          restaurantName: selectedRestaurant.name,
-          restaurantDetails: selectedRestaurant,
-          menuType,
-          modelId: "claude-3-7-sonnet-20250219"
+          restaurantName: restaurantName,
+          restaurantAddress: selectedRestaurant?.address,
+          // Non serve più specificare il tipo di menu poiché i messaggi normali gestiscono tutto automaticamente
+          languageData: menuLanguages
         }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore nella generazione del messaggio');
+        throw new Error('Errore nella generazione del messaggio')
       }
 
-      const data = await response.json();
-      if (data.success) {
-        setWelcomeMessage(data.message);
-      } else {
-        toast({
-          title: "Errore",
-          description: `Non è stato possibile generare il messaggio: ${data.error}`,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error:", error);
+      const data = await response.json()
+      
+      // Aggiorna il messaggio di benvenuto generato
+      setWelcomeMessage(data.message)
+
       toast({
-        title: "Errore di connessione",
-        description: "Non è stato possibile contattare il server",
+        title: "Messaggio generato!",
+        description: "Il messaggio di benvenuto è stato creato con successo",
+      })
+    } catch (error) {
+      console.error('Errore nella generazione del messaggio:', error)
+      toast({
+        title: "Errore",
+        description: "Impossibile generare il messaggio di benvenuto",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsGeneratingMessage(false);
+      setIsGeneratingMessage(false)
     }
-  };
+  }
 
-  // Aggiungi questa funzione per generare i template di recensione
   const generateReviewTemplates = async () => {
-    try {
-      setIsGeneratingTemplates(true);
-      
-      if (!selectedRestaurant) {
-        throw new Error("Nessun ristorante selezionato");
-      }
+    if (!restaurantName || !reviewLink) {
+      toast({
+        title: "Errore",
+        description: "Nome del ristorante e link di recensione richiesti",
+        variant: "destructive",
+      })
+      return
+    }
 
-      const response = await fetch("/api/review", {
-        method: "POST",
+    setIsGeneratingTemplates(true)
+    try {
+      const response = await fetch('/api/setup/generate-review-message', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          restaurantName: selectedRestaurant.name,
-          restaurantDetails: selectedRestaurant,
+          restaurantName: restaurantName,
           reviewLink: reviewLink,
-          modelId: "claude-3-7-sonnet-20250219"
+          reviewPlatform: reviewPlatform
         }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore nella generazione dei template');
+        throw new Error('Errore nella generazione del messaggio di recensione')
       }
 
-      const data = await response.json();
-      if (data.success) {
-        // Salviamo direttamente il primo template come messaggio personalizzato
-        setCustomReviewMessage(data.templates[0]);
-      } else {
-        toast({
-          title: "Errore",
-          description: `Non è stato possibile generare il template: ${data.error}`,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error:", error);
+      const data = await response.json()
+      
+      // Aggiorna il messaggio di recensione generato
+      setCustomReviewMessage(data.message)
+
       toast({
-        title: "Errore di connessione",
-        description: "Non è stato possibile contattare il server",
+        title: "Messaggio recensione generato!",
+        description: "Il messaggio per le recensioni è stato creato",
+      })
+    } catch (error) {
+      console.error('Errore nella generazione del messaggio recensione:', error)
+      toast({
+        title: "Errore",
+        description: "Impossibile generare il messaggio di recensione",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsGeneratingTemplates(false);
+      setIsGeneratingTemplates(false)
     }
-  };
-
-  // Aggiungi questo useEffect per generare i template quando lo step diventa attivo
-  useEffect(() => {
-    if (currentStep === 4 && selectedRestaurant?.id && reviewTemplates.length === 0) {
-      generateReviewTemplates();
-    }
-  }, [currentStep, selectedRestaurant]);
+  }
 
   // Funzione corretta per controllare il trigger con debounce senza lodash
   const checkTriggerPhrase = (phrase: string) => {
@@ -570,6 +558,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         ? selectedRestaurant.photos[0] 
         : selectedRestaurant?.photo || null;
 
+      // Mappa delle lingue per i messaggi normali
       const mapMenuLanguagesToBotConfig = () => {
         return menuLanguages.map(lang => ({
           language: {
@@ -579,11 +568,14 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           },
           menuUrl: lang.menuUrl || '',
           menuPdfUrl: lang.menuPdfUrl || '',
-          menuPdfName: lang.menuPdfName || ''
+          menuPdfName: lang.menuPdfName || '',
+          // Aggiungi il messaggio di benvenuto che verrà tradotto automaticamente
+          welcomeMessage: welcomeMessage
         }));
       };
 
-      const formData = {
+      const dataToSubmit = {
+        // Dati del ristorante
         restaurantName,
         restaurantId: selectedRestaurant?.id,
         address: {
@@ -617,6 +609,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           rawText: hour
         })) || [],
         menuUrl: effectiveMenuUrl,
+        
+        // Dati del bot - ora per messaggi normali
         menuLanguages: mapMenuLanguagesToBotConfig(),
         hasMenuFile,
         reviewPlatform,
@@ -625,20 +619,22 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         reviewTimer,
         reviewTemplate: customReviewMessage,
         triggerWord,
+        
+        // Dati utente
         userEmail,
         userPassword,
         userFullName
       };
 
-      console.log("Form data being sent:", formData);
+      console.log('Invio dati al backend:', dataToSubmit)
 
       const response = await fetch('/api/restaurants', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
-      });
+        body: JSON.stringify(dataToSubmit),
+      })
 
       if (!response.ok) {
         let errorMessage = 'Failed to save restaurant data';
