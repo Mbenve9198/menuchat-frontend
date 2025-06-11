@@ -16,42 +16,43 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const restaurantId = searchParams.get('restaurantId') || session.user.restaurantId
     const reviewSettings = searchParams.get('reviewSettings') === 'true'
-    const templateId = searchParams.get('templateId')
-    const buttonText = searchParams.get('buttonText') === 'true'
 
-    if (!restaurantId && !templateId) {
+    if (!restaurantId) {
       return NextResponse.json(
-        { error: 'ID ristorante o ID template richiesto' },
+        { error: 'Restaurant ID è richiesto' },
         { status: 400 }
       )
     }
 
-    // Usa la rotta corretta del nuovo sistema con query parameters
-    const url = new URL(`${process.env.BACKEND_URL}/api/templates`)
-    url.searchParams.set('restaurantId', restaurantId)
-    
+    // Build URL with query parameters
+    const backendUrl = new URL(`${process.env.BACKEND_URL}/api/templates`)
+    backendUrl.searchParams.set('restaurantId', restaurantId)
     if (reviewSettings) {
-      url.searchParams.set('reviewSettings', 'true')
+      backendUrl.searchParams.set('reviewSettings', 'true')
     }
 
-    // Get templates/review settings from backend
-    const response = await fetch(url.toString(), {
+    const response = await fetch(backendUrl.toString(), {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
-      }
+        'Authorization': `Bearer ${session.accessToken}`,
+      },
     })
 
     if (!response.ok) {
-      throw new Error('Impossibile recuperare i dati')
+      const errorData = await response.json()
+      return NextResponse.json(
+        { success: false, error: errorData.error || 'Errore del server' },
+        { status: response.status }
+      )
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Errore nella route API dei template:', error)
+    console.error('API Error:', error)
     return NextResponse.json(
-      { error: 'Errore interno del server' },
+      { success: false, error: 'Errore del server' },
       { status: 500 }
     )
   }
@@ -134,44 +135,39 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    // Get session
     const session = await auth()
     if (!session) {
       return NextResponse.json(
-        { error: 'Non autorizzato' },
+        { success: false, error: 'Non autorizzato' },
         { status: 401 }
       )
     }
 
-    const { restaurantId, reviewLink, reviewPlatform } = await request.json()
-    
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'ID ristorante richiesto' },
-        { status: 400 }
-      )
-    }
+    const data = await request.json()
 
-    // Usa la rotta corretta del nuovo sistema
     const response = await fetch(`${process.env.BACKEND_URL}/api/templates`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
+        'Authorization': `Bearer ${session.accessToken}`,
       },
-      body: JSON.stringify({ restaurantId, reviewLink, reviewPlatform })
+      body: JSON.stringify(data)
     })
 
     if (!response.ok) {
-      throw new Error('Impossibile aggiornare le impostazioni di recensione')
+      const errorData = await response.json()
+      return NextResponse.json(
+        { success: false, error: errorData.error || 'Errore del server' },
+        { status: response.status }
+      )
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    const result = await response.json()
+    return NextResponse.json(result)
   } catch (error) {
-    console.error('Errore nella route API delle impostazioni di recensione:', error)
+    console.error('API Error:', error)
     return NextResponse.json(
-      { error: 'Errore interno del server' },
+      { success: false, error: 'Errore del server' },
       { status: 500 }
     )
   }

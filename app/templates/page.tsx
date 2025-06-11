@@ -356,7 +356,7 @@ function TemplateCard({
         showMenuPdf={isMenuPdf}
         showMenuUrl={isMenuUrl}
         showReviewCta={isReview}
-        reviewButtonText={isReview ? getButtonText() : "Leave Review"}
+        reviewButtonText={getButtonText()}
         menuButtonText={isMenuUrl ? getButtonText() : "Menu"}
         menuUrl={getMenuUrl()}
         reviewUrl={getReviewUrl()}
@@ -599,30 +599,10 @@ export default function TemplatesPage() {
         setMenuFile(null);
       }
       
-      // Carica il testo del pulsante se è un template di recensione
-      if (template.type === 'REVIEW') {
-        fetchButtonText(template._id);
+      // Carica il testo del pulsante dal template esistente se è un template di recensione
+      if (template.type === 'REVIEW' && template.components.buttons?.[0]?.text) {
+        setEditedButtonText(template.components.buttons[0].text);
       }
-    }
-  }
-
-  const fetchButtonText = async (templateId: string) => {
-    if (!templateId) return;
-
-    try {
-      const response = await fetch(`/api/templates?templateId=${templateId}&buttonText=true`);
-      const data = await response.json();
-      
-      if (data.success && data.buttonText) {
-        setEditedButtonText(data.buttonText);
-      }
-    } catch (error) {
-      console.error('Error fetching button text:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare il testo del pulsante",
-        variant: "destructive",
-      });
     }
   }
 
