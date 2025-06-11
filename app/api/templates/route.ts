@@ -26,42 +26,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Se sono richieste le impostazioni di recensione
-    if (reviewSettings && restaurantId) {
-      const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${restaurantId}/review-settings`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Impossibile recuperare le impostazioni di recensione')
-      }
-
-      const data = await response.json()
-      return NextResponse.json(data)
+    // Usa la rotta corretta del nuovo sistema con query parameters
+    const url = new URL(`${process.env.BACKEND_URL}/api/templates`)
+    url.searchParams.set('restaurantId', restaurantId)
+    
+    if (reviewSettings) {
+      url.searchParams.set('reviewSettings', 'true')
     }
 
-    // Se è richiesto il testo del pulsante
-    if (buttonText && templateId) {
-      const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/button-text`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Impossibile recuperare il testo del pulsante')
-      }
-
-      const data = await response.json()
-      return NextResponse.json(data)
-    }
-
-    // Get templates from backend
-    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${restaurantId}`, {
+    // Get templates/review settings from backend
+    const response = await fetch(url.toString(), {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
@@ -69,7 +43,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      throw new Error('Impossibile recuperare i template')
+      throw new Error('Impossibile recuperare i dati')
     }
 
     const data = await response.json()
@@ -95,7 +69,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json()
-    const { templateId, message, buttonText } = data
+    const { templateId, message, buttonText, updateAllLanguages, menuUrl, menuPdfUrl, messageBody, language, restaurantId, reviewButtonText, messageType, mediaUrl } = data
 
     if (!templateId) {
       return NextResponse.json(
@@ -104,49 +78,51 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Gestione aggiornamento del testo del messaggio
-    if (message) {
-      const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
-        },
-        body: JSON.stringify({ message })
-      })
-
-      const result = await response.json()
-      
-      if (!response.ok) {
-        return NextResponse.json(
-          { success: false, error: result.error || "Failed to update template" },
-          { status: response.status }
-        )
-      }
+    // Creiamo l'oggetto da inviare al backend nel formato RestaurantMessage
+    const updateData: any = {
+      messageBody: message || messageBody,
+      language: language,
+      restaurantId: restaurantId,
+      updateAllLanguages: updateAllLanguages === true
     }
 
-    // Gestione aggiornamento del testo del pulsante
-    if (buttonText) {
-      const buttonResponse = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/button-text`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
-        },
-        body: JSON.stringify({ buttonText })
-      })
-
-      const buttonResult = await buttonResponse.json()
-      
-      if (!buttonResponse.ok) {
-        return NextResponse.json(
-          { success: false, error: buttonResult.error || "Failed to update button text" },
-          { status: buttonResponse.status }
-        )
-      }
+    // Aggiungiamo i dati specifici in base al tipo
+    if (messageType) {
+      updateData.messageType = messageType
+    }
+    
+    if (menuUrl) {
+      updateData.menuUrl = menuUrl
+    }
+    
+    if (mediaUrl || menuPdfUrl) {
+      updateData.mediaUrl = mediaUrl || menuPdfUrl
+    }
+    
+    if (reviewButtonText || buttonText) {
+      updateData.reviewButtonText = reviewButtonText || buttonText
     }
 
-    return NextResponse.json({ success: true })
+    // Usa la rotta corretta del nuovo sistema
+    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
+      },
+      body: JSON.stringify(updateData)
+    })
+
+    const result = await response.json()
+    
+    if (!response.ok) {
+      return NextResponse.json(
+        { success: false, error: result.error || "Failed to update template" },
+        { status: response.status }
+      )
+    }
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error in template PUT route:', error)
     return NextResponse.json(
@@ -176,13 +152,14 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${restaurantId}/review-settings`, {
-      method: 'PUT',
+    // Usa la rotta corretta del nuovo sistema
+    const response = await fetch(`${process.env.BACKEND_URL}/api/templates`, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
       },
-      body: JSON.stringify({ reviewLink, reviewPlatform })
+      body: JSON.stringify({ restaurantId, reviewLink, reviewPlatform })
     })
 
     if (!response.ok) {

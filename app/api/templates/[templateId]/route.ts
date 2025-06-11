@@ -16,7 +16,19 @@ export async function PUT(
     }
 
     const data = await request.json()
-    const { message, buttonText, updateAllLanguages, menuUrl, menuPdfUrl } = data
+    const { 
+      message, 
+      messageBody,
+      buttonText, 
+      reviewButtonText,
+      updateAllLanguages, 
+      menuUrl, 
+      menuPdfUrl,
+      mediaUrl,
+      messageType,
+      language,
+      restaurantId
+    } = data
     const templateId = params.templateId
 
     if (!templateId) {
@@ -26,29 +38,38 @@ export async function PUT(
       )
     }
 
-    // Creiamo l'oggetto da inviare al backend
+    // Creiamo l'oggetto da inviare al backend nel formato RestaurantMessage
     const updateData: any = {
+      messageBody: message || messageBody,
       updateAllLanguages: updateAllLanguages === true
     }
 
-    // Aggiungiamo i dati in base a quelli forniti
-    if (message !== undefined) {
-      updateData.message = message
+    // Aggiungiamo i dati opzionali se presenti
+    if (language) {
+      updateData.language = language
     }
     
-    if (buttonText !== undefined) {
-      updateData.buttonText = buttonText
+    if (restaurantId) {
+      updateData.restaurantId = restaurantId
     }
     
-    if (menuUrl !== undefined) {
+    if (messageType) {
+      updateData.messageType = messageType
+    }
+    
+    if (reviewButtonText || buttonText) {
+      updateData.reviewButtonText = reviewButtonText || buttonText
+    }
+    
+    if (menuUrl) {
       updateData.menuUrl = menuUrl
     }
     
-    if (menuPdfUrl !== undefined) {
-      updateData.menuPdfUrl = menuPdfUrl
+    if (mediaUrl || menuPdfUrl) {
+      updateData.mediaUrl = mediaUrl || menuPdfUrl
     }
 
-    // Inviamo la richiesta al backend
+    // Inviamo la richiesta al backend usando la rotta corretta
     const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
       method: 'PUT',
       headers: {

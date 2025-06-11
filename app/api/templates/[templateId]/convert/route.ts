@@ -48,23 +48,24 @@ export async function POST(
       )
     }
 
-    // Creiamo l'oggetto da inviare al backend
-    const convertData = {
-      message,
-      newType,
+    // Nel nuovo sistema RestaurantMessage, la "conversione" è semplicemente un update
+    // con i nuovi parametri di tipo. Usiamo la normale API di update.
+    const updateData = {
+      messageBody: message,
+      messageType: newType === 'MEDIA' ? 'menu' : 'menu',
       updateAllLanguages: updateAllLanguages === true,
-      menuUrl,
-      menuPdfUrl
+      menuUrl: newType === 'CALL_TO_ACTION' ? menuUrl : null,
+      mediaUrl: newType === 'MEDIA' ? menuPdfUrl : null
     }
 
-    // Inviamo la richiesta al backend
-    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/convert`, {
-      method: 'POST',
+    // Usiamo la normale rotta di update invece di una rotta separata di conversione
+    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
       },
-      body: JSON.stringify(convertData)
+      body: JSON.stringify(updateData)
     })
 
     const result = await response.json()
@@ -76,7 +77,11 @@ export async function POST(
       )
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json({
+      success: true,
+      message: 'Template converted successfully',
+      data: result
+    })
   } catch (error) {
     console.error('Error in template convert route:', error)
     return NextResponse.json(

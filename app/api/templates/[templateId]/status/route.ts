@@ -24,20 +24,13 @@ export async function GET(
       )
     }
 
-    // Richiedi lo stato del template dal backend
-    const response = await fetch(`${process.env.BACKEND_URL}/api/templates/${templateId}/status`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`
-      }
+    // Nel nuovo sistema RestaurantMessage, tutti i messaggi sono sempre approvati
+    // Non c'è bisogno di controllare lo status su Meta
+    return NextResponse.json({
+      success: true,
+      status: 'APPROVED',
+      message: 'RestaurantMessage templates are always approved'
     })
-
-    if (!response.ok) {
-      throw new Error('Impossibile recuperare lo stato del template')
-    }
-
-    const data = await response.json()
-    return NextResponse.json(data)
   } catch (error) {
     console.error('Errore nel controllo dello stato del template:', error)
     return NextResponse.json(
