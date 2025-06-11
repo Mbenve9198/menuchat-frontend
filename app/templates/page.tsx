@@ -340,10 +340,22 @@ export default function TemplatesPage() {
     reviewLink: string;
     reviewPlatform: 'google' | 'yelp' | 'tripadvisor' | 'custom';
     reviewTimer: number;
+    messagingHours: {
+      enabled: boolean;
+      startHour: number;
+      endHour: number;
+      timezone: string;
+    };
   }>({
     reviewLink: '',
     reviewPlatform: 'google',
-    reviewTimer: 120
+    reviewTimer: 120,
+    messagingHours: {
+      enabled: true,
+      startHour: 9,
+      endHour: 23,
+      timezone: 'Europe/Rome'
+    }
   })
   const [isEditingReviewSettings, setIsEditingReviewSettings] = useState(false)
   const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
@@ -447,7 +459,13 @@ export default function TemplatesPage() {
           setReviewSettings({
             reviewLink: data.reviewSettings.reviewLink || '',
             reviewPlatform: data.reviewSettings.reviewPlatform || 'google',
-            reviewTimer: data.reviewSettings.reviewTimer || 120
+            reviewTimer: data.reviewSettings.reviewTimer || 120,
+            messagingHours: data.reviewSettings.messagingHours || {
+              enabled: true,
+              startHour: 9,
+              endHour: 23,
+              timezone: 'Europe/Rome'
+            }
           })
         }
       }
@@ -791,7 +809,8 @@ export default function TemplatesPage() {
           restaurantId,
           reviewLink: reviewSettings.reviewLink,
           reviewPlatform: reviewSettings.reviewPlatform,
-          reviewTimer: reviewSettings.reviewTimer
+          reviewTimer: reviewSettings.reviewTimer,
+          messagingHours: reviewSettings.messagingHours
         })
       })
 
@@ -1192,6 +1211,102 @@ export default function TemplatesPage() {
                           </p>
                         </div>
                         
+                        {/* Sezione Fasce Orarie */}
+                        <div className="border-t pt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-xs sm:text-sm font-medium">
+                              Fasce orarie di invio
+                            </Label>
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={reviewSettings.messagingHours.enabled}
+                                onChange={(e) => setReviewSettings({
+                                  ...reviewSettings,
+                                  messagingHours: {
+                                    ...reviewSettings.messagingHours,
+                                    enabled: e.target.checked
+                                  }
+                                })}
+                                className="sr-only"
+                              />
+                              <div className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                                reviewSettings.messagingHours.enabled ? 'bg-blue-600' : 'bg-gray-300'
+                              }`}>
+                                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                  reviewSettings.messagingHours.enabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                                }`} />
+                              </div>
+                            </label>
+                          </div>
+                          
+                          {reviewSettings.messagingHours.enabled && (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <Label htmlFor="startHour" className="text-xs text-gray-600 mb-1 block">
+                                    Ora inizio
+                                  </Label>
+                                  <select
+                                    id="startHour"
+                                    value={reviewSettings.messagingHours.startHour}
+                                    onChange={(e) => setReviewSettings({
+                                      ...reviewSettings,
+                                      messagingHours: {
+                                        ...reviewSettings.messagingHours,
+                                        startHour: parseInt(e.target.value)
+                                      }
+                                    })}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  >
+                                    {Array.from({ length: 24 }, (_, i) => (
+                                      <option key={i} value={i}>
+                                        {i.toString().padStart(2, '0')}:00
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <Label htmlFor="endHour" className="text-xs text-gray-600 mb-1 block">
+                                    Ora fine
+                                  </Label>
+                                  <select
+                                    id="endHour"
+                                    value={reviewSettings.messagingHours.endHour}
+                                    onChange={(e) => setReviewSettings({
+                                      ...reviewSettings,
+                                      messagingHours: {
+                                        ...reviewSettings.messagingHours,
+                                        endHour: parseInt(e.target.value)
+                                      }
+                                    })}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  >
+                                    {Array.from({ length: 24 }, (_, i) => (
+                                      <option key={i} value={i}>
+                                        {i.toString().padStart(2, '0')}:59
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                I messaggi verranno inviati solo nell'orario specificato. 
+                                {reviewSettings.messagingHours.startHour <= reviewSettings.messagingHours.endHour 
+                                  ? `Attualmente: dalle ${reviewSettings.messagingHours.startHour.toString().padStart(2, '0')}:00 alle ${reviewSettings.messagingHours.endHour.toString().padStart(2, '0')}:59`
+                                  : `Attualmente: dalle ${reviewSettings.messagingHours.startHour.toString().padStart(2, '0')}:00 alle ${reviewSettings.messagingHours.endHour.toString().padStart(2, '0')}:59 (attraversa la mezzanotte)`
+                                }
+                              </p>
+                            </div>
+                          )}
+                          
+                          {!reviewSettings.messagingHours.enabled && (
+                            <p className="text-xs text-gray-500">
+                              Le fasce orarie sono disabilitate. I messaggi verranno inviati in qualsiasi momento.
+                            </p>
+                          )}
+                        </div>
+                        
                         <div className="pt-2">
                           <CustomButton
                             size="sm"
@@ -1218,9 +1333,22 @@ export default function TemplatesPage() {
                             {Math.floor(reviewSettings.reviewTimer / 60)}h {reviewSettings.reviewTimer % 60 > 0 ? `${reviewSettings.reviewTimer % 60}m` : ''} dopo il trigger
                           </span>
                         </div>
-                        <div>
+                        <div className="mb-1">
                           <span className="font-medium">Piattaforma: </span>
                           <span className="text-gray-600 capitalize">{reviewSettings.reviewPlatform}</span>
+                        </div>
+                        <div>
+                          <span className="font-medium">Fasce orarie: </span>
+                          {reviewSettings.messagingHours.enabled ? (
+                            <span className="text-gray-600">
+                              {reviewSettings.messagingHours.startHour <= reviewSettings.messagingHours.endHour 
+                                ? `${reviewSettings.messagingHours.startHour.toString().padStart(2, '0')}:00 - ${reviewSettings.messagingHours.endHour.toString().padStart(2, '0')}:59`
+                                : `${reviewSettings.messagingHours.startHour.toString().padStart(2, '0')}:00 - ${reviewSettings.messagingHours.endHour.toString().padStart(2, '0')}:59 (attraversa mezzanotte)`
+                              }
+                            </span>
+                          ) : (
+                            <span className="text-gray-600">Sempre attive</span>
+                          )}
                         </div>
                       </div>
                     )}
