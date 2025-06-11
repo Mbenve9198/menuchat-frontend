@@ -14,7 +14,6 @@ import {
   Send,
   FileText,
   Globe,
-  RefreshCw,
   Upload,
   File,
   Link,
@@ -94,16 +93,17 @@ function WhatsAppMockup({
   menuUrl?: string,
   reviewUrl?: string
 }) {
-  // Funzione per formattare il messaggio con gli URL come fa il backend
-  const formatMessageWithUrls = () => {
-    let formattedMessage = message.replace('{customerName}', 'Marco');
+  // Funzione per formattare il messaggio come lo fa il nuovo sistema RestaurantMessage
+  const formatMessageLikeBackend = () => {
+    // Sostituisce {{1}} con il nome del cliente e eventuali altre variabili
+    let formattedMessage = message.replace(/\{\{1\}\}/g, 'Marco');
+    formattedMessage = formattedMessage.replace(/\{restaurantName\}/g, restaurantName);
     
-    // Per i template URL, aggiungi l'URL al messaggio come fa il backend
+    // Aggiungi le CTA hardcoded come fa il backend RestaurantMessage
     if (showMenuUrl && menuUrl) {
       formattedMessage += `\n\n🔗 ${menuButtonText}: ${menuUrl}`;
     }
     
-    // Per i template recensioni, aggiungi l'URL di recensione come fa il backend
     if (showReviewCta && reviewUrl) {
       formattedMessage += `\n\n⭐ ${reviewButtonText}: ${reviewUrl}`;
     }
@@ -185,7 +185,8 @@ function WhatsAppMockup({
             </div>
           )}
           
-          <p className="text-sm md:text-base whitespace-pre-wrap">{formatMessageWithUrls()}</p>
+          {/* Corpo del messaggio con CTA integrate */}
+          <p className="text-sm md:text-base whitespace-pre-wrap">{formatMessageLikeBackend()}</p>
           
           <div className="text-right mt-2">
             <span className="text-[10px] md:text-xs text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
@@ -233,8 +234,6 @@ function TemplateCard({
   isGenerating,
   botConfig,
   restaurantPhoto,
-  onCheckStatus,
-  isCheckingStatus,
   restaurantName
 }: { 
   template: Template, 
@@ -245,8 +244,6 @@ function TemplateCard({
   isGenerating: boolean,
   botConfig: {triggerWord: string} | null,
   restaurantPhoto: string,
-  onCheckStatus: (templateId: string) => void,
-  isCheckingStatus: string | null,
   restaurantName?: string
 }) {
   const { toast } = useToast()
@@ -308,10 +305,25 @@ function TemplateCard({
     
     return defaultTexts[template.language] || (isMenuUrl ? 'Menu' : 'Leave Review');
   };
+
+  // Ottieni gli URL per il mockup
+  const getMenuUrl = () => {
+    if (isMenuUrl && template.components.buttons && template.components.buttons.length > 0) {
+      return template.components.buttons[0].url;
+    }
+    return "";
+  };
+
+  const getReviewUrl = () => {
+    if (isReview && template.components.buttons && template.components.buttons.length > 0) {
+      return template.components.buttons[0].url;
+    }
+    return "";
+  };
   
   return (
     <div className="mb-8 sm:mb-10">
-      {/* Status container */}
+      {/* Status container - Sempre APPROVED per RestaurantMessage */}
       <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-4 sm:mb-5">
         <div className="flex flex-col items-center justify-center">
           <div 
@@ -319,21 +331,6 @@ function TemplateCard({
           >
             <span className="text-lg mr-1">{getStatusIcon(template.status)}</span>
             {template.status}
-            <button 
-              onClick={(e) => {
-                e.stopPropagation(); // Impedisce la propagazione al genitore
-                onCheckStatus(template._id);
-              }}
-              className="flex items-center justify-center w-6 h-6 ml-1 text-gray-500 hover:text-blue-500 transition-colors"
-              title="Aggiorna stato approvazione"
-              disabled={isCheckingStatus === template._id}
-            >
-              {isCheckingStatus === template._id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
           </div>
           <div className="text-xs text-gray-500">
             Last update: {new Date(template.updatedAt).toLocaleDateString()}
@@ -350,7 +347,7 @@ function TemplateCard({
         )}
       </div>
 
-      {/* WhatsApp messages - now without container */}
+      {/* WhatsApp messages mockup */}
       <WhatsAppMockup 
         message={displayMessage} 
         userMessage={isReview ? "Order completed! 🎉" : `${getTriggerWord(restaurantName || "Restaurant", botConfig)}`}
@@ -361,8 +358,8 @@ function TemplateCard({
         showReviewCta={isReview}
         reviewButtonText={isReview ? getButtonText() : "Leave Review"}
         menuButtonText={isMenuUrl ? getButtonText() : "Menu"}
-        menuUrl={isMenuUrl ? template.components.buttons?.[0]?.url || "" : ""}
-        reviewUrl={isReview ? template.components.buttons?.[0]?.url || "" : ""}
+        menuUrl={getMenuUrl()}
+        reviewUrl={getReviewUrl()}
       />
     </div>
   );
@@ -394,7 +391,6 @@ export default function TemplatesPage() {
   })
   const [isEditingReviewSettings, setIsEditingReviewSettings] = useState(false)
   const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
-  const [isCheckingStatus, setIsCheckingStatus] = useState<string | null>(null)
   const { toast } = useToast()
   
   // Stato per la dialog di conferma
@@ -486,25 +482,21 @@ export default function TemplatesPage() {
     if (!restaurantId) return
 
     try {
-      setIsLoading(true)
       const response = await fetch(`/api/templates?restaurantId=${restaurantId}&reviewSettings=true`)
       const data = await response.json()
-      
-      if (data.success && data.reviewSettings) {
-        setReviewSettings({
-          reviewLink: data.reviewSettings.reviewLink || '',
-          reviewPlatform: data.reviewSettings.reviewPlatform || 'google'
-        })
+
+      if (response.ok && data.success) {
+        // Nel nuovo sistema, le review settings sono salvate nel ristorante
+        if (data.reviewSettings) {
+          setReviewSettings({
+            reviewLink: data.reviewSettings.reviewLink || '',
+            reviewPlatform: data.reviewSettings.reviewPlatform || 'google'
+          })
+        }
       }
     } catch (error) {
       console.error('Error fetching review settings:', error)
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare le impostazioni di recensione",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
+      // Non mostriamo errore per le review settings, è una funzionalità secondaria
     }
   }
 
@@ -512,62 +504,70 @@ export default function TemplatesPage() {
     if (!restaurantId) return
 
     try {
-      setIsLoading(true);
+      setIsLoading(true)
       const response = await fetch(`/api/templates?restaurantId=${restaurantId}`)
       const data = await response.json()
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to load templates')
-      }
-      
-      if (!data.success || !data.templates) {
-        throw new Error('Invalid response format')
+        throw new Error(data.error || 'Impossibile caricare i template')
       }
 
-      // Separa i template per tipo
-      const menuTypes = ['MEDIA', 'CALL_TO_ACTION'];
-      const menuTemplates = data.templates.filter((t: Template) => menuTypes.includes(t.type));
-      const reviewTemplates = data.templates.filter((t: Template) => t.type === 'REVIEW');
-
-      // Debug dei dati dei template
-      console.log('Menu Templates:', menuTemplates);
-      console.log('Review Templates:', reviewTemplates);
-      
-      // Carica le informazioni sul ristorante se non presenti nel template
-      const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${restaurantId}&basicInfo=true`);
-      const restaurantData = await restaurantResponse.json();
-      
-      if (restaurantResponse.ok && restaurantData.success && restaurantData.restaurant) {
-        const realRestaurantName = restaurantData.restaurant.name;
-        // Salva il nome reale del ristorante nello stato
-        setRestaurantName(realRestaurantName);
+      if (data.success) {
+        // I dati sono già nel formato RestaurantMessage
+        const menuMessages = data.messages.filter((msg: any) => msg.messageType === 'menu')
+        const reviewMessages = data.messages.filter((msg: any) => msg.messageType === 'review')
         
-        // Aggiungi il nome del ristorante ai template se mancante
-        menuTemplates.forEach((t: Template) => {
-          if (!t.name) {
-            t.name = realRestaurantName;
-          } else if (t.name.includes('_menu_') || t.name.includes('.pdf')) {
-            // Se il nome sembra essere un nome di file (contiene "_menu_" o ".pdf")
-            // lo sostituiamo con il nome del ristorante
-            t.name = realRestaurantName;
-          }
-        });
+        // Trasforma i RestaurantMessage nel formato Template per compatibilità con l'UI
+        const transformToTemplate = (message: any): Template => ({
+          _id: message._id,
+          type: message.messageType === 'menu' && message.mediaUrl ? 'MEDIA' : 
+                message.messageType === 'menu' ? 'CALL_TO_ACTION' : 'REVIEW',
+          name: `${message.restaurant.name} - ${message.messageType} - ${message.language}`,
+          language: message.language,
+          status: 'APPROVED', // I RestaurantMessage sono sempre approvati
+          restaurant: message.restaurant._id,
+          components: {
+            body: {
+              text: message.messageBody
+            },
+            ...(message.messageType === 'menu' && message.ctaUrl && {
+              buttons: [{
+                type: 'URL',
+                text: message.ctaText || 'Menu',
+                url: message.ctaUrl
+              }]
+            }),
+            ...(message.messageType === 'review' && message.ctaUrl && {
+              buttons: [{
+                type: 'URL',
+                text: message.ctaText || 'Leave Review',
+                url: message.ctaUrl
+              }]
+            }),
+            ...(message.mediaUrl && {
+              header: {
+                type: 'DOCUMENT',
+                format: 'DOCUMENT',
+                example: message.mediaUrl
+              }
+            })
+          },
+          createdAt: message.createdAt,
+          updatedAt: message.updatedAt
+        })
         
-        reviewTemplates.forEach((t: Template) => {
-          if (!t.name) {
-            t.name = realRestaurantName;
-          } else if (t.name.includes('_menu_') || t.name.includes('.pdf')) {
-            t.name = realRestaurantName;
-          }
-        });
+        setMenuTemplates(menuMessages.map(transformToTemplate))
+        setReviewTemplates(reviewMessages.map(transformToTemplate))
+        
+        // Aggiorna il nome del ristorante se disponibile
+        if (data.messages.length > 0 && data.messages[0].restaurant?.name) {
+          setRestaurantName(data.messages[0].restaurant.name)
+        }
       }
-
-      setMenuTemplates(menuTemplates);
-      setReviewTemplates(reviewTemplates);
     } catch (error) {
       console.error('Error fetching templates:', error)
       toast({
-        title: "Errore",
+        title: "Errore nel caricamento",
         description: error instanceof Error ? error.message : "Impossibile caricare i template",
         variant: "destructive",
       })
@@ -912,64 +912,6 @@ export default function TemplatesPage() {
     return flagMap[langCode] || '🌐';
   }
 
-  // Controlla lo stato del template chiamando l'API
-  const checkTemplateStatus = async (templateId: string) => {
-    if (!templateId) return;
-    
-    try {
-      setIsCheckingStatus(templateId);
-      
-      const response = await fetch(`/api/templates/${templateId}/status`);
-      
-      if (!response.ok) {
-        throw new Error('Impossibile recuperare lo stato del template');
-      }
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Errore nel controllo dello stato');
-      }
-      
-      // Aggiorna lo stato di TUTTI i template in tutte le categorie e lingue
-      const updateAllTemplates = (templates: Template[]) => {
-        return templates.map(t => {
-          // Aggiorniamo tutti i template indipendentemente dal tipo
-          return {
-            ...t,
-            status: data.template.status,
-            rejectionReason: data.template.rejectionReason
-          };
-        });
-      };
-      
-      // Aggiorna sia i template di menu che quelli di review
-      setMenuTemplates(prev => {
-        const updated = updateAllTemplates(prev);
-        return updated;
-      });
-      
-      setReviewTemplates(prev => {
-        const updated = updateAllTemplates(prev);
-        return updated;
-      });
-      
-      toast({
-        title: "Successo",
-        description: "Stato di tutti i template aggiornato",
-      });
-    } catch (error) {
-      console.error('Error checking template status:', error);
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Impossibile controllare lo stato del template",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCheckingStatus(null);
-    }
-  };
-
   // Aggiungi questa funzione per verificare il cambio di tipo
   const handleMenuTypeChange = (value: "url" | "file") => {
     if (selectedTemplate) {
@@ -1259,11 +1201,6 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id: string) => {
-                            // Solo aggiorna lo stato senza aprire il pannello di editing
-                            checkTemplateStatus(id);
-                          }}
-                          isCheckingStatus={isCheckingStatus}
                         />
                       </div>
                     ))}
@@ -1401,11 +1338,6 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
-                          onCheckStatus={(id: string) => {
-                            // Solo aggiorna lo stato senza aprire il pannello di editing
-                            checkTemplateStatus(id);
-                          }}
-                          isCheckingStatus={isCheckingStatus}
                         />
                       </div>
                     ))}
