@@ -231,7 +231,6 @@ function TemplateCard({
   onRegenerate, 
   editMode,
   editedMessage,
-  editedButtonText,
   isGenerating,
   botConfig,
   restaurantPhoto,
@@ -241,7 +240,6 @@ function TemplateCard({
   onRegenerate: () => void,
   editMode: boolean,
   editedMessage: string,
-  editedButtonText: string,
   isGenerating: boolean,
   botConfig: {triggerWord: string} | null,
   restaurantPhoto: string,
@@ -257,30 +255,34 @@ function TemplateCard({
   
   // Ottieni il testo del pulsante dal template o usa quello modificato
   const getButtonText = () => {
-    if (editMode) {
-      return editedButtonText;
+    // Per i template di recensione, usa sempre il testo hardcoded dal backend
+    if (isReview) {
+      // Valori hardcoded dal backend per le recensioni
+      const reviewButtonTexts: Record<string, string> = {
+        'it': '⭐ Lascia una recensione',
+        'en': '⭐ Leave a review',
+        'es': '⭐ Deja una reseña',
+        'de': '⭐ Bewertung abgeben',
+        'fr': '⭐ Laisser un avis'
+      };
+      return reviewButtonTexts[template.language] || '⭐ Leave a review';
     }
     
-    // Per i template di tipo CALL_TO_ACTION, prendi il testo dal pulsante
+    // Per i template di tipo CALL_TO_ACTION (menu), prendi il testo dal pulsante
     if (isMenuUrl && template.components.buttons && template.components.buttons.length > 0) {
       return template.components.buttons[0].text;
     }
     
-    // Per i template di recensione
-    if (isReview && template.components.buttons && template.components.buttons.length > 0) {
-      return template.components.buttons[0].text;
-    }
-    
-    // Valori di default in base alla lingua
+    // Valori di default per menu
     const defaultTexts: Record<string, string> = {
-      'it': isMenuUrl ? 'Menu' : 'Lascia Recensione',
-      'en': isMenuUrl ? 'Menu' : 'Leave Review',
-      'es': isMenuUrl ? 'Menú' : 'Dejar Reseña',
-      'de': isMenuUrl ? 'Menü' : 'Bewertung abgeben',
-      'fr': isMenuUrl ? 'Menu' : 'Laisser Avis'
+      'it': '🔗 Menu',
+      'en': '🔗 Menu',
+      'es': '🔗 Menú',
+      'de': '🔗 Menü',
+      'fr': '🔗 Menu'
     };
     
-    return defaultTexts[template.language] || (isMenuUrl ? 'Menu' : 'Leave Review');
+    return defaultTexts[template.language] || '🔗 Menu';
   };
 
   // Ottieni gli URL per il mockup
@@ -328,7 +330,6 @@ export default function TemplatesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null)
   const [editedMessage, setEditedMessage] = useState("")
-  const [editedButtonText, setEditedButtonText] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState<string>("") // Per il tab delle lingue
   const [activeTab, setActiveTab] = useState("menu") // menu o review
@@ -338,9 +339,11 @@ export default function TemplatesPage() {
   const [reviewSettings, setReviewSettings] = useState<{
     reviewLink: string;
     reviewPlatform: 'google' | 'yelp' | 'tripadvisor' | 'custom';
+    reviewTimer: number;
   }>({
     reviewLink: '',
-    reviewPlatform: 'google'
+    reviewPlatform: 'google',
+    reviewTimer: 120
   })
   const [isEditingReviewSettings, setIsEditingReviewSettings] = useState(false)
   const [isUpdatingReviewSettings, setIsUpdatingReviewSettings] = useState(false)
@@ -439,11 +442,12 @@ export default function TemplatesPage() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        // Nel nuovo sistema, le review settings sono salvate nel ristorante
+        // Nel nuovo sistema, le review settings sono salvate nel ristorante e bot configuration
         if (data.reviewSettings) {
           setReviewSettings({
             reviewLink: data.reviewSettings.reviewLink || '',
-            reviewPlatform: data.reviewSettings.reviewPlatform || 'google'
+            reviewPlatform: data.reviewSettings.reviewPlatform || 'google',
+            reviewTimer: data.reviewSettings.reviewTimer || 120
           })
         }
       }
@@ -551,19 +555,6 @@ export default function TemplatesPage() {
         setMenuPdfUrl("");
         setMenuFile(null);
       }
-      
-      // Carica il testo del pulsante dal template esistente se è un template di recensione
-      if (template.type === 'REVIEW' && template.components.buttons?.[0]?.text) {
-        setEditedButtonText(template.components.buttons?.[0]?.text || '');
-        
-        // Carica l'URL di recensione nelle impostazioni locali per l'editing
-        if (template.components.buttons?.[0]?.url) {
-          setReviewSettings(prev => ({
-            ...prev,
-            reviewLink: template.components.buttons?.[0]?.url || ''
-          }));
-        }
-      }
     }
   }
 
@@ -649,31 +640,6 @@ export default function TemplatesPage() {
       setIsSaving(true);
       setSaveDialogOpen(false);
       
-      // Se è un template di recensione e l'URL è stato modificato, aggiorna prima le impostazioni di recensione
-      if (templateToSave.type === 'REVIEW') {
-        // Controlla se l'URL di recensione è stato modificato
-        const currentReviewUrl = templateToSave.components.buttons?.[0]?.url || '';
-        if (reviewSettings.reviewLink !== currentReviewUrl) {
-          // Aggiorna le impostazioni di recensione
-          const reviewResponse = await fetch(`/api/templates`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              restaurantId,
-              reviewLink: reviewSettings.reviewLink,
-              reviewPlatform: reviewSettings.reviewPlatform
-            })
-          });
-          
-          if (!reviewResponse.ok) {
-            const errorData = await reviewResponse.json();
-            throw new Error(errorData.error || 'Errore nell\'aggiornamento dell\'URL di recensione');
-          }
-        }
-      }
-      
       const menuData = menuType === "file" ? { 
         menuPdfUrl,
         menuFile: menuFile ? {
@@ -691,8 +657,7 @@ export default function TemplatesPage() {
         menuUrl: menuType === "url" ? menuUrl : "",
         mediaUrl: menuType === "file" ? menuPdfUrl : "",
         language: templateToSave.language,
-        restaurantId,
-        ...(templateToSave.type === 'REVIEW' && { reviewButtonText: editedButtonText })
+        restaurantId
       };
       
       // Per la gestione multi-lingua, se updateAllLanguages è true
@@ -825,7 +790,8 @@ export default function TemplatesPage() {
         body: JSON.stringify({
           restaurantId,
           reviewLink: reviewSettings.reviewLink,
-          reviewPlatform: reviewSettings.reviewPlatform
+          reviewPlatform: reviewSettings.reviewPlatform,
+          reviewTimer: reviewSettings.reviewTimer
         })
       })
 
@@ -1163,7 +1129,6 @@ export default function TemplatesPage() {
                         onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
                         editedMessage={editedMessage}
-                          editedButtonText={editedButtonText}
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
@@ -1197,40 +1162,34 @@ export default function TemplatesPage() {
                     {isEditingReviewSettings ? (
                       <div className="space-y-3">
                         <div>
-                          <Label htmlFor="reviewPlatform" className="text-xs sm:text-sm mb-1 block">
-                            Piattaforma di recensione
+                          <Label htmlFor="reviewTimer" className="text-xs sm:text-sm mb-1 block">
+                            Timer di scheduling (minuti dopo il trigger)
                           </Label>
-                          <select
-                            id="reviewPlatform"
-                            value={reviewSettings.reviewPlatform}
-                            onChange={(e) => setReviewSettings({
-                              ...reviewSettings,
-                              reviewPlatform: e.target.value as 'google' | 'yelp' | 'tripadvisor' | 'custom'
-                            })}
-                            className="w-full text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
-                          >
-                            <option value="google">Google</option>
-                            <option value="yelp">Yelp</option>
-                            <option value="tripadvisor">TripAdvisor</option>
-                            <option value="custom">Personalizzato</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="reviewLink" className="text-xs sm:text-sm mb-1 block">
-                            URL per le recensioni
-                          </Label>
-                          <input
-                            id="reviewLink"
-                            type="text"
-                            value={reviewSettings.reviewLink}
-                            onChange={(e) => setReviewSettings({
-                              ...reviewSettings,
-                              reviewLink: e.target.value
-                            })}
-                            placeholder="https://..."
-                            className="w-full text-xs sm:text-sm p-2 border border-gray-300 rounded-md"
-                          />
+                          <div className="space-y-2">
+                            <input
+                              id="reviewTimer"
+                              type="range"
+                              min="60"
+                              max="1440"
+                              step="60"
+                              value={reviewSettings.reviewTimer}
+                              onChange={(e) => setReviewSettings({
+                                ...reviewSettings,
+                                reviewTimer: parseInt(e.target.value)
+                              })}
+                              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>1h</span>
+                              <span className="font-medium text-blue-600">
+                                {Math.floor(reviewSettings.reviewTimer / 60)}h {reviewSettings.reviewTimer % 60 > 0 ? `${reviewSettings.reviewTimer % 60}m` : ''}
+                              </span>
+                              <span>24h</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Il messaggio di recensione verrà inviato automaticamente dopo questo tempo dal primo messaggio del cliente
+                          </p>
                         </div>
                         
                         <div className="pt-2">
@@ -1254,14 +1213,14 @@ export default function TemplatesPage() {
                     ) : (
                       <div className="text-xs sm:text-sm">
                         <div className="mb-1">
-                          <span className="font-medium">Piattaforma: </span>
-                          <span className="text-gray-600 capitalize">{reviewSettings.reviewPlatform}</span>
+                          <span className="font-medium">Timer di scheduling: </span>
+                          <span className="text-gray-600">
+                            {Math.floor(reviewSettings.reviewTimer / 60)}h {reviewSettings.reviewTimer % 60 > 0 ? `${reviewSettings.reviewTimer % 60}m` : ''} dopo il trigger
+                          </span>
                         </div>
                         <div>
-                          <span className="font-medium">URL: </span>
-                          <span className="text-gray-600 break-all">
-                            {reviewSettings.reviewLink || 'Non impostato'}
-                          </span>
+                          <span className="font-medium">Piattaforma: </span>
+                          <span className="text-gray-600 capitalize">{reviewSettings.reviewPlatform}</span>
                         </div>
                       </div>
                     )}
@@ -1300,7 +1259,6 @@ export default function TemplatesPage() {
                         onRegenerate={() => regenerateWithAI(template)}
                           editMode={selectedTemplate?._id === template._id && isEditorOpen}
                         editedMessage={editedMessage}
-                          editedButtonText={editedButtonText}
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
@@ -1465,44 +1423,11 @@ export default function TemplatesPage() {
                 {selectedTemplate.type === 'REVIEW' && (
                   <div className="mb-3">
                     <Label className="text-gray-700 text-sm block mb-2">
-                      Impostazioni Recensione
+                      Messaggio di Recensione
                     </Label>
-                    
-                    <div className="space-y-3">
-                      {/* Campo per il testo del pulsante */}
-                      <div>
-                        <Label htmlFor="review-button-text" className="text-xs text-gray-600 mb-1 block">
-                          Testo del pulsante
-                        </Label>
-                        <Input
-                          id="review-button-text"
-                          placeholder="⭐ Lascia Recensione"
-                          value={editedButtonText}
-                          onChange={(e) => setEditedButtonText(e.target.value)}
-                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                        />
-                      </div>
-                      
-                      {/* Campo per l'URL di recensione */}
-                      <div>
-                        <Label htmlFor="review-url" className="text-xs text-gray-600 mb-1 block">
-                          URL Recensione
-                        </Label>
-                        <Input
-                          id="review-url"
-                          placeholder="https://g.page/your-restaurant/review"
-                          value={reviewSettings.reviewLink}
-                          onChange={(e) => setReviewSettings({
-                            ...reviewSettings,
-                            reviewLink: e.target.value
-                          })}
-                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Questo URL verrà aggiornato per tutti i messaggi di recensione
-                        </p>
-                      </div>
-                    </div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Il testo del pulsante è automaticamente "⭐ Lascia una recensione" e il timer di scheduling è configurabile nelle impostazioni sopra.
+                    </p>
                   </div>
                 )}
               </div>
