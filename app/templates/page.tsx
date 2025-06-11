@@ -554,7 +554,15 @@ export default function TemplatesPage() {
       
       // Carica il testo del pulsante dal template esistente se è un template di recensione
       if (template.type === 'REVIEW' && template.components.buttons?.[0]?.text) {
-        setEditedButtonText(template.components.buttons[0].text);
+        setEditedButtonText(template.components.buttons?.[0]?.text || '');
+        
+        // Carica l'URL di recensione nelle impostazioni locali per l'editing
+        if (template.components.buttons?.[0]?.url) {
+          setReviewSettings(prev => ({
+            ...prev,
+            reviewLink: template.components.buttons?.[0]?.url || ''
+          }));
+        }
       }
     }
   }
@@ -640,6 +648,31 @@ export default function TemplatesPage() {
     try {
       setIsSaving(true);
       setSaveDialogOpen(false);
+      
+      // Se è un template di recensione e l'URL è stato modificato, aggiorna prima le impostazioni di recensione
+      if (templateToSave.type === 'REVIEW') {
+        // Controlla se l'URL di recensione è stato modificato
+        const currentReviewUrl = templateToSave.components.buttons?.[0]?.url || '';
+        if (reviewSettings.reviewLink !== currentReviewUrl) {
+          // Aggiorna le impostazioni di recensione
+          const reviewResponse = await fetch(`/api/templates`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              restaurantId,
+              reviewLink: reviewSettings.reviewLink,
+              reviewPlatform: reviewSettings.reviewPlatform
+            })
+          });
+          
+          if (!reviewResponse.ok) {
+            const errorData = await reviewResponse.json();
+            throw new Error(errorData.error || 'Errore nell\'aggiornamento dell\'URL di recensione');
+          }
+        }
+      }
       
       const menuData = menuType === "file" ? { 
         menuPdfUrl,
@@ -1428,21 +1461,47 @@ export default function TemplatesPage() {
                   </div>
                 )}
                 
-                {/* Campo per modificare il testo del pulsante, solo per i template di recensione */}
+                {/* Opzioni per i template di recensione */}
                 {selectedTemplate.type === 'REVIEW' && (
                   <div className="mb-3">
-                    <Label htmlFor="buttonText" className="text-sm md:text-base mb-1 block">
-                      Testo del pulsante
+                    <Label className="text-gray-700 text-sm block mb-2">
+                      Impostazioni Recensione
                     </Label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        id="buttonText"
-                        type="text"
-                        value={editedButtonText}
-                        onChange={(e) => setEditedButtonText(e.target.value)}
-                        placeholder="Testo del pulsante"
-                        className="flex-1 text-sm md:text-base p-3 border border-gray-300 rounded-md"
-                      />
+                    
+                    <div className="space-y-3">
+                      {/* Campo per il testo del pulsante */}
+                      <div>
+                        <Label htmlFor="review-button-text" className="text-xs text-gray-600 mb-1 block">
+                          Testo del pulsante
+                        </Label>
+                        <Input
+                          id="review-button-text"
+                          placeholder="⭐ Lascia Recensione"
+                          value={editedButtonText}
+                          onChange={(e) => setEditedButtonText(e.target.value)}
+                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                        />
+                      </div>
+                      
+                      {/* Campo per l'URL di recensione */}
+                      <div>
+                        <Label htmlFor="review-url" className="text-xs text-gray-600 mb-1 block">
+                          URL Recensione
+                        </Label>
+                        <Input
+                          id="review-url"
+                          placeholder="https://g.page/your-restaurant/review"
+                          value={reviewSettings.reviewLink}
+                          onChange={(e) => setReviewSettings({
+                            ...reviewSettings,
+                            reviewLink: e.target.value
+                          })}
+                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Questo URL verrà aggiornato per tutti i messaggi di recensione
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
