@@ -99,13 +99,14 @@ function WhatsAppMockup({
     let formattedMessage = message.replace(/\{\{1\}\}/g, 'Marco');
     formattedMessage = formattedMessage.replace(/\{restaurantName\}/g, restaurantName);
     
-    // Aggiungi le CTA hardcoded come fa il backend RestaurantMessage
+    // Aggiungi la CTA esattamente come fa il backend RestaurantMessage.generateFinalMessage()
+    // Il backend aggiunge: finalMessage += `\n\n${this.ctaText}: ${this.ctaUrl}`;
     if (showMenuUrl && menuUrl) {
-      formattedMessage += `\n\n🔗 ${menuButtonText}: ${menuUrl}`;
+      formattedMessage += `\n\n${menuButtonText}: ${menuUrl}`;
     }
     
     if (showReviewCta && reviewUrl) {
-      formattedMessage += `\n\n⭐ ${reviewButtonText}: ${reviewUrl}`;
+      formattedMessage += `\n\n${reviewButtonText}: ${reviewUrl}`;
     }
     
     return formattedMessage;
@@ -248,30 +249,6 @@ function TemplateCard({
 }) {
   const { toast } = useToast()
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return 'text-green-500'
-      case 'REJECTED':
-        return 'text-red-500'
-      default:
-        return 'text-amber-500'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return '✅'
-      case 'REJECTED':
-        return '❌'
-      case 'PENDING':
-        return '⏳'
-      default:
-        return '❓'
-    }
-  }
-
   // Determina quale messaggio visualizzare nel mockup
   const displayMessage = editMode ? editedMessage : template.components.body.text;
   const isMenuPdf = template.type === 'MEDIA';
@@ -323,30 +300,6 @@ function TemplateCard({
   
   return (
     <div className="mb-8 sm:mb-10">
-      {/* Status container - Sempre APPROVED per RestaurantMessage */}
-      <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-4 sm:mb-5">
-        <div className="flex flex-col items-center justify-center">
-          <div 
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(template.status)} bg-opacity-10 mb-1`}
-          >
-            <span className="text-lg mr-1">{getStatusIcon(template.status)}</span>
-            {template.status}
-          </div>
-          <div className="text-xs text-gray-500">
-            Last update: {new Date(template.updatedAt).toLocaleDateString()}
-          </div>
-        </div>
-
-        {template.status === 'REJECTED' && template.rejectionReason && (
-          <div className="mt-3 p-2 bg-red-50 rounded-lg border border-red-100">
-            <p className="text-[10px] sm:text-xs text-red-700">
-              <XCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 inline mr-1" />
-              Rejection reason: {template.rejectionReason}
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* WhatsApp messages mockup */}
       <WhatsAppMockup 
         message={displayMessage} 
