@@ -148,14 +148,7 @@ export default function MarketingOptinPage() {
   
   const [config, setConfig] = useState<OptinConfig>({
     enabled: false,
-    messages: {
-      it: {
-        title: "🍽️ Prima di accedere al menu...",
-        message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
-        acceptButton: "Accetta e Continua",
-        skipButton: "Continua senza accettare"
-      }
-    },
+    messages: {},
     stats: {
       totalViews: 0,
       totalOptins: 0,
@@ -339,12 +332,23 @@ export default function MarketingOptinPage() {
   }
 
   const getCurrentMessage = (): OptinMessage => {
-    return config.messages[currentLanguage] || config.messages.it || {
+    // Se abbiamo un messaggio per la lingua corrente, usalo
+    if (config.messages[currentLanguage]) {
+      return config.messages[currentLanguage];
+    }
+    
+    // Se abbiamo un messaggio in italiano, usalo come fallback
+    if (config.messages.it) {
+      return config.messages.it;
+    }
+    
+    // Solo se non abbiamo nessun messaggio dal backend, usa i default aggiornati
+    return {
       title: "🍽️ Prima di accedere al menu...",
       message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
       acceptButton: "Accetta e Continua",
       skipButton: "Continua senza accettare"
-    }
+    };
   }
 
   const getConversionRate = () => {
