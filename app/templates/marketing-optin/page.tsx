@@ -194,8 +194,14 @@ export default function MarketingOptinPage() {
       const response = await fetch(`/api/marketing-optin?restaurantId=${restaurantId}`)
       const data = await response.json()
       
+      console.log('📥 Fetched config from backend:', data)
+      
       if (response.ok && data.success) {
+        console.log('✅ Setting config:', data.config)
+        console.log('📝 Messages received:', data.config.messages)
         setConfig(data.config)
+      } else {
+        console.error('❌ Failed to fetch config:', data)
       }
     } catch (error) {
       console.error('Error fetching config:', error)
@@ -226,6 +232,10 @@ export default function MarketingOptinPage() {
   const saveConfig = async () => {
     try {
       setIsSaving(true)
+      
+      console.log('💾 Saving config to backend:', config)
+      console.log('📝 Messages being saved:', config.messages)
+      
       const response = await fetch('/api/marketing-optin', {
         method: 'POST',
         headers: {
@@ -238,6 +248,8 @@ export default function MarketingOptinPage() {
       })
 
       const data = await response.json()
+      
+      console.log('📤 Save response:', data)
       
       if (!response.ok) {
         throw new Error(data.error || 'Errore nel salvare la configurazione')
@@ -319,16 +331,26 @@ export default function MarketingOptinPage() {
   }
 
   const updateMessage = (field: keyof OptinMessage, value: string) => {
-    setConfig(prev => ({
-      ...prev,
-      messages: {
-        ...prev.messages,
-        [currentLanguage]: {
-          ...prev.messages[currentLanguage],
-          [field]: value
+    setConfig(prev => {
+      // Ottieni il messaggio esistente o crea uno nuovo con i valori di default
+      const currentMessage = prev.messages[currentLanguage] || {
+        title: "🍽️ Prima di accedere al menu...",
+        message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
+        acceptButton: "Accetta e Continua",
+        skipButton: "Continua senza accettare"
+      };
+
+      return {
+        ...prev,
+        messages: {
+          ...prev.messages,
+          [currentLanguage]: {
+            ...currentMessage,
+            [field]: value
+          }
         }
-      }
-    }))
+      };
+    });
   }
 
   const getCurrentMessage = (): OptinMessage => {
