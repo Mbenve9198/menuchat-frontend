@@ -17,7 +17,8 @@ import {
   Upload,
   File,
   Link,
-  Trophy
+  Trophy,
+  Settings
 } from "lucide-react"
 import Image from "next/image"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -1475,6 +1476,29 @@ export default function TemplatesPage() {
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
+              
+              {/* Link alla configurazione opt-in marketing (solo per menu) */}
+              {selectedTemplate.type !== 'REVIEW' && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-blue-500" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">Opt-in Marketing</p>
+                        <p className="text-xs text-blue-600">Raccogli consensi prima del menu</p>
+                      </div>
+                    </div>
+                    <CustomButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push('/templates/marketing-optin')}
+                      className="text-xs border-blue-300 text-blue-700 hover:bg-blue-100"
+                    >
+                      Configura
+                    </CustomButton>
+                  </div>
+                </div>
+              )}
               
               <div className="flex-grow overflow-y-auto mb-4">
                 {/* Avviso cambio tipo template */}
