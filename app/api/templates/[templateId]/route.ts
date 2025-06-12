@@ -25,6 +25,7 @@ export async function PUT(
       menuUrl, 
       menuPdfUrl,
       mediaUrl,
+      reviewUrl,
       messageType,
       language,
       restaurantId
@@ -67,6 +68,10 @@ export async function PUT(
     
     if (mediaUrl || menuPdfUrl) {
       updateData.mediaUrl = mediaUrl || menuPdfUrl
+    }
+
+    if (reviewUrl) {
+      updateData.reviewUrl = reviewUrl
     }
 
     // Inviamo la richiesta al backend usando la rotta corretta
