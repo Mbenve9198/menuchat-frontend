@@ -214,6 +214,9 @@ export default function CreateCampaign() {
             selected: false
           }));
           
+          console.log('Loaded contacts:', contactsWithSelection.map((c: Contact) => ({ name: c.name, phone: c.phone, countryCode: c.countryCode })));
+          console.log('Available country codes:', data.countryCodes);
+          
           setContacts(contactsWithSelection);
           setCountryCodes(data.countryCodes || []);
           setRestaurant(data.restaurant);
@@ -264,6 +267,12 @@ export default function CreateCampaign() {
     const matchesSearch =
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || contact.phone.includes(searchQuery)
     const matchesCountry = !selectedCountryCode || contact.countryCode === selectedCountryCode
+    
+    // Debug logging
+    if (selectedCountryCode) {
+      console.log(`Filtering contact ${contact.name} (${contact.phone}): countryCode=${contact.countryCode}, selectedCountryCode=${selectedCountryCode}, matches=${matchesCountry}`)
+    }
+    
     return matchesSearch && matchesCountry
   })
 
@@ -1130,23 +1139,55 @@ export default function CreateCampaign() {
                       </div>
                       <div className="overflow-x-auto pb-2">
                         <div className="flex flex-nowrap gap-2 min-w-max">
-                          {countryCodes.map((country) => (
-                            <button
-                              key={country.code}
-                              onClick={() => filterByCountry(country.code)}
-                              className={`text-xl px-3 py-2 rounded-full ${
-                                selectedCountryCode === country.code
-                                  ? "bg-[#EF476F] text-white"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              }`}
-                              title={country.name}
-                            >
-                              {country.flag}
-                            </button>
-                          ))}
+                          {countryCodes.map((country) => {
+                            // Conta quanti contatti ci sono per questo paese
+                            const contactsForCountry = contacts.filter(contact => contact.countryCode === country.code).length;
+                            
+                            return (
+                              <button
+                                key={country.code}
+                                onClick={() => filterByCountry(country.code)}
+                                className={`text-xl px-3 py-2 rounded-full relative ${
+                                  selectedCountryCode === country.code
+                                    ? "bg-[#EF476F] text-white"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                }`}
+                                title={`${country.name} (${contactsForCountry} contatti)`}
+                              >
+                                {country.flag}
+                                {contactsForCountry > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                    {contactsForCountry}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
+
+                    {/* Debug info - rimuovere in produzione */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs">
+                        <p><strong>Debug Info:</strong></p>
+                        <p>Contatti totali: {contacts.length}</p>
+                        <p>Contatti filtrati: {filteredContacts.length}</p>
+                        <p>Filtro paese attivo: {selectedCountryCode || 'Nessuno'}</p>
+                        <p>Query ricerca: "{searchQuery}"</p>
+                        <div className="mt-2">
+                          <strong>Distribuzione per paese:</strong>
+                          {countryCodes.map(country => {
+                            const count = contacts.filter(c => c.countryCode === country.code).length;
+                            return count > 0 ? (
+                              <span key={country.code} className="inline-block mr-2">
+                                {country.flag} {country.code}: {count}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Select all */}
                     <div className="flex items-center py-2 border-b border-gray-100">
