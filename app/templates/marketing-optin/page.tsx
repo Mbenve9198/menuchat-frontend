@@ -151,7 +151,7 @@ export default function MarketingOptinPage() {
     messages: {
       it: {
         title: "🍽️ Prima di accedere al menu...",
-        message: "Ciao {customerName}! Prima di mostrarti il nostro delizioso menu, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
+        message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
         acceptButton: "Accetta e Continua",
         skipButton: "Continua senza accettare"
       }
@@ -341,7 +341,7 @@ export default function MarketingOptinPage() {
   const getCurrentMessage = (): OptinMessage => {
     return config.messages[currentLanguage] || config.messages.it || {
       title: "🍽️ Prima di accedere al menu...",
-      message: "Ciao {customerName}! Prima di mostrarti il nostro delizioso menu, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
+      message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
       acceptButton: "Accetta e Continua",
       skipButton: "Continua senza accettare"
     }
@@ -597,7 +597,7 @@ export default function MarketingOptinPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="skip">Pulsante Salta</Label>
+                      <Label htmlFor="skip">Pulsante Rifiuto</Label>
                       <Input
                         id="skip"
                         value={getCurrentMessage().skipButton}
