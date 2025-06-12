@@ -131,8 +131,8 @@ function OptinPreview({
 
         {/* Pulsanti */}
         <div className="flex flex-col gap-2">
-          <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center justify-center">
-            <ArrowRight className="w-3 h-3 mr-2" />
+          <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg text-sm flex items-center justify-center">
+            <ArrowRight className="w-3 h-3 mr-2 text-black" />
             {buttons.accept}
           </button>
           

@@ -300,12 +300,12 @@ export default function OptinPage() {
           <CustomButton
             onClick={handleAccept}
             disabled={isSubmitting}
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
-              <ArrowRight className="w-4 h-4 mr-2" />
+              <ArrowRight className="w-4 h-4 mr-2 text-black" />
             )}
             {buttons.accept}
           </CustomButton>
