@@ -372,10 +372,12 @@ export default function TemplatesPage() {
   
   // Stati per la gestione del menu
   const [menuType, setMenuType] = useState<"url" | "file">("url")
-  const [menuUrl, setMenuUrl] = useState("")
   const [menuFile, setMenuFile] = useState<File | null>(null)
-  const [menuPdfUrl, setMenuPdfUrl] = useState("")
+  const [menuPdfUrl, setMenuPdfUrl] = useState<string>("")
+  const [menuUrl, setMenuUrl] = useState<string>("")
   const [isUploadingMenu, setIsUploadingMenu] = useState(false)
+  const [editedButtonText, setEditedButtonText] = useState('')
+  const [editedReviewUrl, setEditedReviewUrl] = useState('')
   const [showTypeChangeAlert, setShowTypeChangeAlert] = useState(false)
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
@@ -572,6 +574,9 @@ export default function TemplatesPage() {
         setMenuUrl(template.components.buttons?.[0]?.url || "");
         setMenuPdfUrl("");
         setMenuFile(null);
+      } else if (template.type === 'REVIEW') {
+        // Carica l'URL di recensione esistente
+        setEditedReviewUrl(template.components.buttons?.[0]?.url || "");
       }
     }
   }
@@ -588,6 +593,7 @@ export default function TemplatesPage() {
     setMenuFile(null);
     setMenuUrl("");
     setMenuPdfUrl("");
+    setEditedReviewUrl("");
     setShowTypeChangeAlert(false);
   }
   
@@ -674,6 +680,7 @@ export default function TemplatesPage() {
                     templateToSave.type === 'CALL_TO_ACTION' ? 'menu_url' : 'review',
         menuUrl: menuType === "url" ? menuUrl : "",
         mediaUrl: menuType === "file" ? menuPdfUrl : "",
+        reviewUrl: templateToSave.type === 'REVIEW' ? editedReviewUrl : "",
         language: templateToSave.language,
         restaurantId
       };
@@ -1551,11 +1558,29 @@ export default function TemplatesPage() {
                 {selectedTemplate.type === 'REVIEW' && (
                   <div className="mb-3">
                     <Label className="text-gray-700 text-sm block mb-2">
-                      Messaggio di Recensione
+                      Impostazioni Recensione
                     </Label>
-                    <p className="text-xs text-gray-500 mb-2">
+                    <p className="text-xs text-gray-500 mb-3">
                       Il testo del pulsante è automaticamente "⭐ Lascia una recensione" e il timer di scheduling è configurabile nelle impostazioni sopra.
                     </p>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="review-url" className="text-gray-700 text-sm">
+                          URL Recensione
+                        </Label>
+                        <Input
+                          id="review-url"
+                          placeholder="https://g.page/r/your-google-business/review"
+                          value={editedReviewUrl}
+                          onChange={(e) => setEditedReviewUrl(e.target.value)}
+                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400 mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          URL dove i clienti lasceranno le recensioni (es. Google Business, TripAdvisor, ecc.)
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
