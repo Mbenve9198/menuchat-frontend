@@ -14,8 +14,6 @@ import { CustomButton } from "@/components/ui/custom-button"
 interface OptinMessage {
   title: string
   message: string
-  acceptButton: string
-  skipButton: string
 }
 
 interface RestaurantInfo {
@@ -203,6 +201,17 @@ export default function OptinPage() {
     return null
   }
 
+  // Testi dei pulsanti hardcoded per lingua
+  const buttonTexts = {
+    it: { accept: "Accetta e Continua", skip: "Continua senza accettare" },
+    en: { accept: "Accept and Continue", skip: "Continue without accepting" },
+    es: { accept: "Aceptar y Continuar", skip: "Continuar sin aceptar" },
+    fr: { accept: "Accepter et Continuer", skip: "Continuer sans accepter" },
+    de: { accept: "Akzeptieren und Weiter", skip: "Ohne Akzeptieren fortfahren" }
+  };
+
+  const buttons = buttonTexts[language as keyof typeof buttonTexts] || buttonTexts.it;
+
   // Personalizza il messaggio con nome cliente e ristorante
   const personalizedMessage = message.message
     .replace(/\{customerName\}/g, customerName)
@@ -298,7 +307,7 @@ export default function OptinPage() {
             ) : (
               <ArrowRight className="w-4 h-4 mr-2" />
             )}
-            {message.acceptButton}
+            {buttons.accept}
           </CustomButton>
           
           <CustomButton
@@ -307,7 +316,7 @@ export default function OptinPage() {
             disabled={isSubmitting}
             className="w-full"
           >
-            {message.skipButton}
+            {buttons.skip}
           </CustomButton>
         </motion.div>
 

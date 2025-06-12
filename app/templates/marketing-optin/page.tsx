@@ -39,8 +39,6 @@ import BubbleBackground from "@/components/bubble-background"
 interface OptinMessage {
   title: string
   message: string
-  acceptButton: string
-  skipButton: string
 }
 
 interface OptinConfig {
@@ -58,14 +56,27 @@ function OptinPreview({
   message, 
   restaurantName = "Il Tuo Ristorante",
   restaurantPhoto = "",
-  customerName = "Marco"
+  customerName = "Marco",
+  language = "it"
 }: { 
   message: OptinMessage, 
   restaurantName?: string,
   restaurantPhoto?: string,
-  customerName?: string
+  customerName?: string,
+  language?: string
 }) {
   const [isChecked, setIsChecked] = useState(false)
+
+  // Testi dei pulsanti hardcoded per lingua
+  const buttonTexts = {
+    it: { accept: "Accetta e Continua", skip: "Continua senza accettare" },
+    en: { accept: "Accept and Continue", skip: "Continue without accepting" },
+    es: { accept: "Aceptar y Continuar", skip: "Continuar sin aceptar" },
+    fr: { accept: "Accepter et Continuer", skip: "Continuer sans accepter" },
+    de: { accept: "Akzeptieren und Weiter", skip: "Ohne Akzeptieren fortfahren" }
+  };
+
+  const buttons = buttonTexts[language as keyof typeof buttonTexts] || buttonTexts.it;
 
   // Personalizza il messaggio con nome cliente e ristorante
   const personalizedMessage = message.message
@@ -122,11 +133,11 @@ function OptinPreview({
         <div className="flex flex-col gap-2">
           <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center justify-center">
             <ArrowRight className="w-3 h-3 mr-2" />
-            {message.acceptButton}
+            {buttons.accept}
           </button>
           
           <button className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-4 rounded-lg text-sm">
-            {message.skipButton}
+            {buttons.skip}
           </button>
         </div>
 
@@ -205,9 +216,7 @@ export default function MarketingOptinPage() {
         Object.entries(data.config.messages).forEach(([lang, message]: [string, any]) => {
           cleanMessages[lang] = {
             title: message.title || "🍽️ Prima di accedere al menu...",
-            message: message.message || "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
-            acceptButton: message.acceptButton || "Accetta e Continua",
-            skipButton: message.skipButton || "Continua senza accettare"
+            message: message.message || "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟"
           };
         });
         
@@ -350,17 +359,13 @@ export default function MarketingOptinPage() {
       // Ottieni il messaggio esistente o crea uno nuovo con i valori di default
       const currentMessage = prev.messages[currentLanguage] || {
         title: "🍽️ Prima di accedere al menu...",
-        message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
-        acceptButton: "Accetta e Continua",
-        skipButton: "Continua senza accettare"
+        message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟"
       };
 
-      // Crea il nuovo messaggio pulito senza campi obsoleti
+      // Crea il nuovo messaggio pulito
       const cleanMessage = {
         title: currentMessage.title,
         message: currentMessage.message,
-        acceptButton: currentMessage.acceptButton,
-        skipButton: currentMessage.skipButton,
         [field]: value
       };
 
@@ -388,9 +393,7 @@ export default function MarketingOptinPage() {
     // Solo se non abbiamo nessun messaggio dal backend, usa i default aggiornati
     return {
       title: "🍽️ Prima di accedere al menu...",
-      message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
-      acceptButton: "Accetta e Continua",
-      skipButton: "Continua senza accettare"
+      message: "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟"
     };
   }
 
@@ -632,26 +635,6 @@ export default function MarketingOptinPage() {
                         rows={3}
                       />
                     </div>
-
-                    <div>
-                      <Label htmlFor="accept">Pulsante Accetta</Label>
-                      <Input
-                        id="accept"
-                        value={getCurrentMessage().acceptButton}
-                        onChange={(e) => updateMessage('acceptButton', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="skip">Pulsante Rifiuto</Label>
-                      <Input
-                        id="skip"
-                        value={getCurrentMessage().skipButton}
-                        onChange={(e) => updateMessage('skipButton', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
                   </div>
                 </div>
               )}
@@ -685,6 +668,7 @@ export default function MarketingOptinPage() {
                     message={getCurrentMessage()}
                     restaurantName={restaurantName}
                     restaurantPhoto={restaurantPhoto}
+                    language={currentLanguage}
                   />
                 </div>
               </div>
