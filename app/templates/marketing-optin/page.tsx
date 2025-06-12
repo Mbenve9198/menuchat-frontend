@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Lightbulb,
-  Wand2
+  Wand2,
+  ArrowRight
 } from "lucide-react"
 import Image from "next/image"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -38,8 +39,7 @@ import BubbleBackground from "@/components/bubble-background"
 interface OptinMessage {
   title: string
   message: string
-  checkboxText: string
-  continueButton: string
+  acceptButton: string
   skipButton: string
 }
 
@@ -57,83 +57,85 @@ interface OptinConfig {
 function OptinPreview({ 
   message, 
   restaurantName = "Il Tuo Ristorante",
-  restaurantPhoto = ""
+  restaurantPhoto = "",
+  customerName = "Marco"
 }: { 
   message: OptinMessage, 
   restaurantName?: string,
-  restaurantPhoto?: string
+  restaurantPhoto?: string,
+  customerName?: string
 }) {
   const [isChecked, setIsChecked] = useState(false)
 
+  // Personalizza il messaggio con nome cliente e ristorante
+  const personalizedMessage = message.message
+    .replace(/\{customerName\}/g, customerName)
+    .replace(/\{restaurantName\}/g, restaurantName)
+
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm mx-auto">
-      {/* Header con logo ristorante */}
-      <div className="flex items-center mb-4">
-        <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden flex-shrink-0 mr-3">
-          {restaurantPhoto ? (
-            <img 
-              src={restaurantPhoto} 
-              alt={restaurantName} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-              {restaurantName.charAt(0)}
-            </div>
-          )}
-        </div>
-        <div>
-          <h3 className="font-bold text-gray-900">{restaurantName}</h3>
-          <p className="text-sm text-gray-500">MenuChat</p>
-        </div>
-      </div>
-
-      {/* Titolo */}
-      <h2 className="text-xl font-bold text-gray-900 mb-3 text-center">
-        {message.title}
-      </h2>
-
-      {/* Messaggio */}
-      <p className="text-gray-700 mb-6 text-center leading-relaxed">
-        {message.message}
-      </p>
-
-      {/* Checkbox */}
-      <label className="flex items-start space-x-3 mb-6 cursor-pointer">
-        <div className="relative">
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={(e) => setIsChecked(e.target.checked)}
-            className="sr-only"
-          />
-          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-            isChecked 
-              ? 'bg-green-500 border-green-500' 
-              : 'border-gray-300 hover:border-gray-400'
-          }`}>
-            {isChecked && (
-              <CheckCircle2 className="w-3 h-3 text-white" />
+    <div className="bg-gradient-to-b from-blue-50 to-white p-4 max-w-sm mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl p-6">
+        {/* Header con logo ristorante */}
+        <div className="flex items-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden flex-shrink-0 mr-3">
+            {restaurantPhoto ? (
+              <img 
+                src={restaurantPhoto} 
+                alt={restaurantName} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                {restaurantName.charAt(0)}
+              </div>
             )}
           </div>
+          <div>
+            <h3 className="font-bold text-gray-900 text-sm">{restaurantName}</h3>
+            <p className="text-xs text-gray-500">MenuChat</p>
+          </div>
         </div>
-        <span className="text-sm text-gray-700 leading-tight">
-          {message.checkboxText}
-        </span>
-      </label>
 
-      {/* Pulsanti */}
-      <div className="flex gap-3">
-        <button className="flex-1 px-4 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-          {message.skipButton}
-        </button>
-        <button className={`flex-1 px-4 py-3 rounded-lg transition-colors ${
-          isChecked 
-            ? 'bg-green-500 text-white hover:bg-green-600' 
-            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-        }`}>
-          {message.continueButton}
-        </button>
+        {/* Saluto personalizzato */}
+        <div className="text-center mb-3">
+          <p className="text-sm text-gray-700">Ciao <span className="font-semibold text-blue-600">{customerName}</span>!</p>
+        </div>
+
+        {/* Titolo */}
+        <h1 className="text-lg font-bold text-gray-900 mb-3 text-center">
+          {message.title}
+        </h1>
+
+        {/* Messaggio personalizzato */}
+        <p className="text-gray-700 mb-4 text-center leading-relaxed text-sm">
+          {personalizedMessage}
+        </p>
+
+        {/* Nota sulla revoca del consenso */}
+        <div className="bg-gray-50 rounded-lg p-3 mb-4">
+          <p className="text-xs text-gray-600 text-center">
+            ℹ️ Potrai revocare il consenso in qualsiasi momento cliccando il pulsante "Unsubscribe" nei messaggi promozionali.
+          </p>
+        </div>
+
+        {/* Pulsanti */}
+        <div className="flex flex-col gap-2">
+          <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center justify-center">
+            <ArrowRight className="w-3 h-3 mr-2" />
+            {message.acceptButton}
+          </button>
+          
+          <button className="w-full border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-4 rounded-lg text-sm">
+            {message.skipButton}
+          </button>
+        </div>
+
+        {/* Footer informativo */}
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            Potrai sempre modificare le tue preferenze
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -148,11 +150,10 @@ export default function MarketingOptinPage() {
     enabled: false,
     messages: {
       it: {
-        title: "🍽️ Resta aggiornato!",
-        message: "Vuoi ricevere le nostre offerte esclusive e novità del menu direttamente su WhatsApp? Solo roba d'oro, promesso! 🌟",
-        checkboxText: "Sì, voglio ricevere offerte esclusive",
-        continueButton: "Continua al Menu",
-        skipButton: "Salta"
+        title: "🍽️ Prima di accedere al menu...",
+        message: "Ciao {customerName}! Prima di mostrarti il nostro delizioso menu, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
+        acceptButton: "Accetta e Continua",
+        skipButton: "Continua senza accettare"
       }
     },
     stats: {
@@ -339,11 +340,10 @@ export default function MarketingOptinPage() {
 
   const getCurrentMessage = (): OptinMessage => {
     return config.messages[currentLanguage] || config.messages.it || {
-      title: "🍽️ Resta aggiornato!",
-      message: "Vuoi ricevere le nostre offerte esclusive e novità del menu direttamente su WhatsApp? Solo roba d'oro, promesso! 🌟",
-      checkboxText: "Sì, voglio ricevere offerte esclusive",
-      continueButton: "Continua al Menu",
-      skipButton: "Salta"
+      title: "🍽️ Prima di accedere al menu...",
+      message: "Ciao {customerName}! Prima di mostrarti il nostro delizioso menu, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
+      acceptButton: "Accetta e Continua",
+      skipButton: "Continua senza accettare"
     }
   }
 
@@ -587,34 +587,23 @@ export default function MarketingOptinPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="checkbox">Testo Checkbox</Label>
+                      <Label htmlFor="accept">Pulsante Accetta</Label>
                       <Input
-                        id="checkbox"
-                        value={getCurrentMessage().checkboxText}
-                        onChange={(e) => updateMessage('checkboxText', e.target.value)}
+                        id="accept"
+                        value={getCurrentMessage().acceptButton}
+                        onChange={(e) => updateMessage('acceptButton', e.target.value)}
                         className="mt-1"
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="continue">Pulsante Continua</Label>
-                        <Input
-                          id="continue"
-                          value={getCurrentMessage().continueButton}
-                          onChange={(e) => updateMessage('continueButton', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="skip">Pulsante Salta</Label>
-                        <Input
-                          id="skip"
-                          value={getCurrentMessage().skipButton}
-                          onChange={(e) => updateMessage('skipButton', e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor="skip">Pulsante Salta</Label>
+                      <Input
+                        id="skip"
+                        value={getCurrentMessage().skipButton}
+                        onChange={(e) => updateMessage('skipButton', e.target.value)}
+                        className="mt-1"
+                      />
                     </div>
                   </div>
                 </div>

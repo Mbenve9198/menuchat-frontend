@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
-  CheckCircle2,
   ArrowRight,
   Loader2,
   AlertCircle
@@ -15,8 +14,7 @@ import { CustomButton } from "@/components/ui/custom-button"
 interface OptinMessage {
   title: string
   message: string
-  checkboxText: string
-  continueButton: string
+  acceptButton: string
   skipButton: string
 }
 
@@ -33,9 +31,9 @@ export default function OptinPage() {
   const restaurantId = params.restaurantId as string
   const menuUrl = searchParams.get('menuUrl')
   const phoneNumber = searchParams.get('phone')
+  const customerName = searchParams.get('customerName') || 'Cliente'
   const language = searchParams.get('lang') || 'it'
   
-  const [isChecked, setIsChecked] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<OptinMessage | null>(null)
@@ -77,14 +75,23 @@ export default function OptinPage() {
       
       setMessage(currentMessage)
       
-      // Fetch info ristorante
-      const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${restaurantId}&profileImage=true`)
-      const restaurantData = await restaurantResponse.json()
-      
-      if (restaurantData.success) {
+      // Fetch info ristorante pubbliche
+      try {
+        const restaurantResponse = await fetch(`/api/restaurants-public/${restaurantId}`)
+        const restaurantData = await restaurantResponse.json()
+        
+        if (restaurantData.success && restaurantData.restaurant) {
+          setRestaurant({
+            name: restaurantData.restaurant.name || 'Ristorante',
+            profileImage: restaurantData.restaurant.profileImage
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant info:', error)
+        // Fallback con nome generico se non riesce a caricare
         setRestaurant({
-          name: restaurantData.name || 'Ristorante',
-          profileImage: restaurantData.profileImage
+          name: 'Ristorante',
+          profileImage: undefined
         })
       }
       
@@ -160,10 +167,8 @@ export default function OptinPage() {
     }
   }
 
-  const handleContinue = () => {
-    if (isChecked) {
-      handleSubmit(true)
-    }
+  const handleAccept = () => {
+    handleSubmit(true)
   }
 
   const handleSkip = () => {
@@ -198,6 +203,11 @@ export default function OptinPage() {
     return null
   }
 
+  // Personalizza il messaggio con nome cliente e ristorante
+  const personalizedMessage = message.message
+    .replace(/\{customerName\}/g, customerName)
+    .replace(/\{restaurantName\}/g, restaurant.name)
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
       <motion.div
@@ -227,6 +237,18 @@ export default function OptinPage() {
           </div>
         </div>
 
+        {/* Saluto personalizzato */}
+        {customerName !== 'Cliente' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="text-center mb-4"
+          >
+            <p className="text-lg text-gray-700">Ciao <span className="font-semibold text-blue-600">{customerName}</span>!</p>
+          </motion.div>
+        )}
+
         {/* Titolo */}
         <motion.h1
           initial={{ opacity: 0 }}
@@ -237,82 +259,55 @@ export default function OptinPage() {
           {message.title}
         </motion.h1>
 
-        {/* Messaggio */}
+        {/* Messaggio personalizzato */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-gray-700 mb-8 text-center leading-relaxed"
+          className="text-gray-700 mb-6 text-center leading-relaxed"
         >
-          {message.message}
+          {personalizedMessage}
         </motion.p>
 
-        {/* Checkbox */}
-        <motion.label
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+        {/* Nota sulla revoca del consenso */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="flex items-start space-x-3 mb-8 cursor-pointer"
+          className="bg-gray-50 rounded-lg p-4 mb-6"
         >
-          <div className="relative">
-            <input
-              type="checkbox"
-              checked={isChecked}
-              onChange={(e) => setIsChecked(e.target.checked)}
-              className="sr-only"
-            />
-            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-              isChecked 
-                ? 'bg-green-500 border-green-500 scale-110' 
-                : 'border-gray-300 hover:border-gray-400'
-            }`}>
-              {isChecked && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", bounce: 0.5 }}
-                >
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                </motion.div>
-              )}
-            </div>
-          </div>
-          <span className="text-gray-700 leading-tight">
-            {message.checkboxText}
-          </span>
-        </motion.label>
+          <p className="text-sm text-gray-600 text-center">
+            ℹ️ Potrai revocare il consenso in qualsiasi momento cliccando il pulsante "Unsubscribe" nei messaggi promozionali.
+          </p>
+        </motion.div>
 
         {/* Pulsanti */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="flex gap-4"
+          className="flex flex-col gap-3"
         >
           <CustomButton
-            variant="outline"
-            onClick={handleSkip}
+            onClick={handleAccept}
             disabled={isSubmitting}
-            className="flex-1"
-          >
-            {message.skipButton}
-          </CustomButton>
-          
-          <CustomButton
-            onClick={handleContinue}
-            disabled={!isChecked || isSubmitting}
-            className={`flex-1 transition-all duration-200 ${
-              isChecked 
-                ? 'bg-green-500 hover:bg-green-600' 
-                : 'bg-gray-300 cursor-not-allowed'
-            }`}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
               <ArrowRight className="w-4 h-4 mr-2" />
             )}
-            {message.continueButton}
+            {message.acceptButton}
+          </CustomButton>
+          
+          <CustomButton
+            variant="outline"
+            onClick={handleSkip}
+            disabled={isSubmitting}
+            className="w-full"
+          >
+            {message.skipButton}
           </CustomButton>
         </motion.div>
 
@@ -324,7 +319,7 @@ export default function OptinPage() {
           className="mt-6 text-center"
         >
           <p className="text-xs text-gray-500">
-            Puoi modificare le tue preferenze in qualsiasi momento
+            Potrai sempre modificare le tue preferenze
           </p>
         </motion.div>
       </motion.div>
