@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronRight, Star } from "lucide-react"
+import { ChevronRight, LogIn } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
+import Link from "next/link"
 import SetupWizard from "@/components/setup-wizard"
 import BubbleBackground from "@/components/bubble-background"
 import FloatingElements from "@/components/floating-elements"
@@ -13,15 +14,12 @@ import { CustomButton } from "@/components/ui/custom-button"
 export default function Home() {
   const { toast } = useToast()
   const [showSetup, setShowSetup] = useState(false)
-  const [coins, setCoins] = useState(0)
 
   const handleStartSetup = () => {
     setShowSetup(true)
-    // Award initial coins
-    setCoins((prev) => prev + 50)
     toast({
-      title: "🎉 +50 coins awarded!",
-      description: "You've started your journey to menu success!",
+      title: "🎉 Benvenuto!",
+      description: "Inizia la configurazione del tuo menu bot!",
       variant: "default",
     })
   }
@@ -42,13 +40,17 @@ export default function Home() {
             <FloatingElements />
 
             <motion.div
-              className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-lg"
+              className="absolute top-4 right-4"
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-              <span className="font-bold text-purple-800">{coins} coins</span>
+              <Link href="/auth/login">
+                <CustomButton variant="outline" size="sm" className="flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </CustomButton>
+              </Link>
             </motion.div>
 
             <motion.div
@@ -197,20 +199,14 @@ export default function Home() {
             onComplete={() => {
               console.log("Setup completed callback called");
               setShowSetup(false);
-              setCoins((prev) => prev + 200);
               toast({
-                title: "🎊 Achievement Unlocked!",
-                description: "Setup Complete: +200 coins awarded!",
+                title: "🎊 Configurazione completata!",
+                description: "Il tuo menu bot è pronto!",
                 variant: "default",
               });
             }}
-            onCoinEarned={(amount) => {
-              setCoins((prev) => prev + amount);
-              toast({
-                title: `🌟 +${amount} coins awarded!`,
-                description: "Keep going to earn more rewards!",
-                variant: "default",
-              });
+            onCoinEarned={() => {
+              // Rimuovo la logica dei coins - funzione legacy
             }}
           />
         )}
