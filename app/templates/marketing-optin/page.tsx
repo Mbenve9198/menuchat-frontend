@@ -199,7 +199,22 @@ export default function MarketingOptinPage() {
       if (response.ok && data.success) {
         console.log('✅ Setting config:', data.config)
         console.log('📝 Messages received:', data.config.messages)
-        setConfig(data.config)
+        
+        // Pulisci i messaggi dai campi obsoleti
+        const cleanMessages: Record<string, OptinMessage> = {};
+        Object.entries(data.config.messages).forEach(([lang, message]: [string, any]) => {
+          cleanMessages[lang] = {
+            title: message.title || "🍽️ Prima di accedere al menu...",
+            message: message.message || "Ciao {customerName}! Prima di mostrarti il delizioso menu di {restaurantName}, vorresti ricevere le nostre offerte esclusive e novità direttamente su WhatsApp? Solo contenuti di qualità, promesso! 🌟",
+            acceptButton: message.acceptButton || "Accetta e Continua",
+            skipButton: message.skipButton || "Continua senza accettare"
+          };
+        });
+        
+        setConfig({
+          ...data.config,
+          messages: cleanMessages
+        });
       } else {
         console.error('❌ Failed to fetch config:', data)
       }
@@ -340,14 +355,20 @@ export default function MarketingOptinPage() {
         skipButton: "Continua senza accettare"
       };
 
+      // Crea il nuovo messaggio pulito senza campi obsoleti
+      const cleanMessage = {
+        title: currentMessage.title,
+        message: currentMessage.message,
+        acceptButton: currentMessage.acceptButton,
+        skipButton: currentMessage.skipButton,
+        [field]: value
+      };
+
       return {
         ...prev,
         messages: {
           ...prev.messages,
-          [currentLanguage]: {
-            ...currentMessage,
-            [field]: value
-          }
+          [currentLanguage]: cleanMessage
         }
       };
     });
