@@ -234,7 +234,8 @@ function TemplateCard({
   isGenerating,
   botConfig,
   restaurantPhoto,
-  restaurantName
+  restaurantName,
+  reviewSettings
 }: { 
   template: Template, 
   onRegenerate: () => void,
@@ -243,7 +244,13 @@ function TemplateCard({
   isGenerating: boolean,
   botConfig: {triggerWord: string} | null,
   restaurantPhoto: string,
-  restaurantName?: string
+  restaurantName?: string,
+  reviewSettings?: {
+    reviewLink: string;
+    reviewPlatform: string;
+    reviewTimer: number;
+    messagingHours: any;
+  }
 }) {
   const { toast } = useToast()
 
@@ -294,8 +301,9 @@ function TemplateCard({
   };
 
   const getReviewUrl = () => {
-    if (isReview && template.components.buttons && template.components.buttons.length > 0) {
-      return template.components.buttons[0].url;
+    if (isReview) {
+      // Per le recensioni, usa l'URL dalle impostazioni del ristorante
+      return reviewSettings?.reviewLink || "";
     }
     return "";
   };
@@ -372,15 +380,16 @@ export default function TemplatesPage() {
   
   // Stati per la gestione del menu
   const [menuType, setMenuType] = useState<"url" | "file">("url")
+  const [menuUrl, setMenuUrl] = useState("")
   const [menuFile, setMenuFile] = useState<File | null>(null)
-  const [menuPdfUrl, setMenuPdfUrl] = useState<string>("")
-  const [menuUrl, setMenuUrl] = useState<string>("")
+  const [menuPdfUrl, setMenuPdfUrl] = useState("")
   const [isUploadingMenu, setIsUploadingMenu] = useState(false)
-  const [editedButtonText, setEditedButtonText] = useState('')
-  const [editedReviewUrl, setEditedReviewUrl] = useState('')
   const [showTypeChangeAlert, setShowTypeChangeAlert] = useState(false)
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  
+  // Stato per l'URL di recensione in modifica nel banner
+  const [editedReviewUrl, setEditedReviewUrl] = useState("")
 
   // Ottenere tutte le lingue disponibili nei template
   const availableLanguages = () => {
@@ -454,12 +463,12 @@ export default function TemplatesPage() {
     try {
       const response = await fetch(`/api/templates?restaurantId=${restaurantId}&reviewSettings=true`)
       const data = await response.json()
-
+      
       if (response.ok && data.success) {
         // Nel nuovo sistema, le review settings sono salvate nel ristorante e bot configuration
         if (data.reviewSettings) {
-          setReviewSettings({
-            reviewLink: data.reviewSettings.reviewLink || '',
+        setReviewSettings({
+          reviewLink: data.reviewSettings.reviewLink || '',
             reviewPlatform: data.reviewSettings.reviewPlatform || 'google',
             reviewTimer: data.reviewSettings.reviewTimer || 120,
             messagingHours: data.reviewSettings.messagingHours || {
@@ -484,7 +493,7 @@ export default function TemplatesPage() {
       setIsLoading(true)
       const response = await fetch(`/api/templates?restaurantId=${restaurantId}`)
       const data = await response.json()
-
+      
       if (!response.ok) {
         throw new Error(data.error || 'Impossibile caricare i template')
       }
@@ -575,8 +584,8 @@ export default function TemplatesPage() {
         setMenuPdfUrl("");
         setMenuFile(null);
       } else if (template.type === 'REVIEW') {
-        // Carica l'URL di recensione esistente
-        setEditedReviewUrl(template.components.buttons?.[0]?.url || "");
+        // Per i template di recensione, carica l'URL di recensione corrente
+        setEditedReviewUrl(reviewSettings.reviewLink || "");
       }
     }
   }
@@ -680,10 +689,38 @@ export default function TemplatesPage() {
                     templateToSave.type === 'CALL_TO_ACTION' ? 'menu_url' : 'review',
         menuUrl: menuType === "url" ? menuUrl : "",
         mediaUrl: menuType === "file" ? menuPdfUrl : "",
-        reviewUrl: templateToSave.type === 'REVIEW' ? editedReviewUrl : "",
         language: templateToSave.language,
         restaurantId
       };
+      
+      // Se è un template di recensione, salva anche l'URL di recensione
+      if (templateToSave.type === 'REVIEW' && editedReviewUrl !== reviewSettings.reviewLink) {
+        // Prima aggiorna le impostazioni del ristorante
+        const reviewUpdateResponse = await fetch(`/api/templates`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            restaurantId,
+            reviewLink: editedReviewUrl,
+            reviewPlatform: reviewSettings.reviewPlatform,
+            reviewTimer: reviewSettings.reviewTimer,
+            messagingHours: reviewSettings.messagingHours
+          })
+        });
+
+        if (!reviewUpdateResponse.ok) {
+          const errorData = await reviewUpdateResponse.json();
+          throw new Error(errorData.error || 'Errore nel salvare l\'URL di recensione');
+        }
+        
+        // Aggiorna lo stato locale
+        setReviewSettings(prev => ({
+          ...prev,
+          reviewLink: editedReviewUrl
+        }));
+      }
       
       // Per la gestione multi-lingua, se updateAllLanguages è true
       const languagesToUpdate = updateAllLanguages ? 
@@ -912,6 +949,7 @@ export default function TemplatesPage() {
       <TemplateCard 
         {...props}
         restaurantName={restaurantName} // Passa il nome del ristorante come prop separata
+        reviewSettings={reviewSettings} // Passa le impostazioni di recensione
       />
     );
   };
@@ -1158,6 +1196,7 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
+                          reviewSettings={reviewSettings}
                         />
                       </div>
                     ))}
@@ -1253,12 +1292,12 @@ export default function TemplatesPage() {
                                 <div>
                                   <Label htmlFor="startHour" className="text-xs text-gray-600 mb-1 block">
                                     Ora inizio
-                                  </Label>
-                                  <select
+                          </Label>
+                          <select
                                     id="startHour"
                                     value={reviewSettings.messagingHours.startHour}
-                                    onChange={(e) => setReviewSettings({
-                                      ...reviewSettings,
+                            onChange={(e) => setReviewSettings({
+                              ...reviewSettings,
                                       messagingHours: {
                                         ...reviewSettings.messagingHours,
                                         startHour: parseInt(e.target.value)
@@ -1271,17 +1310,17 @@ export default function TemplatesPage() {
                                         {i.toString().padStart(2, '0')}:00
                                       </option>
                                     ))}
-                                  </select>
-                                </div>
-                                <div>
+                          </select>
+                        </div>
+                        <div>
                                   <Label htmlFor="endHour" className="text-xs text-gray-600 mb-1 block">
                                     Ora fine
-                                  </Label>
+                          </Label>
                                   <select
                                     id="endHour"
                                     value={reviewSettings.messagingHours.endHour}
-                                    onChange={(e) => setReviewSettings({
-                                      ...reviewSettings,
+                            onChange={(e) => setReviewSettings({
+                              ...reviewSettings,
                                       messagingHours: {
                                         ...reviewSettings.messagingHours,
                                         endHour: parseInt(e.target.value)
@@ -1352,7 +1391,7 @@ export default function TemplatesPage() {
                                 ? `${reviewSettings.messagingHours.startHour.toString().padStart(2, '0')}:00 - ${reviewSettings.messagingHours.endHour.toString().padStart(2, '0')}:59`
                                 : `${reviewSettings.messagingHours.startHour.toString().padStart(2, '0')}:00 - ${reviewSettings.messagingHours.endHour.toString().padStart(2, '0')}:59 (attraversa mezzanotte)`
                               }
-                            </span>
+                          </span>
                           ) : (
                             <span className="text-gray-600">Sempre attive</span>
                           )}
@@ -1397,6 +1436,7 @@ export default function TemplatesPage() {
                         isGenerating={isGenerating}
                           botConfig={botConfig}
                           restaurantPhoto={restaurantProfileImage}
+                          reviewSettings={reviewSettings}
                         />
                       </div>
                     ))}
@@ -1571,13 +1611,13 @@ export default function TemplatesPage() {
                         </Label>
                         <Input
                           id="review-url"
-                          placeholder="https://g.page/r/your-google-business/review"
+                          placeholder="https://g.page/your-restaurant/review"
                           value={editedReviewUrl}
                           onChange={(e) => setEditedReviewUrl(e.target.value)}
-                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400 mt-1"
+                          className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          URL dove i clienti lasceranno le recensioni (es. Google Business, TripAdvisor, ecc.)
+                          Questo URL verrà usato nel pulsante di recensione del messaggio
                         </p>
                       </div>
                     </div>
