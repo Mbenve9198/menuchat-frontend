@@ -75,13 +75,13 @@ export default function OptinPage() {
       
       // Fetch info ristorante pubbliche
       try {
-        const restaurantResponse = await fetch(`/api/restaurants-public/${restaurantId}`)
+        const restaurantResponse = await fetch(`/api/restaurants?restaurantId=${restaurantId}&profileImage=true`)
         const restaurantData = await restaurantResponse.json()
         
-        if (restaurantData.success && restaurantData.restaurant) {
+        if (restaurantData.success) {
           setRestaurant({
-            name: restaurantData.restaurant.name || 'Ristorante',
-            profileImage: restaurantData.restaurant.profileImage
+            name: restaurantData.name || 'Ristorante',
+            profileImage: restaurantData.profileImage
           })
         }
       } catch (error) {
