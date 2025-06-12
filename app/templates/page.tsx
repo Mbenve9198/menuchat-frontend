@@ -264,15 +264,15 @@ function TemplateCard({
   const getButtonText = () => {
     // Per i template di recensione, usa sempre il testo hardcoded dal backend
     if (isReview) {
-      // Valori hardcoded dal backend per le recensioni
+      // Valori hardcoded dal backend per le recensioni - allineati con RestaurantMessage.js
       const reviewButtonTexts: Record<string, string> = {
         'it': '⭐ Lascia una recensione',
-        'en': '⭐ Leave a review',
+        'en': '⭐ Leave a review', 
         'es': '⭐ Deja una reseña',
         'de': '⭐ Bewertung abgeben',
         'fr': '⭐ Laisser un avis'
       };
-      return reviewButtonTexts[template.language] || '⭐ Leave a review';
+      return reviewButtonTexts[template.language] || '⭐ Lascia una recensione';
     }
     
     // Per i template di tipo CALL_TO_ACTION (menu), prendi il testo dal pulsante
@@ -302,7 +302,11 @@ function TemplateCard({
 
   const getReviewUrl = () => {
     if (isReview) {
-      // Per le recensioni, usa l'URL dalle impostazioni del ristorante
+      // Prima controlla se il template ha un URL specifico
+      if (template.components.buttons && template.components.buttons.length > 0) {
+        return template.components.buttons[0].url;
+      }
+      // Fallback all'URL dalle impostazioni del ristorante
       return reviewSettings?.reviewLink || "";
     }
     return "";
@@ -584,8 +588,9 @@ export default function TemplatesPage() {
         setMenuPdfUrl("");
         setMenuFile(null);
       } else if (template.type === 'REVIEW') {
-        // Per i template di recensione, carica l'URL di recensione corrente
-        setEditedReviewUrl(reviewSettings.reviewLink || "");
+        // Per i template di recensione, carica l'URL di recensione dal template specifico
+        const templateReviewUrl = template.components.buttons?.[0]?.url || "";
+        setEditedReviewUrl(templateReviewUrl || reviewSettings.reviewLink || "");
       }
     }
   }
