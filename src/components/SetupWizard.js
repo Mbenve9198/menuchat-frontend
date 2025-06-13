@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 const SetupWizard = () => {
   const { t, i18n } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
-  const [selectedLanguage, setSelectedLanguage] = useState('it');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [restaurantData, setRestaurantData] = useState({
     name: '',
     description: '',

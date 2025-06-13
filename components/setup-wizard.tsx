@@ -390,6 +390,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
       const hasAnyFile = menuLanguages.some(lang => lang.menuFile !== null);
       const menuType = hasAnyFile ? 'pdf' : 'url';
 
+      // Usa la prima lingua selezionata dall'utente invece di forzare italiano
+      const primaryLanguage = menuLanguages[0]?.code || 'en';
+
       // Prepara i dettagli del ristorante
       const restaurantDetails = {
         name: restaurantName,
@@ -412,7 +415,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         },
         body: JSON.stringify({
           restaurantId: selectedRestaurant?.id,
-          language: "it", // Forza italiano come da regola utente
+          language: primaryLanguage, // Usa la lingua selezionata dall'utente
           forceLanguage: true,
           menuType: menuType,
           restaurantDetails: restaurantDetails,
@@ -461,6 +464,9 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
     setIsGeneratingTemplates(true)
     try {
+      // Usa la prima lingua selezionata dall'utente invece di forzare italiano
+      const primaryLanguage = menuLanguages[0]?.code || 'en';
+
       // Prepara i dettagli del ristorante
       const restaurantDetails = {
         name: restaurantName,
@@ -484,7 +490,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         body: JSON.stringify({
           restaurantId: selectedRestaurant?.id,
           restaurantName: restaurantName,
-          language: "it", // Forza italiano come da regola utente
+          language: primaryLanguage, // Usa la lingua selezionata dall'utente
           forceLanguage: true,
           restaurantDetails: restaurantDetails,
           reviewLink: reviewLink,
@@ -1061,8 +1067,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         menuButtonText={CTA_TEXTS.menu[menuLanguages[0]?.code as SupportedLang] || CTA_TEXTS.menu.en}
                         menuUrl={menuLanguages.find(lang => lang.menuUrl)?.menuUrl || ""}
                       />
-                    </div>
-                    
+                          </div>
+                          
                     <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
                       <CustomButton
                         variant="outline"
@@ -1208,8 +1214,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         reviewButtonText={CTA_TEXTS.review[menuLanguages[0]?.code as SupportedLang] || CTA_TEXTS.review.en}
                         reviewUrl={reviewLink}
                       />
-                    </div>
-                    
+                          </div>
+                          
                     <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
                       <CustomButton
                         variant="outline"
