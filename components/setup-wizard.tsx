@@ -78,6 +78,25 @@ interface WizardFormData {
   userFullName: string;
 }
 
+// Mappa CTA per lingua
+const CTA_TEXTS = {
+  menu: {
+    it: '🔗 Menu:',
+    en: '🔗 Menu:',
+    es: '🔗 Menú:',
+    de: '🔗 Menü:',
+    fr: '🔗 Menu:'
+  },
+  review: {
+    it: '⭐️ Lascia recensione:',
+    en: '⭐️ Leave a review:',
+    es: '⭐️ Deja una reseña:',
+    de: '⭐️ Bewertung abgeben:',
+    fr: '⭐️ Laisser un avis:'
+  }
+} as const;
+type SupportedLang = keyof typeof CTA_TEXTS.menu;
+
 export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardProps) {
   const { t } = useTranslation()
   const isMountedRef = useRef(true)
@@ -626,6 +645,8 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
 
       // --- NUOVO: Generazione messaggi per ogni lingua ---
       const messages = menuLanguages.flatMap(lang => {
+        const menuCta = CTA_TEXTS.menu[lang.code as SupportedLang] || CTA_TEXTS.menu.en;
+        const reviewCta = CTA_TEXTS.review[lang.code as SupportedLang] || CTA_TEXTS.review.en;
         // Messaggio di menu
         const isPdf = lang.menuPdfUrl && lang.menuPdfUrl.trim() !== '';
         const menuMessage = {
@@ -634,7 +655,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           language: lang.code,
           menuUrl: !isPdf ? (lang.menuUrl || '') : '',
           mediaUrl: isPdf ? lang.menuPdfUrl : '',
-          ctaText: '🔗 Menu'
+          ctaText: menuCta
         };
         // Messaggio di recensione
         const reviewMessage = {
@@ -642,7 +663,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
           messageType: 'review',
           language: lang.code,
           ctaUrl: reviewLink || '',
-          ctaText: '⭐ Lascia una recensione'
+          ctaText: reviewCta
         };
         return [menuMessage, reviewMessage];
       });
@@ -1037,7 +1058,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         restaurantPhoto={selectedRestaurant?.photos?.[0] || selectedRestaurant?.photo || ""}
                         showMenuPdf={menuLanguages.some(lang => lang.menuFile)}
                         showMenuUrl={!menuLanguages.some(lang => lang.menuFile) && menuLanguages.some(lang => lang.menuUrl)}
-                        menuButtonText={t("setup.welcomeMessage.viewMenu")}
+                        menuButtonText={CTA_TEXTS.menu[menuLanguages[0]?.code as SupportedLang] || CTA_TEXTS.menu.en}
                         menuUrl={menuLanguages.find(lang => lang.menuUrl)?.menuUrl || ""}
                       />
                     </div>
@@ -1184,7 +1205,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         restaurantName={selectedRestaurant?.name || restaurantName || "Restaurant"}
                         restaurantPhoto={selectedRestaurant?.photos?.[0] || selectedRestaurant?.photo || ""}
                         showReviewCta={true}
-                        reviewButtonText={t("setup.reviewRequest.leaveReview", "Lascia Recensione")}
+                        reviewButtonText={CTA_TEXTS.review[menuLanguages[0]?.code as SupportedLang] || CTA_TEXTS.review.en}
                         reviewUrl={reviewLink}
                       />
                     </div>
