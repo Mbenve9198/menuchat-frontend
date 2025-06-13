@@ -21,6 +21,8 @@ import { signIn } from "next-auth/react"
 import { useTranslation } from "react-i18next"
 import UILanguageSelector from "@/components/ui-language-selector"
 import { useRouter } from "next/navigation"
+// IMPORTO IL COMPONENTE WHATSAPPMOCKUP
+import WhatsAppMockup from "@/app/templates/page"
 
 interface Restaurant {
   id: string;
@@ -622,6 +624,30 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         }));
       };
 
+      // --- NUOVO: Generazione messaggi per ogni lingua ---
+      const messages = menuLanguages.flatMap(lang => {
+        // Messaggio di menu
+        const isPdf = lang.menuPdfUrl && lang.menuPdfUrl.trim() !== '';
+        const menuMessage = {
+          messageBody: welcomeMessage,
+          messageType: isPdf ? 'media' : 'menu_url',
+          language: lang.code,
+          menuUrl: !isPdf ? (lang.menuUrl || '') : '',
+          mediaUrl: isPdf ? lang.menuPdfUrl : '',
+          ctaText: '🔗 Menu'
+        };
+        // Messaggio di recensione
+        const reviewMessage = {
+          messageBody: customReviewMessage || '',
+          messageType: 'review',
+          language: lang.code,
+          ctaUrl: reviewLink || '',
+          ctaText: '⭐ Lascia una recensione'
+        };
+        return [menuMessage, reviewMessage];
+      });
+      // --- FINE NUOVO ---
+
       const dataToSubmit = {
         // Dati del ristorante
         restaurantName,
@@ -671,7 +697,10 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
         // Dati utente
         userEmail,
         userPassword,
-        userFullName
+        userFullName,
+
+        // --- NUOVO: messaggi da creare ---
+        messages
       };
 
       console.log('Invio dati al backend:', dataToSubmit)
