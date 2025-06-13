@@ -81,18 +81,18 @@ interface WizardFormData {
 // Mappa CTA per lingua
 const CTA_TEXTS = {
   menu: {
-    it: '🔗 Menu:',
-    en: '🔗 Menu:',
-    es: '🔗 Menú:',
-    de: '🔗 Menü:',
-    fr: '🔗 Menu:'
+    it: '🔗 Menu',
+    en: '🔗 Menu',
+    es: '🔗 Menú',
+    de: '🔗 Menü',
+    fr: '🔗 Menu'
   },
   review: {
-    it: '⭐️ Lascia recensione:',
-    en: '⭐️ Leave a review:',
-    es: '⭐️ Deja una reseña:',
-    de: '⭐️ Bewertung abgeben:',
-    fr: '⭐️ Laisser un avis:'
+    it: '⭐️ Lascia recensione',
+    en: '⭐️ Leave a review',
+    es: '⭐️ Deja una reseña',
+    de: '⭐️ Bewertung abgeben',
+    fr: '⭐️ Laisser un avis'
   }
 } as const;
 type SupportedLang = keyof typeof CTA_TEXTS.menu;
