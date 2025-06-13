@@ -199,6 +199,8 @@ function WhatsAppMockup({
   );
 }
 
+export { WhatsAppMockup };
+
 // Funzione per ottenere il trigger word basato sul nome del ristorante e la configurazione
 function getTriggerWord(restaurantName: string, botConfig: {triggerWord: string} | null): string {
   // Dato che l'API non è implementata nel backend, usiamo "Menu" come trigger word di default
