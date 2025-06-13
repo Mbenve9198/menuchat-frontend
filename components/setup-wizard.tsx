@@ -1041,7 +1041,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         menuUrl={menuLanguages.find(lang => lang.menuUrl)?.menuUrl || ""}
                       />
                     </div>
-                    {/* Bottoni di azione e textarea rimangono invariati */
+                    
                     <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
                       <CustomButton
                         variant="outline"
@@ -1188,7 +1188,7 @@ export default function SetupWizard({ onComplete, onCoinEarned }: SetupWizardPro
                         reviewUrl={reviewLink}
                       />
                     </div>
-                    {/* Bottoni di azione e textarea rimangono invariati */
+                    
                     <div className="flex flex-col sm:flex-row justify-center gap-3 mt-4">
                       <CustomButton
                         variant="outline"
