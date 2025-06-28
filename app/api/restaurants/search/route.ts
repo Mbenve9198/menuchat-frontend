@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     const searchResponse = await fetch(
       `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(
         query
-      )}&type=restaurant&key=${GOOGLE_PLACES_API_KEY}`
+      )}&key=${GOOGLE_PLACES_API_KEY}`
     );
 
     if (!searchResponse.ok) {
