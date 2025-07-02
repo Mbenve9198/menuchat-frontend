@@ -691,15 +691,42 @@ export default function TemplatesPage() {
       } : { menuUrl };
       
       // Per messaggi normali, creiamo la struttura del messaggio
-      const messageData = {
+      // Determina il messageType in base alla scelta corrente dell'utente, non al tipo originale
+      let currentMessageType = 'review'; // default per i template di recensione
+      
+      if (templateToSave.type !== 'REVIEW') {
+        // Per i template di menu, determina in base alla scelta corrente
+        if (menuType === "file" && menuPdfUrl) {
+          currentMessageType = 'media';
+        } else if (menuType === "url" && menuUrl) {
+          currentMessageType = 'menu';
+        } else {
+          // Fallback al tipo originale se non c'è una scelta chiara
+          currentMessageType = templateToSave.type === 'MEDIA' ? 'media' : 'menu';
+        }
+      }
+      
+      const messageData: any = {
         messageBody: editedMessage,
-        messageType: templateToSave.type === 'MEDIA' ? 'media' : 
-                    templateToSave.type === 'CALL_TO_ACTION' ? 'menu_url' : 'review',
-        menuUrl: menuType === "url" ? menuUrl : "",
-        mediaUrl: menuType === "file" ? menuPdfUrl : "",
+        messageType: currentMessageType,
         language: templateToSave.language,
         restaurantId
       };
+      
+      // Aggiungi solo i dati necessari per il tipo corrente
+      if (currentMessageType === 'media' && menuPdfUrl) {
+        messageData.mediaUrl = menuPdfUrl;
+        // Assicurati che menuUrl sia vuoto quando si usa PDF
+        messageData.menuUrl = "";
+      } else if (currentMessageType === 'menu' && menuUrl) {
+        messageData.menuUrl = menuUrl;
+        // Assicurati che mediaUrl sia vuoto quando si usa URL
+        messageData.mediaUrl = "";
+      } else if (currentMessageType === 'review') {
+        // Per i template di recensione, non servono menuUrl o mediaUrl
+        messageData.menuUrl = "";
+        messageData.mediaUrl = "";
+      }
       
       // Se è un template di recensione, salva anche l'URL di recensione
       if (templateToSave.type === 'REVIEW' && editedReviewUrl !== reviewSettings.reviewLink) {
