@@ -65,6 +65,8 @@ export default function Dashboard() {
   const [showWhatsappDialog, setShowWhatsappDialog] = useState(false)
   const [whatsappNumber, setWhatsappNumber] = useState("")
   const [messagingServiceId, setMessagingServiceId] = useState("")
+  const [twilioAccountSid, setTwilioAccountSid] = useState("")
+  const [twilioAuthToken, setTwilioAuthToken] = useState("")
   const [isSavingTwilio, setIsSavingTwilio] = useState(false)
   const [twilioSuccess, setTwilioSuccess] = useState(false)
   const [twilioError, setTwilioError] = useState<string | null>(null)
@@ -294,6 +296,16 @@ export default function Dashboard() {
         setMessagingServiceId(data.data.status.messagingServiceSid)
       }
       
+      // Imposta le credenziali Twilio personalizzate se disponibili
+      if (data.data.status && data.data.status.twilioAccountSid) {
+        setTwilioAccountSid(data.data.status.twilioAccountSid)
+      }
+      
+      // Non mostrare l'Auth Token per sicurezza, ma indica se è configurato
+      if (data.data.status && data.data.status.twilioAuthToken) {
+        setTwilioAuthToken("***CONFIGURATO***")
+      }
+      
     } catch (err) {
       console.error("Error fetching Twilio status:", err)
     }
@@ -313,7 +325,9 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           whatsappNumber,
-          messagingServiceSid: messagingServiceId
+          messagingServiceSid: messagingServiceId,
+          twilioAccountSid,
+          twilioAuthToken: twilioAuthToken === "***CONFIGURATO***" ? undefined : twilioAuthToken
         })
       })
       
@@ -1199,6 +1213,49 @@ export default function Dashboard() {
                     value={messagingServiceId}
                     onChange={(e) => setMessagingServiceId(e.target.value)}
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Twilio Account SID
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border border-gray-300 rounded-xl text-sm focus:border-[#1B9AAA] focus:ring-1 focus:ring-[#1B9AAA] outline-none transition"
+                    placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={twilioAccountSid}
+                    onChange={(e) => setTwilioAccountSid(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Il tuo Account SID Twilio (inizia con AC)
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Twilio Auth Token
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full p-2 border border-gray-300 rounded-xl text-sm focus:border-[#1B9AAA] focus:ring-1 focus:ring-[#1B9AAA] outline-none transition"
+                    placeholder="Il tuo Auth Token Twilio"
+                    value={twilioAuthToken === "***CONFIGURATO***" ? "" : twilioAuthToken}
+                    onChange={(e) => setTwilioAuthToken(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {twilioAuthToken === "***CONFIGURATO***" 
+                      ? "Auth Token già configurato. Lascia vuoto per mantenerlo o inserisci uno nuovo."
+                      : "Il tuo Auth Token Twilio (disponibile nella console Twilio)"
+                    }
+                  </p>
+                </div>
+                
+                {/* Avviso importante */}
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p className="text-sm text-blue-800">
+                    <strong>⚠️ Importante:</strong> Per utilizzare un Messaging Service personalizzato, 
+                    devi fornire le tue credenziali Twilio complete (Account SID, Auth Token e Messaging Service SID).
+                  </p>
                 </div>
                 
                 {/* Aggiungi separatore e spiegazione */}
