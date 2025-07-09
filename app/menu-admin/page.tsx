@@ -543,11 +543,11 @@ export default function MenuAdminPage() {
   const [bulkPercentage, setBulkPercentage] = React.useState("")
 
   // Stati per l'importazione menu
-  const [showImportDialog, setShowImportDialog] = useState(false)
-  const [importedFile, setImportedFile] = useState<string | null>(null)
-  const [importFileType, setImportFileType] = useState<"image" | "video" | "pdf" | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analyzedData, setAnalyzedData] = useState<{
+  const [showImportDialog, setShowImportDialog] = React.useState(false)
+  const [importedFile, setImportedFile] = React.useState<string | null>(null)
+  const [importFileType, setImportFileType] = React.useState<"image" | "video" | "pdf" | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = React.useState(false)
+  const [analyzedData, setAnalyzedData] = React.useState<{
     categories: Array<{
       name: string
       icon: string
@@ -559,8 +559,8 @@ export default function MenuAdminPage() {
       }>
     }>
   } | null>(null)
-  const [showAnalysisPreview, setShowAnalysisPreview] = useState(false)
-  const [addIngredientsDescription, setAddIngredientsDescription] = useState(false)
+  const [showAnalysisPreview, setShowAnalysisPreview] = React.useState(false)
+  const [addIngredientsDescription, setAddIngredientsDescription] = React.useState(false)
 
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
@@ -1146,7 +1146,7 @@ export default function MenuAdminPage() {
                   </h3>
                   
                   <div className="space-y-4">
-                    {analyzedData.categories.map((category, catIndex) => (
+                    {analyzedData.categories.map((category: any, catIndex: number) => (
                       <div key={catIndex} className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-2xl">{category.icon}</span>
@@ -1157,7 +1157,7 @@ export default function MenuAdminPage() {
                         </div>
                         
                         <div className="space-y-2">
-                          {category.dishes.map((dish, dishIndex) => (
+                          {category.dishes.map((dish: any, dishIndex: number) => (
                             <div key={dishIndex} className="bg-white p-3 rounded border">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
