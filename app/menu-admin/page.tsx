@@ -9,37 +9,18 @@ import {
   Copy,
   PlusCircle,
   Upload,
-  Replace,
   Trash2,
-  GripVertical,
   DollarSign,
   Percent,
   Plus,
 } from "lucide-react"
-import { DuoButton } from "@/components/ui/duo-button"
+import { CustomButton } from "@/components/ui/custom-button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 
 // --- TYPES ---
 type Tag = { 
@@ -388,7 +369,6 @@ const CategoryAccordion = ({
   onAddDish,
   availableTags,
   restaurantId,
-  dragHandleProps,
   showBulkCheckbox = false,
   selectedBulkItems = [],
   onBulkToggle,
@@ -402,7 +382,6 @@ const CategoryAccordion = ({
   onAddDish: (categoryId: string) => void
   availableTags: Tag[]
   restaurantId: string
-  dragHandleProps: any
   showBulkCheckbox?: boolean
   selectedBulkItems?: string[]
   onBulkToggle?: (dishId: string) => void
@@ -446,9 +425,6 @@ const CategoryAccordion = ({
         <div className="relative bg-white rounded-2xl overflow-hidden">
           <AccordionTrigger className="text-lg font-bold text-gray-700 p-4 hover:no-underline w-full data-[state=open]:border-b">
             <div className="flex items-center gap-3 w-full">
-              <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
-                <GripVertical className="text-gray-400" />
-              </div>
               <Input
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
@@ -509,21 +485,6 @@ const CategoryAccordion = ({
   )
 }
 
-const SortableCategoryItem = (props: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.category.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  return (
-    <div ref={setNodeRef} style={style} id={props.category.id}>
-      <CategoryAccordion {...props} dragHandleProps={{ ...attributes, ...listeners }} />
-    </div>
-  )
-}
-
 // --- MAIN COMPONENT ---
 export default function MenuAdminPage() {
   const { data: session, status } = useSession()
@@ -536,13 +497,6 @@ export default function MenuAdminPage() {
   const [availableTags, setAvailableTags] = React.useState<Tag[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
-  
-  // Dialog states
-  const [showCategoryDialog, setShowCategoryDialog] = React.useState(false)
-  const [dialogStep, setDialogStep] = React.useState<"type-selection" | "bundle-items" | "bundle-pricing">("type-selection")
-  const [selectedBundleItems, setSelectedBundleItems] = React.useState<string[]>([])
-  const [bundleName, setBundleName] = React.useState("Nuovo Bundle")
-  const [bundlePrice, setBundlePrice] = React.useState("")
   
   // Bulk operations states
   const [showBulkPriceDialog, setShowBulkPriceDialog] = React.useState(false)
@@ -594,40 +548,6 @@ export default function MenuAdminPage() {
     }
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    if (over && active.id !== over.id) {
-      const oldIndex = categories.findIndex((item) => item.id === active.id)
-      const newIndex = categories.findIndex((item) => item.id === over.id)
-      const newCategories = arrayMove(categories, oldIndex, newIndex)
-      
-      setCategories(newCategories)
-      
-      // Save new order to backend
-      try {
-        const categoryOrders = newCategories.map(cat => ({ categoryId: cat.id }))
-        await fetch('/api/menu/item', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            operation: 'reorder-categories',
-            restaurantId,
-            categoryOrders
-          })
-        })
-      } catch (err) {
-        console.error('Error saving category order:', err)
-      }
-    }
-  }
-
   // Handler functions
   const handleAddDish = async (categoryId: string) => {
     try {
@@ -648,7 +568,7 @@ export default function MenuAdminPage() {
   }
 
   const handleDishUpdate = (categoryId: string, updatedDish: Dish) => {
-    setCategories(categories.map(cat => 
+    setCategories(categories.map((cat: Category) => 
       cat.id === categoryId 
         ? { ...cat, dishes: cat.dishes.map(d => d.id === updatedDish.id ? updatedDish : d) }
         : cat
@@ -674,7 +594,7 @@ export default function MenuAdminPage() {
         method: 'DELETE'
       })
       if (response.ok) {
-        setCategories(categories.map(cat => 
+        setCategories(categories.map((cat: Category) => 
           cat.id === categoryId 
             ? { ...cat, dishes: cat.dishes.filter(d => d.id !== dishId) }
             : cat
@@ -781,9 +701,9 @@ export default function MenuAdminPage() {
 
         {!bulkMode && (
           <div className="mb-6">
-            <DuoButton variant="secondary" onClick={handleBulkPriceUpdate}>
+            <CustomButton variant="outline" onClick={handleBulkPriceUpdate}>
               <DollarSign className="mr-2 h-5 w-5" /> Aggiorna Prezzi
-            </DuoButton>
+            </CustomButton>
           </div>
         )}
 
@@ -831,40 +751,54 @@ export default function MenuAdminPage() {
           </div>
         )}
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={categories} strategy={verticalListSortingStrategy}>
-            <Accordion type="multiple" className="w-full space-y-4" defaultValue={categories.map(cat => cat.id)}>
-              {categories.map((category) => (
-                <SortableCategoryItem
-                  key={category.id}
-                  category={category}
-                  onUpdateCategory={(updatedCategory: Category) => {
-                    setCategories(categories.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat))
-                  }}
-                  onDeleteCategory={() => {
-                    // TODO: Implement category deletion
-                    setCategories(categories.filter(cat => cat.id !== category.id))
-                  }}
-                  onAddDish={handleAddDish}
-                  availableTags={availableTags}
-                  restaurantId={restaurantId!}
-                  showBulkCheckbox={bulkMode}
-                  selectedBulkItems={selectedBulkItems}
-                  onBulkToggle={handleBulkItemToggle}
-                  onDishUpdate={handleDishUpdate}
-                  onDishDuplicate={handleDishDuplicate}
-                  onDishDelete={handleDishDelete}
-                />
-              ))}
-            </Accordion>
-          </SortableContext>
-        </DndContext>
+        <Accordion type="multiple" className="w-full space-y-4" defaultValue={categories.map(cat => cat.id)}>
+          {categories.map((category) => (
+            <CategoryAccordion
+              key={category.id}
+              category={category}
+              onUpdateCategory={(updatedCategory: Category) => {
+                setCategories(categories.map((cat: Category) => cat.id === updatedCategory.id ? updatedCategory : cat))
+              }}
+              onDeleteCategory={() => {
+                // TODO: Implement category deletion API call
+                setCategories(categories.filter((cat: Category) => cat.id !== category.id))
+              }}
+              onAddDish={handleAddDish}
+              availableTags={availableTags}
+              restaurantId={restaurantId!}
+              showBulkCheckbox={bulkMode}
+              selectedBulkItems={selectedBulkItems}
+              onBulkToggle={handleBulkItemToggle}
+              onDishUpdate={handleDishUpdate}
+              onDishDuplicate={handleDishDuplicate}
+              onDishDelete={handleDishDelete}
+            />
+          ))}
+        </Accordion>
 
         {/* Add Category Button */}
         <div className="mt-6">
           <button
             className="relative w-full rounded-2xl border-b-4 border-gray-900/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
-            onClick={() => setShowCategoryDialog(true)}
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/menu/category', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    menuId: menuData?.menu.id,
+                    restaurantId,
+                    name: 'Nuova Categoria',
+                    icon: '🍽️'
+                  })
+                })
+                if (response.ok) {
+                  loadMenuData() // Reload to get the new category
+                }
+              } catch (err) {
+                console.error('Error adding category:', err)
+              }
+            }}
           >
             <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
             <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-transparent border-dashed border-2 border-gray-300 text-gray-500 py-3 px-6 transition-transform duration-150">
