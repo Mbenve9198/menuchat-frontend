@@ -1096,6 +1096,19 @@ export default function MenuAdminPage() {
               </DialogDescription>
             </DialogHeader>
             
+            {!analysisTaskId && !showAnalysisPreview && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">💡 Suggerimenti per risultati migliori:</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Usa immagini ad alta risoluzione e ben illuminate</li>
+                  <li>• Assicurati che tutto il testo sia leggibile</li>
+                  <li>• Evita riflessi, ombre o angolazioni eccessive</li>
+                  <li>• Se il menu è su più pagine, carica tutte le sezioni</li>
+                  <li>• Per menu molto grandi, dividi per sezioni (primi, secondi, etc.)</li>
+                </ul>
+              </div>
+            )}
+            
             <div className="space-y-4">
               {!showAnalysisPreview && (
                 <>
@@ -1173,9 +1186,39 @@ export default function MenuAdminPage() {
             {analyzedData && (
               <div className="space-y-6">
                 <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-lg mb-4">
-                    Categorie trovate: {analyzedData.categories.length}
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-lg">
+                      Categorie trovate: {analyzedData.categories.length}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-blue-50">
+                        {analyzedData.categories.reduce((sum: number, cat: any) => sum + cat.dishes.length, 0)} piatti totali
+                      </Badge>
+                      <CustomButton 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setShowAnalysisPreview(false)
+                          setAnalyzedData(null)
+                          // Permette di ri-analizzare con lo stesso file
+                        }}
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Ri-analizza
+                      </CustomButton>
+                    </div>
+                  </div>
+                  
+                  {analyzedData.categories.reduce((sum: number, cat: any) => sum + cat.dishes.length, 0) < 5 && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-yellow-800">
+                        <span className="text-sm">⚠️</span>
+                        <span className="text-sm font-medium">
+                          Sembrano pochi piatti per un menu. Prova a ri-analizzare per risultati migliori.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="space-y-4">
                     {analyzedData.categories.map((category: any, catIndex: number) => (
