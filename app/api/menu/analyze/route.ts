@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { fileUrl, fileType, restaurantId } = await request.json()
+    const { files, restaurantId } = await request.json()
 
-    if (!fileUrl || !fileType || !restaurantId) {
+    if (!files || !Array.isArray(files) || files.length === 0 || !restaurantId) {
       return NextResponse.json({ 
-        error: 'Parametri mancanti: fileUrl, fileType e restaurantId sono richiesti' 
+        error: 'Parametri mancanti: files (array) e restaurantId sono richiesti' 
       }, { status: 400 })
     }
 
@@ -19,8 +19,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        fileUrl,
-        fileType,
+        files,
         restaurantId
       }),
       cache: 'no-store'

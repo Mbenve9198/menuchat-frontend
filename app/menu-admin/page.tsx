@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { MediaUpload } from "@/components/ui/media-upload"
+import { MultipleMediaUpload } from "@/components/ui/multiple-media-upload"
 
 // --- TYPES ---
 type Tag = { 
@@ -544,8 +544,11 @@ export default function MenuAdminPage() {
 
   // Stati per l'importazione menu
   const [showImportDialog, setShowImportDialog] = React.useState(false)
-  const [importedFile, setImportedFile] = React.useState<string | null>(null)
-  const [importFileType, setImportFileType] = React.useState<"image" | "video" | "pdf" | null>(null)
+  const [importedFiles, setImportedFiles] = React.useState<Array<{
+    url: string
+    type: "image" | "pdf"
+    name: string
+  }>>([])
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
   const [analyzedData, setAnalyzedData] = React.useState<{
     categories: Array<{
@@ -726,13 +729,12 @@ export default function MenuAdminPage() {
     setShowImportDialog(true)
   }
 
-  const handleFileImport = (fileUrl: string, fileType: "image" | "video" | "pdf") => {
-    setImportedFile(fileUrl)
-    setImportFileType(fileType)
+  const handleFilesImport = (files: Array<{ url: string; type: "image" | "pdf"; name: string }>) => {
+    setImportedFiles(files)
   }
 
   const handleAnalyzeMenu = async () => {
-    if (!importedFile) return
+    if (importedFiles.length === 0) return
 
     setIsAnalyzing(true)
     try {
@@ -740,8 +742,7 @@ export default function MenuAdminPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileUrl: importedFile,
-          fileType: importFileType,
+          files: importedFiles,
           restaurantId
         })
       })
@@ -778,8 +779,7 @@ export default function MenuAdminPage() {
       if (response.ok) {
         setShowImportDialog(false)
         setShowAnalysisPreview(false)
-        setImportedFile(null)
-        setImportFileType(null)
+        setImportedFiles([])
         setAnalyzedData(null)
         loadMenuData() // Reload to show imported data
         alert('Menu importato con successo!')
@@ -1063,66 +1063,51 @@ export default function MenuAdminPage() {
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Importa Menu da PDF o Immagine</DialogTitle>
+              <DialogTitle>Importa Menu da Immagini</DialogTitle>
               <DialogDescription>
-                Carica un file PDF del tuo menu o una foto/immagine e useremo l'AI per estrarre automaticamente categorie e piatti.
+                Carica una o più immagini del tuo menu (fino a 5) e useremo l'AI per estrarre automaticamente categorie e piatti da tutte le immagini insieme.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
-              {!importedFile && (
-                <MediaUpload
-                  onFileSelect={handleFileImport}
-                  selectedFile={importedFile}
-                  mediaType="all"
-                  label="Carica PDF o Immagine del Menu"
-                  className="w-full"
-                />
-              )}
-              
-              {importedFile && !showAnalysisPreview && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      {importFileType === "pdf" ? (
-                        <FileText className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <ImageIcon className="h-5 w-5 text-green-600" />
-                      )}
-                      <span className="text-sm font-medium text-green-800">
-                        File caricato: {importFileType === "pdf" ? "PDF" : "Immagine"}
-                      </span>
-                    </div>
-                  </div>
+              {!showAnalysisPreview && (
+                <>
+                  <MultipleMediaUpload
+                    onFilesSelect={handleFilesImport}
+                    selectedFiles={importedFiles}
+                    mediaType="image"
+                    maxFiles={5}
+                    label="Carica Immagini del Menu (max 5)"
+                    className="w-full"
+                  />
                   
-                  <div className="flex justify-end gap-2">
-                    <CustomButton 
-                      variant="outline" 
-                      onClick={() => {
-                        setImportedFile(null)
-                        setImportFileType(null)
-                      }}
-                    >
-                      Cambia File
-                    </CustomButton>
-                    <CustomButton 
-                      onClick={handleAnalyzeMenu}
-                      disabled={isAnalyzing}
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Analizzando...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="mr-2 h-4 w-4" />
-                          Analizza con AI
-                        </>
-                      )}
-                    </CustomButton>
-                  </div>
-                </div>
+                  {importedFiles.length > 0 && (
+                    <div className="flex justify-end gap-2">
+                      <CustomButton 
+                        variant="outline" 
+                        onClick={() => setImportedFiles([])}
+                      >
+                        Rimuovi Tutti
+                      </CustomButton>
+                      <CustomButton 
+                        onClick={handleAnalyzeMenu}
+                        disabled={isAnalyzing || importedFiles.length === 0}
+                      >
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Analizzando {importedFiles.length} immagini...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="mr-2 h-4 w-4" />
+                            Analizza {importedFiles.length} immagini con AI
+                          </>
+                        )}
+                      </CustomButton>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </DialogContent>
