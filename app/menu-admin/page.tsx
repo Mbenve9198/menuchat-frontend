@@ -1,0 +1,987 @@
+"use client"
+
+import * as React from "react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import {
+  Sparkles,
+  Eye,
+  Copy,
+  PlusCircle,
+  Upload,
+  Replace,
+  Trash2,
+  GripVertical,
+  DollarSign,
+  Percent,
+  Plus,
+} from "lucide-react"
+import { DuoButton } from "@/components/ui/duo-button"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+
+// --- TYPES ---
+type Tag = { 
+  id: string
+  text: string
+  color: string 
+}
+
+type Dish = {
+  id: string
+  name: string
+  price: number
+  available: boolean
+  photoUrl?: string
+  tags: Tag[]
+  description?: string
+  ingredients?: string[]
+}
+
+type Category = {
+  id: string
+  name: string
+  icon: string
+  dishes: Dish[]
+}
+
+type MenuData = {
+  menu: {
+    id: string
+    name: string
+    menuType: string
+  }
+  categories: Category[]
+  availableTags: Tag[]
+  allItems: any[]
+}
+
+// --- DISH COMPONENT ---
+const DishAccordionItem = ({
+  dish,
+  onUpdateDish,
+  onDuplicateDish,
+  onDeleteDish,
+  availableTags,
+  restaurantId,
+  showBulkCheckbox = false,
+  isSelectedForBulk = false,
+  onBulkToggle,
+}: {
+  dish: Dish
+  onUpdateDish: (updatedDish: Dish) => void
+  onDuplicateDish: () => void
+  onDeleteDish: () => void
+  availableTags: Tag[]
+  restaurantId: string
+  showBulkCheckbox?: boolean
+  isSelectedForBulk?: boolean
+  onBulkToggle?: (dishId: string) => void
+}) => {
+  const [name, setName] = React.useState(dish.name)
+  const [price, setPrice] = React.useState(dish.price.toFixed(2))
+  const [description, setDescription] = React.useState(dish.description || "")
+  const [ingredients, setIngredients] = React.useState((dish.ingredients || []).join(", "))
+  const [newTagText, setNewTagText] = React.useState("")
+  const [isCreatingTag, setIsCreatingTag] = React.useState(false)
+
+  React.useEffect(() => {
+    setName(dish.name)
+    setPrice(dish.price.toFixed(2))
+    setDescription(dish.description || "")
+    setIngredients((dish.ingredients || []).join(", "))
+  }, [dish])
+
+  const handleFieldBlur = async (field: "name" | "description" | "ingredients" | "price") => {
+    const updates: any = {}
+    
+    if (field === "name" && name.trim() && name !== dish.name) {
+      updates.name = name.trim()
+    } else if (field === "description" && description !== (dish.description || "")) {
+      updates.description = description
+    } else if (field === "ingredients" && ingredients !== (dish.ingredients || []).join(", ")) {
+      updates.ingredients = ingredients.split(",").map(i => i.trim()).filter(Boolean)
+    } else if (field === "price") {
+      const newPrice = parseFloat(price)
+      if (!isNaN(newPrice) && newPrice !== dish.price) {
+        updates.price = newPrice
+      } else {
+        setPrice(dish.price.toFixed(2))
+        return
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      try {
+        const response = await fetch(`/api/menu/item/${dish.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        })
+        
+        if (response.ok) {
+          onUpdateDish({ ...dish, ...updates })
+        }
+      } catch (err) {
+        console.error('Error updating dish:', err)
+      }
+    }
+  }
+
+  const toggleTag = async (tag: Tag) => {
+    const hasTag = dish.tags.some((t) => t.id === tag.id)
+    const newTags = hasTag 
+      ? dish.tags.filter((t) => t.id !== tag.id)
+      : [...dish.tags, tag]
+
+    try {
+      const response = await fetch(`/api/menu/item/${dish.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: newTags.map(t => t.id) })
+      })
+      
+      if (response.ok) {
+        onUpdateDish({ ...dish, tags: newTags })
+      }
+    } catch (err) {
+      console.error('Error updating tags:', err)
+    }
+  }
+
+  const createNewTag = async () => {
+    if (newTagText.trim()) {
+      try {
+        const response = await fetch('/api/menu/tag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            restaurantId,
+            text: newTagText.trim(),
+            color: 'bg-blue-500'
+          })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          const newTag = result.tag
+          onUpdateDish({ ...dish, tags: [...dish.tags, newTag] })
+          setNewTagText("")
+          setIsCreatingTag(false)
+        }
+      } catch (err) {
+        console.error('Error creating tag:', err)
+      }
+    }
+  }
+
+  const handleAvailabilityChange = async (available: boolean) => {
+    try {
+      const response = await fetch(`/api/menu/item/${dish.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ available })
+      })
+      
+      if (response.ok) {
+        onUpdateDish({ ...dish, available })
+      }
+    } catch (err) {
+      console.error('Error updating availability:', err)
+    }
+  }
+
+  return (
+    <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-gray-200">
+      <AccordionItem value={dish.id} className="border-b-0">
+        <AccordionTrigger className="p-3 hover:no-underline data-[state=open]:border-b">
+          <div className="flex items-center gap-4 w-full">
+            {showBulkCheckbox && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={isSelectedForBulk}
+                  onChange={() => onBulkToggle?.(dish.id)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+              </div>
+            )}
+            <div className="w-16 h-16 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {dish.photoUrl ? (
+                <img
+                  src={dish.photoUrl || "/placeholder.svg"}
+                  alt={dish.name}
+                  className="w-full h-full rounded-lg object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                  <Upload className="w-8 h-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="flex-grow text-left" onClick={(e) => e.stopPropagation()}>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={() => handleFieldBlur("name")}
+                className="font-bold text-gray-800 text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent w-full"
+              />
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-gray-400">€</span>
+                <Input
+                  type="text"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  onBlur={() => handleFieldBlur("price")}
+                  className="w-20 h-8 p-1 text-lg font-semibold border-gray-300 focus:ring-green-500"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-2 px-2" onClick={(e) => e.stopPropagation()}>
+              <Switch
+                checked={dish.available}
+                onCheckedChange={handleAvailabilityChange}
+              />
+              <div className="flex items-center gap-1">
+                <button
+                  className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                  onClick={onDuplicateDish}
+                  title="Duplica piatto"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+                <button
+                  className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
+                  onClick={onDeleteDish}
+                  title="Elimina piatto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="p-4 pt-2">
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-600">Descrizione</label>
+                <button
+                  className="h-6 w-6 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
+                  onClick={() => {
+                    // TODO: Implement AI description generation
+                    console.log("Generate description for:", dish.name)
+                  }}
+                  title="Genera descrizione con AI"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </button>
+              </div>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => handleFieldBlur("description")}
+                className="mt-1 w-full border rounded-md p-2 h-20 text-sm"
+                placeholder="Descrizione breve del piatto..."
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-600">Ingredienti (separati da virgola)</label>
+                <button
+                  className="h-6 w-6 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
+                  onClick={() => {
+                    // TODO: Implement AI ingredients generation
+                    console.log("Generate ingredients for:", dish.name)
+                  }}
+                  title="Genera ingredienti con AI"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </button>
+              </div>
+              <Input
+                value={ingredients}
+                onChange={(e) => setIngredients(e.target.value)}
+                onBlur={() => handleFieldBlur("ingredients")}
+                className="mt-1 w-full text-sm"
+                placeholder="Salmone, Olio, Sale..."
+              />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-600">Etichette</label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {availableTags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    onClick={() => toggleTag(tag)}
+                    className={cn(
+                      "cursor-pointer",
+                      dish.tags.some((t) => t.id === tag.id)
+                        ? `${tag.color} text-white`
+                        : "bg-gray-200 text-gray-700",
+                    )}
+                  >
+                    {tag.text}
+                  </Badge>
+                ))}
+                {isCreatingTag ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      value={newTagText}
+                      onChange={(e) => setNewTagText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") createNewTag()
+                        if (e.key === "Escape") {
+                          setIsCreatingTag(false)
+                          setNewTagText("")
+                        }
+                      }}
+                      onBlur={createNewTag}
+                      className="h-6 text-xs px-2 w-24"
+                      placeholder="Nuova etichetta"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <Badge
+                    onClick={() => setIsCreatingTag(true)}
+                    className="cursor-pointer bg-gray-100 text-gray-500 border-2 border-dashed border-gray-300 hover:bg-gray-200"
+                  >
+                    + Aggiungi
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )
+}
+
+// --- CATEGORY COMPONENT ---
+const CategoryAccordion = ({
+  category,
+  onUpdateCategory,
+  onDeleteCategory,
+  onAddDish,
+  availableTags,
+  restaurantId,
+  dragHandleProps,
+  showBulkCheckbox = false,
+  selectedBulkItems = [],
+  onBulkToggle,
+  onDishUpdate,
+  onDishDuplicate,
+  onDishDelete,
+}: {
+  category: Category
+  onUpdateCategory: (updatedCategory: Category) => void
+  onDeleteCategory: () => void
+  onAddDish: (categoryId: string) => void
+  availableTags: Tag[]
+  restaurantId: string
+  dragHandleProps: any
+  showBulkCheckbox?: boolean
+  selectedBulkItems?: string[]
+  onBulkToggle?: (dishId: string) => void
+  onDishUpdate: (categoryId: string, updatedDish: Dish) => void
+  onDishDuplicate: (categoryId: string, dish: Dish) => void
+  onDishDelete: (categoryId: string, dishId: string) => void
+}) => {
+  const [name, setName] = React.useState(category.name)
+  const [icon, setIcon] = React.useState(category.icon)
+
+  React.useEffect(() => {
+    setName(category.name)
+    setIcon(category.icon)
+  }, [category])
+
+  const handleNameBlur = async () => {
+    if (name.trim() && name !== category.name) {
+      // TODO: Update category name via API
+      onUpdateCategory({ ...category, name: name.trim() })
+    } else {
+      setName(category.name)
+    }
+  }
+
+  const handleIconBlur = async () => {
+    if (icon.trim() && icon !== category.icon) {
+      // TODO: Update category icon via API
+      onUpdateCategory({ ...category, icon: icon.trim() })
+    } else {
+      setIcon(category.icon)
+    }
+  }
+
+  return (
+    <AccordionItem
+      value={category.id}
+      className="group bg-transparent border-none rounded-2xl shadow-sm overflow-visible"
+    >
+      <div className="relative rounded-2xl border-b-4 border-[#d8d8d8] transition-transform group-data-[state=open]:translate-y-1">
+        <span className="absolute inset-0 -bottom-1 rounded-2xl bg-[#e5e5e5]"></span>
+        <div className="relative bg-white rounded-2xl overflow-hidden">
+          <AccordionTrigger className="text-lg font-bold text-gray-700 p-4 hover:no-underline w-full data-[state=open]:border-b">
+            <div className="flex items-center gap-3 w-full">
+              <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                <GripVertical className="text-gray-400" />
+              </div>
+              <Input
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                onBlur={handleIconBlur}
+                className="text-3xl w-12 p-0 h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                onClick={(e) => e.stopPropagation()}
+                maxLength={2}
+              />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleNameBlur}
+                className="text-lg font-bold text-gray-700 p-0 h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                className="h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150 ml-2"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDeleteCategory()
+                }}
+                title="Elimina categoria"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 pt-6">
+            <div className="space-y-3">
+              {category.dishes.map((dish) => (
+                <DishAccordionItem
+                  key={dish.id}
+                  dish={dish}
+                  onUpdateDish={(updatedDish) => onDishUpdate(category.id, updatedDish)}
+                  onDuplicateDish={() => onDishDuplicate(category.id, dish)}
+                  onDeleteDish={() => onDishDelete(category.id, dish.id)}
+                  availableTags={availableTags}
+                  restaurantId={restaurantId}
+                  showBulkCheckbox={showBulkCheckbox}
+                  isSelectedForBulk={selectedBulkItems.includes(dish.id)}
+                  onBulkToggle={onBulkToggle}
+                />
+              ))}
+            </div>
+            <button
+              className="relative w-full mt-4 rounded-2xl border-b-4 border-gray-900/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
+              onClick={() => onAddDish(category.id)}
+            >
+              <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
+              <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-transparent border-dashed border-2 border-gray-300 text-gray-500 py-3 px-6 transition-transform duration-150">
+                <PlusCircle className="mr-2 h-4 w-4" /> Aggiungi Piatto
+              </span>
+            </button>
+          </AccordionContent>
+        </div>
+      </div>
+    </AccordionItem>
+  )
+}
+
+const SortableCategoryItem = (props: any) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.category.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} id={props.category.id}>
+      <CategoryAccordion {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  )
+}
+
+// --- MAIN COMPONENT ---
+export default function MenuAdminPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
+  // States
+  const [menuData, setMenuData] = React.useState<MenuData | null>(null)
+  const [originalCategories, setOriginalCategories] = React.useState<Category[]>([])
+  const [categories, setCategories] = React.useState<Category[]>([])
+  const [availableTags, setAvailableTags] = React.useState<Tag[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  
+  // Dialog states
+  const [showCategoryDialog, setShowCategoryDialog] = React.useState(false)
+  const [dialogStep, setDialogStep] = React.useState<"type-selection" | "bundle-items" | "bundle-pricing">("type-selection")
+  const [selectedBundleItems, setSelectedBundleItems] = React.useState<string[]>([])
+  const [bundleName, setBundleName] = React.useState("Nuovo Bundle")
+  const [bundlePrice, setBundlePrice] = React.useState("")
+  
+  // Bulk operations states
+  const [showBulkPriceDialog, setShowBulkPriceDialog] = React.useState(false)
+  const [bulkMode, setBulkMode] = React.useState(false)
+  const [selectedBulkItems, setSelectedBulkItems] = React.useState<string[]>([])
+  const [bulkUpdateType, setBulkUpdateType] = React.useState<"fixed" | "percentage">("fixed")
+  const [bulkFixedAmount, setBulkFixedAmount] = React.useState("")
+  const [bulkPercentage, setBulkPercentage] = React.useState("")
+
+  const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
+  const restaurantId = session?.user?.restaurantId
+
+  // Redirect if not authenticated
+  React.useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/login")
+    }
+  }, [status, router])
+
+  // Load menu data
+  React.useEffect(() => {
+    if (status === "authenticated" && restaurantId) {
+      loadMenuData()
+    }
+  }, [status, restaurantId])
+
+  const loadMenuData = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/menu/${restaurantId}`)
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.error)
+      }
+      
+      setMenuData(data.data)
+      setCategories(data.data.categories)
+      setOriginalCategories(JSON.parse(JSON.stringify(data.data.categories)))
+      setAvailableTags(data.data.availableTags)
+      
+    } catch (err: any) {
+      console.error('Error loading menu data:', err)
+      setError(err.message || 'Errore nel caricamento del menu')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex((item) => item.id === active.id)
+      const newIndex = categories.findIndex((item) => item.id === over.id)
+      const newCategories = arrayMove(categories, oldIndex, newIndex)
+      
+      setCategories(newCategories)
+      
+      // Save new order to backend
+      try {
+        const categoryOrders = newCategories.map(cat => ({ categoryId: cat.id }))
+        await fetch('/api/menu/item', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation: 'reorder-categories',
+            restaurantId,
+            categoryOrders
+          })
+        })
+      } catch (err) {
+        console.error('Error saving category order:', err)
+      }
+    }
+  }
+
+  // Handler functions
+  const handleAddDish = async (categoryId: string) => {
+    try {
+      const response = await fetch('/api/menu/item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId,
+          restaurantId
+        })
+      })
+      if (response.ok) {
+        loadMenuData() // Reload to get the new dish
+      }
+    } catch (err) {
+      console.error('Error adding dish:', err)
+    }
+  }
+
+  const handleDishUpdate = (categoryId: string, updatedDish: Dish) => {
+    setCategories(categories.map(cat => 
+      cat.id === categoryId 
+        ? { ...cat, dishes: cat.dishes.map(d => d.id === updatedDish.id ? updatedDish : d) }
+        : cat
+    ))
+  }
+
+  const handleDishDuplicate = async (categoryId: string, dish: Dish) => {
+    try {
+      const response = await fetch(`/api/menu/item/${dish.id}/duplicate`, {
+        method: 'POST'
+      })
+      if (response.ok) {
+        loadMenuData() // Reload to get the new dish
+      }
+    } catch (err) {
+      console.error('Error duplicating dish:', err)
+    }
+  }
+
+  const handleDishDelete = async (categoryId: string, dishId: string) => {
+    try {
+      const response = await fetch(`/api/menu/item/${dishId}`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        setCategories(categories.map(cat => 
+          cat.id === categoryId 
+            ? { ...cat, dishes: cat.dishes.filter(d => d.id !== dishId) }
+            : cat
+        ))
+      }
+    } catch (err) {
+      console.error('Error deleting dish:', err)
+    }
+  }
+
+  const handleBulkPriceUpdate = () => {
+    setBulkMode(true)
+    setSelectedBulkItems([])
+  }
+
+  const handleExitBulkMode = () => {
+    setBulkMode(false)
+    setSelectedBulkItems([])
+  }
+
+  const handleBulkItemToggle = (dishId: string) => {
+    setSelectedBulkItems(prev => 
+      prev.includes(dishId) 
+        ? prev.filter(id => id !== dishId)
+        : [...prev, dishId]
+    )
+  }
+
+  const handleApplyBulkPriceUpdate = async () => {
+    const updateAmount = bulkUpdateType === "fixed" 
+      ? parseFloat(bulkFixedAmount) || 0 
+      : parseFloat(bulkPercentage) || 0
+
+    if (updateAmount === 0) return
+
+    try {
+      const response = await fetch('/api/menu/item', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'bulk-price-update',
+          restaurantId,
+          selectedItems: selectedBulkItems,
+          updateType: bulkUpdateType,
+          amount: updateAmount
+        })
+      })
+
+      if (response.ok) {
+        setShowBulkPriceDialog(false)
+        setBulkMode(false)
+        setSelectedBulkItems([])
+        setBulkFixedAmount("")
+        setBulkPercentage("")
+        loadMenuData() // Reload to get updated prices
+      }
+    } catch (err) {
+      console.error('Error updating prices:', err)
+    }
+  }
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Caricamento menu...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={loadMenuData}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Riprova
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-gray-50 min-h-screen font-sans">
+      <header className="fixed top-4 right-4 z-10">
+        <button className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 w-12 shadow-lg font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0">
+          <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
+          <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white/80 transition-transform duration-150">
+            <Eye className="h-6 w-6 text-gray-700" />
+          </span>
+        </button>
+      </header>
+      
+      <main className="pt-8 pb-8 container mx-auto px-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-800">Il Tuo Menù Digitale</h1>
+        </div>
+
+        {!bulkMode && (
+          <div className="mb-6">
+            <DuoButton variant="secondary" onClick={handleBulkPriceUpdate}>
+              <DollarSign className="mr-2 h-5 w-5" /> Aggiorna Prezzi
+            </DuoButton>
+          </div>
+        )}
+
+        {bulkMode && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-blue-600" />
+                <span className="font-semibold text-blue-800">Modalità Aggiornamento Prezzi</span>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  {selectedBulkItems.length} selezionati
+                </Badge>
+              </div>
+              <button
+                className="px-3 py-1 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
+                onClick={handleExitBulkMode}
+              >
+                Esci
+              </button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                className="px-3 py-1 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
+                onClick={() => {
+                  const allDishIds = categories.flatMap(cat => cat.dishes.map(dish => dish.id))
+                  setSelectedBulkItems(allDishIds)
+                }}
+              >
+                Seleziona Tutto
+              </button>
+              <button
+                className="px-3 py-1 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
+                onClick={() => setSelectedBulkItems([])}
+              >
+                Deseleziona Tutto
+              </button>
+              <button
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowBulkPriceDialog(true)}
+                disabled={selectedBulkItems.length === 0}
+              >
+                Applica Modifiche ({selectedBulkItems.length})
+              </button>
+            </div>
+          </div>
+        )}
+
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={categories} strategy={verticalListSortingStrategy}>
+            <Accordion type="multiple" className="w-full space-y-4" defaultValue={categories.map(cat => cat.id)}>
+              {categories.map((category) => (
+                <SortableCategoryItem
+                  key={category.id}
+                  category={category}
+                  onUpdateCategory={(updatedCategory: Category) => {
+                    setCategories(categories.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat))
+                  }}
+                  onDeleteCategory={() => {
+                    // TODO: Implement category deletion
+                    setCategories(categories.filter(cat => cat.id !== category.id))
+                  }}
+                  onAddDish={handleAddDish}
+                  availableTags={availableTags}
+                  restaurantId={restaurantId!}
+                  showBulkCheckbox={bulkMode}
+                  selectedBulkItems={selectedBulkItems}
+                  onBulkToggle={handleBulkItemToggle}
+                  onDishUpdate={handleDishUpdate}
+                  onDishDuplicate={handleDishDuplicate}
+                  onDishDelete={handleDishDelete}
+                />
+              ))}
+            </Accordion>
+          </SortableContext>
+        </DndContext>
+
+        {/* Add Category Button */}
+        <div className="mt-6">
+          <button
+            className="relative w-full rounded-2xl border-b-4 border-gray-900/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
+            onClick={() => setShowCategoryDialog(true)}
+          >
+            <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
+            <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-transparent border-dashed border-2 border-gray-300 text-gray-500 py-3 px-6 transition-transform duration-150">
+              <PlusCircle className="mr-2 h-4 w-4" /> Aggiungi Categoria
+            </span>
+          </button>
+        </div>
+
+        {/* Bulk Price Update Dialog */}
+        <Dialog open={showBulkPriceDialog} onOpenChange={setShowBulkPriceDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Aggiorna Prezzi in Blocco</DialogTitle>
+              <DialogDescription>
+                Seleziona il tipo di aggiornamento da applicare ai {selectedBulkItems.length} elementi selezionati.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="fixed-amount"
+                    name="bulk-type"
+                    checked={bulkUpdateType === "fixed"}
+                    onChange={() => setBulkUpdateType("fixed")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <label htmlFor="fixed-amount" className="flex items-center gap-2 cursor-pointer">
+                    <Plus className="h-4 w-4 text-green-600" />
+                    <span className="font-medium">Aumenta di un importo fisso</span>
+                  </label>
+                </div>
+                {bulkUpdateType === "fixed" && (
+                  <div className="ml-6 flex items-center gap-2">
+                    <span className="text-gray-500">€</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={bulkFixedAmount}
+                      onChange={(e) => setBulkFixedAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-24"
+                    />
+                    <span className="text-sm text-gray-600">per ogni elemento</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="percentage"
+                    name="bulk-type"
+                    checked={bulkUpdateType === "percentage"}
+                    onChange={() => setBulkUpdateType("percentage")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <label htmlFor="percentage" className="flex items-center gap-2 cursor-pointer">
+                    <Percent className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">Aumenta di una percentuale</span>
+                  </label>
+                </div>
+                {bulkUpdateType === "percentage" && (
+                  <div className="ml-6 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={bulkPercentage}
+                      onChange={(e) => setBulkPercentage(e.target.value)}
+                      placeholder="0"
+                      className="w-20"
+                    />
+                    <span className="text-gray-500">%</span>
+                    <span className="text-sm text-gray-600">di aumento</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t">
+                <div className="text-sm text-gray-600 mb-3">
+                  Anteprima: {selectedBulkItems.length} elementi verranno aggiornati
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button
+                    className="px-4 py-2 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
+                    onClick={() => setShowBulkPriceDialog(false)}
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleApplyBulkPriceUpdate}
+                    disabled={
+                      (bulkUpdateType === "fixed" && !bulkFixedAmount) ||
+                      (bulkUpdateType === "percentage" && !bulkPercentage)
+                    }
+                  >
+                    Applica Modifiche
+                  </button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {hasChanges && (
+          <div className="fixed bottom-0 left-0 right-0 z-20 pb-8">
+            <div className="mx-auto w-fit">
+              <div className="bg-gray-800 text-white rounded-xl shadow-2xl p-3 flex items-center gap-4 mx-4">
+                <p className="font-semibold text-sm px-2">Modifiche salvate automaticamente</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+} 
