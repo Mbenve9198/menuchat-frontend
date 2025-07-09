@@ -13,6 +13,11 @@ import {
   DollarSign,
   Percent,
   Plus,
+  FileText,
+  ImageIcon,
+  Loader2,
+  Zap,
+  Check,
 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -21,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { MediaUpload } from "@/components/ui/media-upload"
 
 // --- TYPES ---
 type Tag = { 
@@ -536,6 +542,26 @@ export default function MenuAdminPage() {
   const [bulkFixedAmount, setBulkFixedAmount] = React.useState("")
   const [bulkPercentage, setBulkPercentage] = React.useState("")
 
+  // Stati per l'importazione menu
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const [importedFile, setImportedFile] = useState<string | null>(null)
+  const [importFileType, setImportFileType] = useState<"image" | "video" | "pdf" | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analyzedData, setAnalyzedData] = useState<{
+    categories: Array<{
+      name: string
+      icon: string
+      dishes: Array<{
+        name: string
+        price?: number
+        description?: string
+        ingredients?: string[]
+      }>
+    }>
+  } | null>(null)
+  const [showAnalysisPreview, setShowAnalysisPreview] = useState(false)
+  const [addIngredientsDescription, setAddIngredientsDescription] = useState(false)
+
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
 
@@ -696,6 +722,77 @@ export default function MenuAdminPage() {
     }
   }
 
+  const handleImportMenu = () => {
+    setShowImportDialog(true)
+  }
+
+  const handleFileImport = (fileUrl: string, fileType: "image" | "video" | "pdf") => {
+    setImportedFile(fileUrl)
+    setImportFileType(fileType)
+  }
+
+  const handleAnalyzeMenu = async () => {
+    if (!importedFile) return
+
+    setIsAnalyzing(true)
+    try {
+      const response = await fetch('/api/menu/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileUrl: importedFile,
+          fileType: importFileType,
+          restaurantId
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setAnalyzedData(data.menuData)
+        setShowAnalysisPreview(true)
+      } else {
+        const error = await response.json()
+        alert('Errore nell\'analisi: ' + (error.error || 'Errore sconosciuto'))
+      }
+    } catch (err) {
+      console.error('Error analyzing menu:', err)
+      alert('Errore nell\'analisi del menu')
+    }
+    setIsAnalyzing(false)
+  }
+
+  const handleConfirmImport = async () => {
+    if (!analyzedData) return
+
+    try {
+      const response = await fetch('/api/menu/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantId,
+          menuData: analyzedData,
+          addIngredientsDescription
+        })
+      })
+
+      if (response.ok) {
+        setShowImportDialog(false)
+        setShowAnalysisPreview(false)
+        setImportedFile(null)
+        setImportFileType(null)
+        setAnalyzedData(null)
+        loadMenuData() // Reload to show imported data
+        alert('Menu importato con successo!')
+      } else {
+        const error = await response.json()
+        alert('Errore nell\'importazione: ' + (error.error || 'Errore sconosciuto'))
+      }
+    } catch (err) {
+      console.error('Error importing menu:', err)
+      alert('Errore nell\'importazione del menu')
+    }
+  }
+
   if (status === "loading" || isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -740,9 +837,12 @@ export default function MenuAdminPage() {
         </div>
 
         {!bulkMode && (
-          <div className="mb-6">
+          <div className="mb-6 flex gap-3">
             <CustomButton variant="outline" onClick={handleBulkPriceUpdate}>
               <DollarSign className="mr-2 h-5 w-5" /> Aggiorna Prezzi
+            </CustomButton>
+            <CustomButton variant="outline" onClick={handleImportMenu}>
+              <Upload className="mr-2 h-5 w-5" /> Importa Menu
             </CustomButton>
           </div>
         )}
@@ -956,6 +1056,167 @@ export default function MenuAdminPage() {
                 </div>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Menu Import Dialog */}
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Importa Menu da PDF o Immagine</DialogTitle>
+              <DialogDescription>
+                Carica un file PDF del tuo menu o una foto/immagine e useremo l'AI per estrarre automaticamente categorie e piatti.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {!importedFile && (
+                <MediaUpload
+                  onFileSelect={handleFileImport}
+                  selectedFile={importedFile}
+                  mediaType="all"
+                  label="Carica PDF o Immagine del Menu"
+                  className="w-full"
+                />
+              )}
+              
+              {importedFile && !showAnalysisPreview && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      {importFileType === "pdf" ? (
+                        <FileText className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-green-600" />
+                      )}
+                      <span className="text-sm font-medium text-green-800">
+                        File caricato: {importFileType === "pdf" ? "PDF" : "Immagine"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2">
+                    <CustomButton 
+                      variant="outline" 
+                      onClick={() => {
+                        setImportedFile(null)
+                        setImportFileType(null)
+                      }}
+                    >
+                      Cambia File
+                    </CustomButton>
+                    <CustomButton 
+                      onClick={handleAnalyzeMenu}
+                      disabled={isAnalyzing}
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Analizzando...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="mr-2 h-4 w-4" />
+                          Analizza con AI
+                        </>
+                      )}
+                    </CustomButton>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Analysis Preview Dialog */}
+        <Dialog open={showAnalysisPreview} onOpenChange={setShowAnalysisPreview}>
+          <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Anteprima Menu Analizzato</DialogTitle>
+              <DialogDescription>
+                Ecco quello che abbiamo estratto dal tuo file. Controlla i dati e conferma per importare nel database.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {analyzedData && (
+              <div className="space-y-6">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-4">
+                    Categorie trovate: {analyzedData.categories.length}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {analyzedData.categories.map((category, catIndex) => (
+                      <div key={catIndex} className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">{category.icon}</span>
+                          <h4 className="font-semibold text-lg">{category.name}</h4>
+                          <Badge variant="secondary">
+                            {category.dishes.length} piatti
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {category.dishes.map((dish, dishIndex) => (
+                            <div key={dishIndex} className="bg-white p-3 rounded border">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h5 className="font-medium">{dish.name}</h5>
+                                  {dish.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{dish.description}</p>
+                                  )}
+                                  {dish.ingredients && dish.ingredients.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Ingredienti: {dish.ingredients.join(', ')}
+                                    </p>
+                                  )}
+                                </div>
+                                {dish.price && (
+                                  <span className="font-semibold text-lg text-green-600">
+                                    €{dish.price.toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="addIngredientsDescription"
+                      checked={addIngredientsDescription}
+                      onChange={(e) => setAddIngredientsDescription(e.target.checked)}
+                      className="mr-3"
+                    />
+                    <label htmlFor="addIngredientsDescription" className="text-sm font-medium text-blue-800">
+                      Aggiungi automaticamente ingredienti e descrizioni dettagliate a tutti i piatti usando l'AI
+                    </label>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1 ml-6">
+                    Questa opzione utilizzerà l'AI per arricchire ogni piatto con ingredienti tipici e descrizioni appetitose
+                  </p>
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <CustomButton 
+                    variant="outline" 
+                    onClick={() => setShowAnalysisPreview(false)}
+                  >
+                    Torna Indietro
+                  </CustomButton>
+                  <CustomButton onClick={handleConfirmImport}>
+                    <Check className="mr-2 h-4 w-4" />
+                    Conferma e Importa
+                  </CustomButton>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
