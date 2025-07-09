@@ -167,9 +167,13 @@ const DishAccordionItem = ({
         if (response.ok) {
           const result = await response.json()
           const newTag = result.tag
+          // Aggiorna la lista globale dei tag disponibili
+          const updatedAvailableTags = [...availableTags, newTag]
           onUpdateDish({ ...dish, tags: [...dish.tags, newTag] })
           setNewTagText("")
           setIsCreatingTag(false)
+          // Notifica il componente parent per aggiornare la lista globale
+          window.dispatchEvent(new CustomEvent('tagsUpdated', { detail: updatedAvailableTags }))
         }
       } catch (err) {
         console.error('Error creating tag:', err)
@@ -399,8 +403,21 @@ const CategoryAccordion = ({
 
   const handleNameBlur = async () => {
     if (name.trim() && name !== category.name) {
-      // TODO: Update category name via API
-      onUpdateCategory({ ...category, name: name.trim() })
+      try {
+        const response = await fetch(`/api/menu/category/${category.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim() })
+        })
+        if (response.ok) {
+          onUpdateCategory({ ...category, name: name.trim() })
+        } else {
+          setName(category.name) // Revert on error
+        }
+      } catch (err) {
+        console.error('Error updating category name:', err)
+        setName(category.name) // Revert on error
+      }
     } else {
       setName(category.name)
     }
@@ -408,8 +425,21 @@ const CategoryAccordion = ({
 
   const handleIconBlur = async () => {
     if (icon.trim() && icon !== category.icon) {
-      // TODO: Update category icon via API
-      onUpdateCategory({ ...category, icon: icon.trim() })
+      try {
+        const response = await fetch(`/api/menu/category/${category.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ icon: icon.trim() })
+        })
+        if (response.ok) {
+          onUpdateCategory({ ...category, icon: icon.trim() })
+        } else {
+          setIcon(category.icon) // Revert on error
+        }
+      } catch (err) {
+        console.error('Error updating category icon:', err)
+        setIcon(category.icon) // Revert on error
+      }
     } else {
       setIcon(category.icon)
     }
@@ -522,6 +552,16 @@ export default function MenuAdminPage() {
       loadMenuData()
     }
   }, [status, restaurantId])
+
+  // Listen for tags updates
+  React.useEffect(() => {
+    const handleTagsUpdate = (event: CustomEvent) => {
+      setAvailableTags(event.detail)
+    }
+    
+    window.addEventListener('tagsUpdated', handleTagsUpdate as EventListener)
+    return () => window.removeEventListener('tagsUpdated', handleTagsUpdate as EventListener)
+  }, [])
 
   const loadMenuData = async () => {
     try {
@@ -759,9 +799,22 @@ export default function MenuAdminPage() {
               onUpdateCategory={(updatedCategory: Category) => {
                 setCategories(categories.map((cat: Category) => cat.id === updatedCategory.id ? updatedCategory : cat))
               }}
-              onDeleteCategory={() => {
-                // TODO: Implement category deletion API call
-                setCategories(categories.filter((cat: Category) => cat.id !== category.id))
+              onDeleteCategory={async () => {
+                if (confirm(`Sei sicuro di voler eliminare la categoria "${category.name}" e tutti i suoi piatti?`)) {
+                  try {
+                    const response = await fetch(`/api/menu/category/${category.id}`, {
+                      method: 'DELETE'
+                    })
+                    if (response.ok) {
+                      setCategories(categories.filter((cat: Category) => cat.id !== category.id))
+                    } else {
+                      alert('Errore nell\'eliminazione della categoria')
+                    }
+                  } catch (err) {
+                    console.error('Error deleting category:', err)
+                    alert('Errore nell\'eliminazione della categoria')
+                  }
+                }
               }}
               onAddDish={handleAddDish}
               availableTags={availableTags}
