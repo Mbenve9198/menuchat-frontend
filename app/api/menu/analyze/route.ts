@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    // Verifica autenticazione
+    const session = await auth();
+    
+    if (!session?.accessToken) {
+      return NextResponse.json(
+        { error: 'Non autorizzato' },
+        { status: 401 }
+      );
+    }
+
     const { files, restaurantId } = await request.json()
 
     if (!files || !Array.isArray(files) || files.length === 0 || !restaurantId) {
@@ -16,7 +27,8 @@ export async function POST(request: NextRequest) {
     const backendResponse = await fetch(`${backendUrl}/api/menu/analyze`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.accessToken}`
       },
       body: JSON.stringify({
         files,

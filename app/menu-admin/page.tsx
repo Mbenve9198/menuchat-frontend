@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { MultipleMediaUpload } from "@/components/ui/multiple-media-upload"
+import { AsyncTaskProgress } from "@/components/ui/async-task-progress"
 
 // --- TYPES ---
 type Tag = { 
@@ -550,6 +551,7 @@ export default function MenuAdminPage() {
     name: string
   }>>([])
   const [isAnalyzing, setIsAnalyzing] = React.useState(false)
+  const [analysisTaskId, setAnalysisTaskId] = React.useState<string | null>(null)
   const [analyzedData, setAnalyzedData] = React.useState<{
     categories: Array<{
       name: string
@@ -737,6 +739,9 @@ export default function MenuAdminPage() {
     if (importedFiles.length === 0) return
 
     setIsAnalyzing(true)
+    setAnalysisTaskId(null)
+    setAnalyzedData(null)
+    
     try {
       const response = await fetch('/api/menu/analyze', {
         method: 'POST',
@@ -749,8 +754,12 @@ export default function MenuAdminPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setAnalyzedData(data.menuData)
-        setShowAnalysisPreview(true)
+        if (data.success && data.taskId) {
+          setAnalysisTaskId(data.taskId)
+          console.log('📋 Analisi avviata con taskId:', data.taskId)
+        } else {
+          throw new Error('Risposta non valida dal server')
+        }
       } else {
         const error = await response.json()
         alert('Errore nell\'analisi: ' + (error.error || 'Errore sconosciuto'))
@@ -758,8 +767,26 @@ export default function MenuAdminPage() {
     } catch (err) {
       console.error('Error analyzing menu:', err)
       alert('Errore nell\'analisi del menu')
+      setAnalysisTaskId(null)
     }
     setIsAnalyzing(false)
+  }
+
+  // Handler per quando l'analisi asincrona è completata
+  const handleAnalysisComplete = (result: any) => {
+    console.log('✅ Analisi completata:', result)
+    if (result.menuData) {
+      setAnalyzedData(result.menuData)
+      setShowAnalysisPreview(true)
+    }
+    setAnalysisTaskId(null)
+  }
+
+  // Handler per quando l'analisi asincrona fallisce
+  const handleAnalysisError = (error: any) => {
+    console.error('❌ Analisi fallita:', error)
+    alert('Errore nell\'analisi: ' + (error?.message || 'Errore sconosciuto'))
+    setAnalysisTaskId(null)
   }
 
   const handleConfirmImport = async () => {
@@ -1072,40 +1099,60 @@ export default function MenuAdminPage() {
             <div className="space-y-4">
               {!showAnalysisPreview && (
                 <>
-                  <MultipleMediaUpload
-                    onFilesSelect={handleFilesImport}
-                    selectedFiles={importedFiles}
-                    mediaType="image"
-                    maxFiles={5}
-                    label="Carica Immagini del Menu (max 5)"
-                    className="w-full"
-                  />
-                  
-                  {importedFiles.length > 0 && (
-                    <div className="flex justify-end gap-2">
-                      <CustomButton 
-                        variant="outline" 
-                        onClick={() => setImportedFiles([])}
-                      >
-                        Rimuovi Tutti
-                      </CustomButton>
-                      <CustomButton 
-                        onClick={handleAnalyzeMenu}
-                        disabled={isAnalyzing || importedFiles.length === 0}
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Analizzando {importedFiles.length} immagini...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="mr-2 h-4 w-4" />
-                            Analizza {importedFiles.length} immagini con AI
-                          </>
-                        )}
-                      </CustomButton>
-                    </div>
+                  {analysisTaskId ? (
+                    // Mostra progresso analisi asincrona
+                    <AsyncTaskProgress
+                      taskId={analysisTaskId}
+                      title="Analisi Menu con AI"
+                      description={`Stiamo analizzando ${importedFiles.length} immagini del tuo menu per estrarre categorie e piatti...`}
+                      onComplete={handleAnalysisComplete}
+                      onError={handleAnalysisError}
+                      onCancel={() => {
+                        setAnalysisTaskId(null)
+                        setImportedFiles([])
+                      }}
+                      pollingInterval={2000}
+                      className="my-6"
+                    />
+                  ) : (
+                    // Mostra interfaccia normale di upload
+                    <>
+                      <MultipleMediaUpload
+                        onFilesSelect={handleFilesImport}
+                        selectedFiles={importedFiles}
+                        mediaType="image"
+                        maxFiles={5}
+                        label="Carica Immagini del Menu (max 5)"
+                        className="w-full"
+                      />
+                      
+                      {importedFiles.length > 0 && (
+                        <div className="flex justify-end gap-2">
+                          <CustomButton 
+                            variant="outline" 
+                            onClick={() => setImportedFiles([])}
+                          >
+                            Rimuovi Tutti
+                          </CustomButton>
+                          <CustomButton 
+                            onClick={handleAnalyzeMenu}
+                            disabled={isAnalyzing || importedFiles.length === 0}
+                          >
+                            {isAnalyzing ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Creazione task...
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="mr-2 h-4 w-4" />
+                                Analizza {importedFiles.length} immagini con AI
+                              </>
+                            )}
+                          </CustomButton>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
