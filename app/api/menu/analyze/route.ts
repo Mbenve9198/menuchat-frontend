@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
 
 export async function POST(request: NextRequest) {
   try {
-    const token = await getToken({ req: request })
-    if (!token?.accessToken) {
-      return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
-    }
-
     const { fileUrl, fileType, restaurantId } = await request.json()
 
     if (!fileUrl || !fileType || !restaurantId) {
@@ -16,22 +10,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+
     // Chiama il backend per analizzare il menu
-    const backendResponse = await fetch(`${process.env.BACKEND_URL}/api/menu/analyze`, {
+    const backendResponse = await fetch(`${backendUrl}/api/menu/analyze`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token.accessToken}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         fileUrl,
         fileType,
         restaurantId
-      })
+      }),
+      cache: 'no-store'
     })
 
     if (!backendResponse.ok) {
-      const errorData = await backendResponse.json()
+      const errorData = await backendResponse.json().catch(() => ({ error: 'Errore del server' }))
       return NextResponse.json({ 
         error: errorData.error || 'Errore durante l\'analisi del menu' 
       }, { status: backendResponse.status })
