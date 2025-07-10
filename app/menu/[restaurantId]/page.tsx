@@ -461,11 +461,11 @@ export default function PublicMenuPage() {
           className="bg-white shadow-sm" 
           style={designSettings.coverImageUrl ? {
             clipPath: 'ellipse(100% 100% at 50% 0%)',
-            paddingTop: '40px'
+            paddingTop: '20px' // Ridotto da 40px
           } : {}}
           ref={!designSettings.coverImageUrl ? coverRef : undefined}
         >
-          <div className={`max-w-4xl mx-auto px-4 ${designSettings.coverImageUrl ? 'pt-8 pb-4' : 'pt-16 pb-4'}`}>
+          <div className={`max-w-4xl mx-auto px-4 ${designSettings.coverImageUrl ? 'pt-4 pb-2' : 'pt-12 pb-2'}`}>
             <div className="text-left ml-28">
               {/* Personalized Greeting - più piccolo */}
               {customerName && (
@@ -586,7 +586,7 @@ export default function PublicMenuPage() {
       )}
 
       {/* Menu Content */}
-      <div className={`max-w-4xl mx-auto p-4 pb-8 ${showNavigation ? 'pt-24' : ''}`}>
+      <div className={`max-w-4xl mx-auto px-4 pb-8 ${showNavigation ? 'pt-20' : 'pt-2'}`}>
         {filteredCategories.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -609,7 +609,7 @@ export default function PublicMenuPage() {
             </motion.button>
           </motion.div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {filteredCategories.map((category) => (
               <motion.div
                 key={category.id}
