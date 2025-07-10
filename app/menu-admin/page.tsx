@@ -20,6 +20,7 @@ import {
   Check,
   Camera,
   X,
+  Globe,
 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -793,6 +794,21 @@ export default function MenuAdminPage() {
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
 
+  // Stati per le traduzioni
+  const [showLanguagesDialog, setShowLanguagesDialog] = React.useState(false)
+  const [availableLanguages, setAvailableLanguages] = React.useState([
+    { code: 'en', name: 'English', flag: '🇬🇧', enabled: false },
+    { code: 'es', name: 'Español', flag: '🇪🇸', enabled: false },
+    { code: 'fr', name: 'Français', flag: '🇫🇷', enabled: false },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪', enabled: false },
+    { code: 'pt', name: 'Português', flag: '🇵🇹', enabled: false },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺', enabled: false },
+    { code: 'zh', name: '中文', flag: '🇨🇳', enabled: false },
+    { code: 'ja', name: '日本語', flag: '🇯🇵', enabled: false },
+    { code: 'ar', name: 'العربية', flag: '🇸🇦', enabled: false }
+  ])
+  const [isTranslating, setIsTranslating] = React.useState(false)
+
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
 
@@ -1111,6 +1127,82 @@ export default function MenuAdminPage() {
     }
   }
 
+  // Carica le lingue abilitate dal server
+  const loadRestaurantLanguages = async () => {
+    try {
+      const response = await fetch(`/api/menu/${restaurantId}/languages`)
+      if (response.ok) {
+        const data = await response.json()
+        const enabledCodes = data.languages.enabled?.map(l => l.code) || []
+        
+        setAvailableLanguages(availableLanguages.map(lang => ({
+          ...lang,
+          enabled: enabledCodes.includes(lang.code)
+        })))
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento delle lingue:', error)
+    }
+  }
+
+  // Salva le lingue e avvia la traduzione
+  const handleApplyTranslations = async () => {
+    try {
+      setIsTranslating(true)
+      
+      // 1. Salva le lingue abilitate
+      const enabledLanguages = availableLanguages.filter(lang => lang.enabled)
+      
+      const languagesResponse = await fetch(`/api/menu/${restaurantId}/languages`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ languages: availableLanguages })
+      })
+
+      if (!languagesResponse.ok) {
+        throw new Error('Errore nel salvataggio delle lingue')
+      }
+
+      // 2. Avvia la traduzione
+      const targetLanguages = enabledLanguages.map(lang => lang.code)
+      
+      if (targetLanguages.length > 0) {
+        const translationResponse = await fetch(`/api/menu/${restaurantId}/translate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ targetLanguages })
+        })
+
+        if (!translationResponse.ok) {
+          throw new Error('Errore durante la traduzione')
+        }
+
+        const translationData = await translationResponse.json()
+        console.log('Traduzioni completate:', translationData)
+      }
+
+      setShowLanguagesDialog(false)
+      alert(`Traduzioni completate per ${enabledLanguages.length} lingue!`)
+      
+    } catch (error) {
+      console.error('Errore nelle traduzioni:', error)
+      alert('Si è verificato un errore durante le traduzioni')
+    } finally {
+      setIsTranslating(false)
+    }
+  }
+
+  // Carica le lingue quando si apre il dialog
+  React.useEffect(() => {
+    if (showLanguagesDialog) {
+      loadRestaurantLanguages()
+    }
+  }, [showLanguagesDialog])
+
   if (status === "loading" || isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -1158,6 +1250,9 @@ export default function MenuAdminPage() {
           <div className="mb-6 flex gap-3">
             <CustomButton variant="outline" onClick={() => setShowBrandDialog(true)}>
               <ImageIcon className="mr-2 h-5 w-5" /> Brand & Design
+            </CustomButton>
+            <CustomButton variant="outline" onClick={() => setShowLanguagesDialog(true)}>
+              <Globe className="mr-2 h-5 w-5" /> Traduzioni
             </CustomButton>
             <CustomButton variant="outline" onClick={handleBulkPriceUpdate}>
               <DollarSign className="mr-2 h-5 w-5" /> Aggiorna Prezzi
@@ -1771,6 +1866,71 @@ export default function MenuAdminPage() {
               >
                 Chiudi
               </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Traduzioni Dialog */}
+        <Dialog open={showLanguagesDialog} onOpenChange={setShowLanguagesDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Gestisci Traduzioni</DialogTitle>
+              <DialogDescription>
+                Seleziona le lingue per le quali vuoi tradurre il tuo menu.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-3">
+                <h4 className="font-semibold text-lg">Lingue Disponibili</h4>
+                {availableLanguages.map((lang) => (
+                  <div key={lang.code} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </div>
+                    <Switch
+                      checked={lang.enabled}
+                      onCheckedChange={(checked) => {
+                        setAvailableLanguages(
+                          availableLanguages.map((l) =>
+                            l.code === lang.code ? { ...l, enabled: checked } : l
+                          )
+                        )
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="pt-4 border-t">
+                <div className="text-sm text-gray-600 mb-3">
+                  Anteprima: {availableLanguages.filter(l => l.enabled).length} lingue attive
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button
+                    className="px-4 py-2 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
+                    onClick={() => setShowLanguagesDialog(false)}
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleApplyTranslations}
+                                         disabled={availableLanguages.filter((l: any) => l.enabled).length === 0 || isTranslating}
+                  >
+                    {isTranslating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Traduzione in corso...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Applica Traduzioni
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

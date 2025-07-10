@@ -90,6 +90,15 @@ export default function PublicMenuPage() {
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   const [showDishModal, setShowDishModal] = useState(false)
   
+  // Stati per la gestione delle lingue
+  const [availableLanguages, setAvailableLanguages] = useState<Array<{
+    code: string
+    name: string
+    flag: string
+  }>>([])
+  const [selectedLanguage, setSelectedLanguage] = useState('it')
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false)
+  
   // Stati per navigation intelligente
   const [showNavigation, setShowNavigation] = useState(true) // Mostra sempre inizialmente
   const navigationRef = useRef<HTMLDivElement>(null)
@@ -115,7 +124,33 @@ export default function PublicMenuPage() {
   // Load data
   useEffect(() => {
     loadData()
-  }, [restaurantId])
+  }, [restaurantId, selectedLanguage])
+
+  // Funzione per cambiare lingua
+  const changeLanguage = (langCode: string) => {
+    setSelectedLanguage(langCode)
+    setShowLanguageSelector(false)
+  }
+
+
+
+  // Chiude il dropdown delle lingue quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showLanguageSelector) {
+        const target = event.target as Element
+        const dropdown = target.closest('.language-selector')
+        if (!dropdown) {
+          setShowLanguageSelector(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showLanguageSelector])
 
   // Gestione tasto ESC per chiudere il modal
   useEffect(() => {
@@ -237,10 +272,11 @@ export default function PublicMenuPage() {
       setIsLoading(true)
       setError(null)
 
-      // Load restaurant info (parallel)
-      const [restaurantResponse, menuResponse] = await Promise.all([
+      // Load restaurant info and languages (parallel)
+      const [restaurantResponse, menuResponse, languagesResponse] = await Promise.all([
         fetch(`/api/restaurants-public/${restaurantId}`),
-        fetch(`/api/menu/${restaurantId}`)
+        fetch(`/api/menu/${restaurantId}?lang=${selectedLanguage}`),
+        fetch(`/api/restaurants-public/${restaurantId}/languages`).catch(() => null) // Fallback se non implementato
       ])
 
       // Handle restaurant info
@@ -248,6 +284,17 @@ export default function PublicMenuPage() {
         const restaurantData = await restaurantResponse.json()
         if (restaurantData.success) {
           setRestaurantInfo(restaurantData.restaurant)
+        }
+      }
+
+      // Handle languages
+      if (languagesResponse && languagesResponse.ok) {
+        const languagesData = await languagesResponse.json()
+        if (languagesData.languages && languagesData.languages.enabled) {
+          setAvailableLanguages([
+            { code: 'it', name: 'Italiano', flag: '🇮🇹' }, // Lingua base sempre presente
+            ...languagesData.languages.enabled
+          ])
         }
       }
 
@@ -423,27 +470,80 @@ export default function PublicMenuPage() {
   return (
     <div 
       className="min-h-screen bg-gray-50"
-      style={{ 
-        backgroundColor: designSettings.backgroundColor,
-        color: designSettings.textColor 
-      }}
+      style={{ backgroundColor: designSettings.backgroundColor }}
     >
-      {/* Cover Image */}
-      {designSettings.coverImageUrl && (
-        <div ref={coverRef} className="relative h-48 w-full">
-          <Image
-            src={designSettings.coverImageUrl}
-            alt="Cover"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+      {/* Language Selector - Fixed Top Right */}
+      {availableLanguages.length > 1 && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="relative language-selector">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowLanguageSelector(!showLanguageSelector)}
+              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+            >
+              <span className="text-lg">
+                {availableLanguages.find(lang => lang.code === selectedLanguage)?.flag || '🇮🇹'}
+              </span>
+              <span className="hidden sm:block text-sm font-medium">
+                {availableLanguages.find(lang => lang.code === selectedLanguage)?.name || 'Italiano'}
+              </span>
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </motion.button>
+
+            {/* Language Dropdown */}
+            {showLanguageSelector && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                className="absolute top-full mt-2 right-0 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden min-w-[160px]"
+              >
+                {availableLanguages.map((language) => (
+                  <motion.button
+                    key={language.code}
+                    whileHover={{ backgroundColor: '#f3f4f6' }}
+                    onClick={() => changeLanguage(language.code)}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${
+                      selectedLanguage === language.code ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="text-lg">{language.flag}</span>
+                    <span className="text-sm font-medium">{language.name}</span>
+                    {selectedLanguage === language.code && (
+                      <span className="ml-auto text-blue-500">✓</span>
+                    )}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Header with floating profile */}
+      {/* Header con copertina e informazioni ristorante */}
       <div className="relative">
+        {/* Cover Image - wave shape */}
+        {designSettings.coverImageUrl && (
+          <div
+            ref={coverRef}
+            className="relative h-80 overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${designSettings.primaryColor}15 0%, ${designSettings.secondaryColor}15 100%)`,
+              clipPath: 'ellipse(100% 85% at 50% 0%)'
+            }}
+          >
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ 
+                backgroundImage: `url(${designSettings.coverImageUrl})`,
+              }}
+            />
+          </div>
+        )}
+
         {/* Profile Image floating - moved to left */}
         {(designSettings.logoUrl || restaurantInfo?.profileImage) && (
           <div className={`absolute ${designSettings.coverImageUrl ? '-top-12' : 'top-4'} left-6 z-10`}>
@@ -466,7 +566,7 @@ export default function PublicMenuPage() {
           } : {}}
           ref={!designSettings.coverImageUrl ? coverRef : undefined}
         >
-          <div className={`max-w-4xl mx-auto px-4 ${designSettings.coverImageUrl ? 'pt-8 pb-4' : 'pt-16 pb-4'}`}>
+          <div className={`max-w-4xl mx-auto px-4 ${designSettings.coverImageUrl ? 'pt-8 pb-2' : 'pt-16 pb-2'}`}>
             <div className="text-left ml-28">
               {/* Personalized Greeting - più piccolo */}
               {customerName && (
@@ -489,7 +589,7 @@ export default function PublicMenuPage() {
               )}
 
               {restaurantInfo?.googleRating && (
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 text-sm mb-2">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-medium">{restaurantInfo.googleRating.rating.toFixed(1)}</span>
@@ -587,7 +687,7 @@ export default function PublicMenuPage() {
       )}
 
       {/* Menu Content */}
-      <div className={`max-w-4xl mx-auto p-4 pb-8 ${showNavigation ? 'pt-24' : ''}`}>
+      <div className={`max-w-4xl mx-auto px-4 pb-8 ${showNavigation ? 'pt-24' : 'pt-2'}`}>
         {filteredCategories.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
