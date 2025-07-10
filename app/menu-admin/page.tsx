@@ -1149,24 +1149,10 @@ export default function MenuAdminPage() {
         </button>
       </header>
       
-      <main className="pt-8 pb-8 container mx-auto px-4">
+      <main className="pt-8 pb-32 container mx-auto px-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-extrabold text-gray-800">Il Tuo Menù Digitale</h1>
         </div>
-
-        {!bulkMode && (
-          <div className="mb-6 flex gap-3">
-            <CustomButton variant="outline" onClick={() => setShowBrandDialog(true)}>
-              <ImageIcon className="mr-2 h-5 w-5" /> Brand & Design
-            </CustomButton>
-            <CustomButton variant="outline" onClick={handleBulkPriceUpdate}>
-              <DollarSign className="mr-2 h-5 w-5" /> Aggiorna Prezzi
-            </CustomButton>
-            <CustomButton variant="outline" onClick={handleImportMenu}>
-              <Upload className="mr-2 h-5 w-5" /> Importa Menu
-            </CustomButton>
-          </div>
-        )}
 
         {bulkMode && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1251,7 +1237,7 @@ export default function MenuAdminPage() {
         </Accordion>
 
         {/* Add Category Button */}
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           <button
             className="relative w-full rounded-2xl border-b-4 border-gray-900/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
             onClick={async () => {
@@ -1277,6 +1263,17 @@ export default function MenuAdminPage() {
             <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
             <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-transparent border-dashed border-2 border-gray-300 text-gray-500 py-3 px-6 transition-transform duration-150">
               <PlusCircle className="mr-2 h-4 w-4" /> Aggiungi Categoria
+            </span>
+          </button>
+
+          {/* Import Menu Button */}
+          <button
+            className="relative w-full rounded-2xl border-b-4 border-blue-600/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
+            onClick={handleImportMenu}
+          >
+            <span className="absolute inset-0 -bottom-1 rounded-2xl bg-blue-100"></span>
+            <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white border-2 border-blue-300 text-blue-600 py-3 px-6 transition-transform duration-150">
+              <Upload className="mr-2 h-4 w-4" /> Importa Menu
             </span>
           </button>
         </div>
@@ -1774,6 +1771,31 @@ export default function MenuAdminPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Fixed Bottom Actions */}
+        <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-transparent backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-20">
+          <div className="grid grid-cols-2 gap-2">
+            <CustomButton
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
+              onClick={() => setShowBrandDialog(true)}
+            >
+              <ImageIcon className="w-5 h-5 mb-1 flex-shrink-0" />
+              <span className="text-center break-words hyphens-auto max-w-full">
+                Brand
+              </span>
+            </CustomButton>
+
+            <CustomButton
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
+              onClick={handleBulkPriceUpdate}
+            >
+              <DollarSign className="w-5 h-5 mb-1 flex-shrink-0" />
+              <span className="text-center break-words hyphens-auto max-w-full">
+                Aggiorna Prezzi
+              </span>
+            </CustomButton>
+          </div>
+        </div>
       </main>
     </div>
   )
