@@ -91,7 +91,7 @@ export default function PublicMenuPage() {
   const [showDishModal, setShowDishModal] = useState(false)
   
   // Stati per navigation intelligente
-  const [showNavigation, setShowNavigation] = useState(false)
+  const [showNavigation, setShowNavigation] = useState(true) // Mostra sempre inizialmente
   const navigationRef = useRef<HTMLDivElement>(null)
   const coverRef = useRef<HTMLDivElement>(null)
 
@@ -166,20 +166,47 @@ export default function PublicMenuPage() {
 
   // Intersection Observer per mostrare/nascondere navigation quando la copertina non è visibile
   useEffect(() => {
+    // Aspetta che menuData sia caricato
+    if (!menuData) return
+
+    // Se non c'è immagine di copertina, mantieni sempre la navigation visibile
+    const coverImageUrl = menuData.menu?.designSettings?.coverImageUrl
+    if (!coverImageUrl) {
+      console.log('📄 Nessuna copertina, navigation sempre visibile')
+      setShowNavigation(true)
+      return
+    }
+
     const coverElement = coverRef.current
-    if (!coverElement) return
+    if (!coverElement) {
+      console.log('⚠️ Cover element non trovato, mostro navigation')
+      setShowNavigation(true)
+      return
+    }
+
+    console.log('🔍 Setting up intersection observer for cover')
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
-        setShowNavigation(!entry.isIntersecting)
+        const isVisible = entry.isIntersecting
+        console.log('📊 Cover visibility changed:', isVisible ? 'VISIBLE' : 'NOT VISIBLE')
+        // Se la copertina è visibile, nascondi la navigation
+        // Se la copertina non è visibile, mostra la navigation
+        setShowNavigation(!isVisible)
       },
-      { threshold: 0.1 }
+      { 
+        threshold: 0.3, // Aumentato per essere più preciso
+        rootMargin: '0px 0px -20px 0px'
+      }
     )
 
     observer.observe(coverElement)
-    return () => observer.unobserve(coverElement)
-  }, [])
+    return () => {
+      console.log('🧹 Cleaning up cover observer')
+      observer.unobserve(coverElement)
+    }
+  }, [menuData])
 
   // Auto-scroll orizzontale quando cambia categoria attiva
   useEffect(() => {
