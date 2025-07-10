@@ -5,7 +5,9 @@ import { motion } from "framer-motion"
 import {
   ArrowRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  ExternalLink
 } from "lucide-react"
 import Image from "next/image"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
@@ -19,6 +21,13 @@ interface OptinMessage {
 interface RestaurantInfo {
   name: string
   profileImage?: string
+}
+
+interface PrivacyPolicyConfig {
+  enabled: boolean
+  type: 'url' | 'pdf'
+  url: string
+  linkText: Record<string, string>
 }
 
 export default function OptinPage() {
@@ -36,6 +45,7 @@ export default function OptinPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<OptinMessage | null>(null)
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null)
+  const [privacyPolicy, setPrivacyPolicy] = useState<PrivacyPolicyConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -72,6 +82,11 @@ export default function OptinPage() {
       }
       
       setMessage(currentMessage)
+      
+      // Ottieni la configurazione della privacy policy se abilitata
+      if (optinData.config.privacyPolicy?.enabled && optinData.config.privacyPolicy?.url) {
+        setPrivacyPolicy(optinData.config.privacyPolicy)
+      }
       
       // Fetch info ristorante pubbliche
       try {
@@ -319,6 +334,30 @@ export default function OptinPage() {
             {buttons.skip}
           </CustomButton>
         </motion.div>
+
+        {/* Privacy Policy Link */}
+        {privacyPolicy?.enabled && privacyPolicy.url && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-4 text-center"
+          >
+            <a 
+              href={privacyPolicy.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center justify-center gap-1"
+            >
+              {privacyPolicy.type === 'pdf' ? (
+                <FileText className="w-3 h-3" />
+              ) : (
+                <ExternalLink className="w-3 h-3" />
+              )}
+              {privacyPolicy.linkText[language] || privacyPolicy.linkText['it'] || 'Privacy Policy'}
+            </a>
+          </motion.div>
+        )}
 
         {/* Footer informativo */}
         <motion.div

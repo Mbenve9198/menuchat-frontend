@@ -15,7 +15,9 @@ import {
   AlertCircle,
   Lightbulb,
   Wand2,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  ExternalLink
 } from "lucide-react"
 import Image from "next/image"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -23,6 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { MediaUpload } from "@/components/ui/media-upload"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -44,6 +47,12 @@ interface OptinMessage {
 interface OptinConfig {
   enabled: boolean
   messages: Record<string, OptinMessage>
+  privacyPolicy?: {
+    enabled: boolean
+    type: 'url' | 'pdf'
+    url: string
+    linkText: Record<string, string>
+  }
   stats: {
     totalViews: number
     totalOptins: number
@@ -57,13 +66,20 @@ function OptinPreview({
   restaurantName = "Il Tuo Ristorante",
   restaurantPhoto = "",
   customerName = "Marco",
-  language = "it"
+  language = "it",
+  privacyPolicy
 }: { 
   message: OptinMessage, 
   restaurantName?: string,
   restaurantPhoto?: string,
   customerName?: string,
-  language?: string
+  language?: string,
+  privacyPolicy?: {
+    enabled: boolean
+    type: 'url' | 'pdf'
+    url: string
+    linkText: Record<string, string>
+  }
 }) {
   const [isChecked, setIsChecked] = useState(false)
 
@@ -129,6 +145,25 @@ function OptinPreview({
           </p>
         </div>
 
+        {/* Privacy Policy Link */}
+        {privacyPolicy?.enabled && privacyPolicy.url && (
+          <div className="mb-4 text-center">
+            <a 
+              href={privacyPolicy.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center justify-center gap-1"
+            >
+              {privacyPolicy.type === 'pdf' ? (
+                <FileText className="w-3 h-3" />
+              ) : (
+                <ExternalLink className="w-3 h-3" />
+              )}
+              {privacyPolicy.linkText[language] || privacyPolicy.linkText['it'] || 'Privacy Policy'}
+            </a>
+          </div>
+        )}
+
         {/* Pulsanti */}
         <div className="flex flex-col gap-2">
           <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg text-sm flex items-center justify-center">
@@ -160,6 +195,18 @@ export default function MarketingOptinPage() {
   const [config, setConfig] = useState<OptinConfig>({
     enabled: false,
     messages: {},
+    privacyPolicy: {
+      enabled: false,
+      type: 'url',
+      url: '',
+      linkText: {
+        'it': 'Privacy Policy',
+        'en': 'Privacy Policy',
+        'es': 'Política de Privacidad',
+        'fr': 'Politique de Confidentialité',
+        'de': 'Datenschutzrichtlinie'
+      }
+    },
     stats: {
       totalViews: 0,
       totalOptins: 0,
@@ -220,9 +267,29 @@ export default function MarketingOptinPage() {
           };
         });
         
+        // Gestisci i dati della privacy policy dal backend
+        const privacyPolicyConfig = data.config.privacyPolicy || {
+          enabled: false,
+          type: 'url',
+          url: '',
+          linkText: {
+            'it': 'Privacy Policy',
+            'en': 'Privacy Policy',
+            'es': 'Política de Privacidad',
+            'fr': 'Politique de Confidentialité',
+            'de': 'Datenschutzrichtlinie'
+          }
+        };
+        
+        // Converti Map in oggetto se necessario per linkText
+        if (privacyPolicyConfig.linkText && privacyPolicyConfig.linkText instanceof Map) {
+          privacyPolicyConfig.linkText = Object.fromEntries(privacyPolicyConfig.linkText);
+        }
+        
         setConfig({
           ...data.config,
-          messages: cleanMessages
+          messages: cleanMessages,
+          privacyPolicy: privacyPolicyConfig
         });
       } else {
         console.error('❌ Failed to fetch config:', data)
@@ -639,6 +706,152 @@ export default function MarketingOptinPage() {
                 </div>
               )}
 
+              {/* Configurazione Privacy Policy */}
+              {config.enabled && (
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Privacy Policy</h3>
+                      <p className="text-sm text-gray-600">Aggiungi un link alla tua privacy policy</p>
+                    </div>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.privacyPolicy?.enabled || false}
+                        onChange={(e) => setConfig(prev => ({
+                          ...prev,
+                          privacyPolicy: {
+                            ...prev.privacyPolicy!,
+                            enabled: e.target.checked
+                          }
+                        }))}
+                        className="sr-only"
+                      />
+                      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        config.privacyPolicy?.enabled ? 'bg-green-600' : 'bg-gray-300'
+                      }`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          config.privacyPolicy?.enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </div>
+                    </label>
+                  </div>
+
+                  {config.privacyPolicy?.enabled && (
+                    <div className="space-y-4">
+                      {/* Tipo di privacy policy */}
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Tipo di Privacy Policy</Label>
+                        <div className="mt-2 space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="privacyType"
+                              value="url"
+                              checked={config.privacyPolicy?.type === 'url'}
+                              onChange={(e) => setConfig(prev => ({
+                                ...prev,
+                                privacyPolicy: {
+                                  ...prev.privacyPolicy!,
+                                  type: 'url'
+                                }
+                              }))}
+                              className="mr-2"
+                            />
+                            <ExternalLink className="w-4 h-4 mr-2 text-gray-500" />
+                            URL esterno
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="privacyType"
+                              value="pdf"
+                              checked={config.privacyPolicy?.type === 'pdf'}
+                              onChange={(e) => setConfig(prev => ({
+                                ...prev,
+                                privacyPolicy: {
+                                  ...prev.privacyPolicy!,
+                                  type: 'pdf'
+                                }
+                              }))}
+                              className="mr-2"
+                            />
+                            <FileText className="w-4 h-4 mr-2 text-gray-500" />
+                            Carica PDF
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* URL o Upload PDF */}
+                      {config.privacyPolicy?.type === 'url' ? (
+                        <div>
+                          <Label htmlFor="privacy-url">URL Privacy Policy</Label>
+                          <Input
+                            id="privacy-url"
+                            type="url"
+                            placeholder="https://tuosito.com/privacy-policy"
+                            value={config.privacyPolicy?.url || ''}
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              privacyPolicy: {
+                                ...prev.privacyPolicy!,
+                                url: e.target.value
+                              }
+                            }))}
+                            className="mt-1"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label>Carica PDF Privacy Policy</Label>
+                          <MediaUpload
+                            onFileSelect={(fileUrl, fileType) => {
+                              if (fileType === 'pdf') {
+                                setConfig(prev => ({
+                                  ...prev,
+                                  privacyPolicy: {
+                                    ...prev.privacyPolicy!,
+                                    url: fileUrl
+                                  }
+                                }))
+                              }
+                            }}
+                            selectedFile={config.privacyPolicy?.url || null}
+                            mediaType="pdf"
+                            maxSize={15}
+                            label="Carica PDF Privacy Policy"
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+
+                      {/* Testo del link personalizzato per lingua */}
+                      <div>
+                        <Label>Testo del link ({currentLanguage})</Label>
+                        <Input
+                          placeholder="Privacy Policy"
+                          value={config.privacyPolicy?.linkText?.[currentLanguage] || ''}
+                          onChange={(e) => setConfig(prev => ({
+                            ...prev,
+                            privacyPolicy: {
+                              ...prev.privacyPolicy!,
+                              linkText: {
+                                ...prev.privacyPolicy!.linkText,
+                                [currentLanguage]: e.target.value
+                              }
+                            }
+                          }))}
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Personalizza il testo del link per ogni lingua
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Pulsante salva */}
               <CustomButton
                 onClick={saveConfig}
@@ -669,6 +882,7 @@ export default function MarketingOptinPage() {
                     restaurantName={restaurantName}
                     restaurantPhoto={restaurantPhoto}
                     language={currentLanguage}
+                    privacyPolicy={config.privacyPolicy}
                   />
                 </div>
               </div>
