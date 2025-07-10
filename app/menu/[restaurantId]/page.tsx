@@ -125,11 +125,16 @@ export default function PublicMenuPage() {
         throw new Error(menuData.error || 'Errore nel caricamento del menu')
       }
 
+      console.log('🔍 Menu data ricevuta:', menuData.data)
+      
       setMenuData(menuData.data)
       
       // Set first category as active
-      if (menuData.data.categories.length > 0) {
+      if (menuData.data.categories && menuData.data.categories.length > 0) {
         setActiveCategory(menuData.data.categories[0].id)
+        console.log('✅ Prima categoria attiva:', menuData.data.categories[0].name)
+      } else {
+        console.log('⚠️ Nessuna categoria trovata!')
       }
 
     } catch (err: any) {
@@ -144,7 +149,7 @@ export default function PublicMenuPage() {
   const getFilteredCategories = () => {
     if (!menuData) return []
 
-    return menuData.categories.map(category => ({
+    const allCategories = menuData.categories.map(category => ({
       ...category,
       dishes: category.dishes.filter(dish => {
         // Search filter
@@ -163,6 +168,23 @@ export default function PublicMenuPage() {
         return matchesSearch && matchesTags && isAvailable
       })
     })).filter(category => category.dishes.length > 0)
+    
+    console.log('🔍 Filtri applicati:')
+    console.log('   - Termine di ricerca:', searchTerm)
+    console.log('   - Tag selezionati:', selectedTags)
+    console.log('   - Categorie totali:', menuData.categories.length)
+    console.log('   - Categorie dopo filtro:', allCategories.length)
+    
+    if (allCategories.length === 0 && menuData.categories.length > 0) {
+      console.log('⚠️ Tutte le categorie sono state filtrate! Dettagli:')
+      menuData.categories.forEach(cat => {
+        console.log(`   Categoria "${cat.name}": ${cat.dishes.length} piatti totali`)
+        const availableDishes = cat.dishes.filter(d => d.available)
+        console.log(`   - ${availableDishes.length} piatti disponibili`)
+      })
+    }
+    
+    return allCategories
   }
 
   const scrollToCategory = (categoryId: string) => {
@@ -217,8 +239,28 @@ export default function PublicMenuPage() {
 
   if (!menuData) return null
 
-  const designSettings = menuData.menu.designSettings
+  // Design settings con valori di default
+  const defaultDesignSettings = {
+    primaryColor: '#3B82F6',
+    secondaryColor: '#64748B', 
+    backgroundColor: '#F9FAFB',
+    textColor: '#1F2937',
+    showImages: true,
+    showPrices: true,
+    coverImageUrl: '',
+    logoUrl: ''
+  }
+  
+  const designSettings = {
+    ...defaultDesignSettings,
+    ...(menuData.menu?.designSettings || {})
+  }
+  
+  console.log('🎨 Design settings utilizzate:', designSettings)
+  
   const filteredCategories = getFilteredCategories()
+  
+  console.log('📋 Categorie filtrate:', filteredCategories.length, filteredCategories)
 
   return (
     <div 
