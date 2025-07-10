@@ -1280,101 +1280,138 @@ export default function MenuAdminPage() {
           </button>
         </div>
 
-        {/* Bulk Price Update Dialog */}
+        {/* Bulk Price Update Dialog - Mobile Optimized */}
         <Dialog open={showBulkPriceDialog} onOpenChange={setShowBulkPriceDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Aggiorna Prezzi in Blocco</DialogTitle>
-              <DialogDescription>
-                Seleziona il tipo di aggiornamento da applicare ai {selectedBulkItems.length} elementi selezionati.
+          <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800">💰 Aggiorna Prezzi</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Seleziona il tipo di aggiornamento per {selectedBulkItems.length} elementi selezionati
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="fixed-amount"
-                    name="bulk-type"
-                    checked={bulkUpdateType === "fixed"}
-                    onChange={() => setBulkUpdateType("fixed")}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <label htmlFor="fixed-amount" className="flex items-center gap-2 cursor-pointer">
-                    <Plus className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">Aumenta di un importo fisso</span>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
+              {/* Opzione Importo Fisso */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="relative">
+                    <input
+                      type="radio"
+                      id="fixed-amount"
+                      name="bulk-type"
+                      checked={bulkUpdateType === "fixed"}
+                      onChange={() => setBulkUpdateType("fixed")}
+                      className="w-6 h-6 text-green-600 border-2 border-gray-300 focus:ring-green-500"
+                    />
+                  </div>
+                  <label htmlFor="fixed-amount" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <Plus className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <span className="text-lg font-bold text-gray-800 block">Importo Fisso</span>
+                      <span className="text-sm text-gray-600">Aumenta di un importo uguale per tutti</span>
+                    </div>
                   </label>
                 </div>
+                
                 {bulkUpdateType === "fixed" && (
-                  <div className="ml-6 flex items-center gap-2">
-                    <span className="text-gray-500">€</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={bulkFixedAmount}
-                      onChange={(e) => setBulkFixedAmount(e.target.value)}
-                      placeholder="0.00"
-                      className="w-24"
-                    />
-                    <span className="text-sm text-gray-600">per ogni elemento</span>
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-green-600">€</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkFixedAmount}
+                          onChange={(e) => setBulkFixedAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="w-32 h-12 text-lg font-semibold border-green-300 focus:border-green-500 focus:ring-green-500"
+                        />
+                      </div>
+                      <span className="text-sm text-green-700 font-medium">per ogni piatto</span>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="percentage"
-                    name="bulk-type"
-                    checked={bulkUpdateType === "percentage"}
-                    onChange={() => setBulkUpdateType("percentage")}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <label htmlFor="percentage" className="flex items-center gap-2 cursor-pointer">
-                    <Percent className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">Aumenta di una percentuale</span>
+              {/* Opzione Percentuale */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="relative">
+                    <input
+                      type="radio"
+                      id="percentage"
+                      name="bulk-type"
+                      checked={bulkUpdateType === "percentage"}
+                      onChange={() => setBulkUpdateType("percentage")}
+                      className="w-6 h-6 text-blue-600 border-2 border-gray-300 focus:ring-blue-500"
+                    />
+                  </div>
+                  <label htmlFor="percentage" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Percent className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="text-lg font-bold text-gray-800 block">Percentuale</span>
+                      <span className="text-sm text-gray-600">Aumenta di una percentuale</span>
+                    </div>
                   </label>
                 </div>
+                
                 {bulkUpdateType === "percentage" && (
-                  <div className="ml-6 flex items-center gap-2">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={bulkPercentage}
-                      onChange={(e) => setBulkPercentage(e.target.value)}
-                      placeholder="0"
-                      className="w-20"
-                    />
-                    <span className="text-gray-500">%</span>
-                    <span className="text-sm text-gray-600">di aumento</span>
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={bulkPercentage}
+                          onChange={(e) => setBulkPercentage(e.target.value)}
+                          placeholder="0"
+                          className="w-24 h-12 text-lg font-semibold border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <span className="text-2xl font-bold text-blue-600">%</span>
+                      </div>
+                      <span className="text-sm text-blue-700 font-medium">di aumento</span>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="pt-4 border-t">
-                <div className="text-sm text-gray-600 mb-3">
-                  Anteprima: {selectedBulkItems.length} elementi verranno aggiornati
+              {/* Anteprima */}
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <span className="text-lg">👀</span>
+                  </div>
+                  <h4 className="font-bold text-orange-900">Anteprima</h4>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    className="px-4 py-2 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
-                    onClick={() => setShowBulkPriceDialog(false)}
-                  >
-                    Annulla
-                  </button>
-                  <button
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleApplyBulkPriceUpdate}
-                    disabled={
-                      (bulkUpdateType === "fixed" && !bulkFixedAmount) ||
-                      (bulkUpdateType === "percentage" && !bulkPercentage)
-                    }
-                  >
-                    Applica Modifiche
-                  </button>
-                </div>
+                <p className="text-sm text-orange-800 bg-orange-100 p-3 rounded-lg">
+                  <span className="font-bold">{selectedBulkItems.length} elementi</span> verranno aggiornati con i nuovi prezzi
+                </p>
               </div>
+            </div>
+            
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200 space-y-3">
+              <CustomButton
+                className="w-full h-14 text-base font-semibold"
+                onClick={handleApplyBulkPriceUpdate}
+                disabled={
+                  (bulkUpdateType === "fixed" && !bulkFixedAmount) ||
+                  (bulkUpdateType === "percentage" && !bulkPercentage)
+                }
+              >
+                🚀 Applica Modifiche
+              </CustomButton>
+              
+              <CustomButton
+                className="w-full h-12 text-base"
+                variant="outline"
+                onClick={() => setShowBulkPriceDialog(false)}
+              >
+                Annulla
+              </CustomButton>
             </div>
           </DialogContent>
         </Dialog>
