@@ -915,6 +915,8 @@ export default function MenuAdminPage() {
   const handleBulkPriceUpdate = () => {
     setBulkMode(true)
     setSelectedBulkItems([])
+    // Scroll automatico verso l'alto per mostrare la modal
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleExitBulkMode = () => {
