@@ -2,11 +2,8 @@
 
 import React, { useState, useRef, ChangeEvent } from "react"
 import { cn } from "@/lib/utils"
-import { Upload, Image as ImageIcon, Video, FileText, X, Loader2, Sparkles, Wand2 } from "lucide-react"
+import { Upload, Image as ImageIcon, Video, FileText, X, Loader2 } from "lucide-react"
 import { CustomButton } from "./custom-button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./dialog"
-import { Textarea } from "./textarea"
-import { toast } from "./use-toast"
 
 interface MediaUploadProps extends React.HTMLAttributes<HTMLDivElement> {
   onFileSelect: (fileUrl: string, fileType: "image" | "video" | "pdf") => void
@@ -16,11 +13,6 @@ interface MediaUploadProps extends React.HTMLAttributes<HTMLDivElement> {
   campaignType?: string
   label?: string
   className?: string
-  // Props per generazione AI (solo per immagini dei piatti)
-  enableAI?: boolean
-  dishId?: string
-  dishName?: string
-  dishIngredients?: string[]
 }
 
 export function MediaUpload({
@@ -31,10 +23,6 @@ export function MediaUpload({
   campaignType = "",
   label = "Aggiungi media",
   className,
-  enableAI = false,
-  dishId,
-  dishName = "",
-  dishIngredients = [],
   ...props
 }: MediaUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -42,9 +30,6 @@ export function MediaUpload({
   const [isUploading, setIsUploading] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [uploadingProgress, setUploadingProgress] = useState(0)
-  const [showAIDialog, setShowAIDialog] = useState(false)
-  const [customPrompt, setCustomPrompt] = useState("")
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const getAcceptString = () => {
@@ -217,96 +202,6 @@ export function MediaUpload({
     }
   }
 
-  // Funzione per generare immagine con AI
-  const generateWithAI = async (useAutoPrompt: boolean, prompt?: string) => {
-    if (!dishId) {
-      toast({
-        title: "Errore",
-        description: "ID piatto mancante per la generazione AI",
-        variant: "destructive"
-      })
-      return
-    }
-
-    try {
-      setIsGeneratingImage(true)
-      setError(null)
-
-      console.log('🎨 Avvio generazione immagine AI...', {
-        dishId,
-        useAutoPrompt,
-        customPrompt: prompt,
-        dishName,
-        dishIngredients
-      })
-
-      const response = await fetch(`/api/menu/item/${dishId}/generate-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          useAutoPrompt,
-          customPrompt: prompt,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Errore nella generazione dell\'immagine')
-      }
-
-      const data = await response.json()
-
-      if (data.success && data.data?.imageUrl) {
-        console.log('✅ Immagine generata con successo:', data.data.imageUrl)
-        
-        // Chiama il callback con l'URL dell'immagine generata
-        onFileSelect(data.data.imageUrl, "image")
-        
-        toast({
-          title: "Immagine generata!",
-          description: "L'immagine del piatto è stata generata con successo con AI",
-          variant: "default"
-        })
-        
-        setShowAIDialog(false)
-        setCustomPrompt("")
-      } else {
-        throw new Error('Risposta non valida dal server')
-      }
-
-    } catch (error: any) {
-      console.error('❌ Errore generazione AI:', error)
-      setError(error.message || 'Errore nella generazione dell\'immagine')
-      
-      toast({
-        title: "Errore generazione AI",
-        description: error.message || "Non è stato possibile generare l'immagine",
-        variant: "destructive"
-      })
-    } finally {
-      setIsGeneratingImage(false)
-    }
-  }
-
-  const handleAIGenerate = () => {
-    setShowAIDialog(true)
-    setError(null)
-  }
-
-  const handleAutoPromptGenerate = () => {
-    generateWithAI(true)
-  }
-
-  const handleCustomPromptGenerate = () => {
-    if (!customPrompt.trim()) {
-      setError("Inserisci un prompt personalizzato")
-      return
-    }
-    generateWithAI(false, customPrompt.trim())
-  }
-
   // Helper per determinare che tipo di file è stato caricato
   const getFileType = (): "image" | "video" | "pdf" => {
     if (!selectedFile) return "image"
@@ -410,42 +305,17 @@ export function MediaUpload({
                       : "Trascina qui un'immagine, un video o un PDF o clicca per scegliere"
               }
             </p>
-            
-            {/* Bottoni di azione */}
-            <div className="flex gap-2 flex-wrap justify-center">
-              <CustomButton 
-                variant="outline" 
-                size="sm" 
-                className="text-sm py-1 px-3"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleBrowseClick()
-                }}
-              >
-                Sfoglia File
-              </CustomButton>
-              
-              {/* Pulsante AI - solo per immagini e se abilitato */}
-              {enableAI && (mediaType === "image" || mediaType === "all" || mediaType === "both") && (
-                <CustomButton 
-                  variant="secondary" 
-                  size="sm" 
-                  className="text-sm py-1 px-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 hover:from-purple-600 hover:to-pink-600"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleAIGenerate()
-                  }}
-                  disabled={isGeneratingImage}
-                >
-                  {isGeneratingImage ? (
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3 h-3 mr-1" />
-                  )}
-                  {isGeneratingImage ? "Generando..." : "Genera con AI"}
-                </CustomButton>
-              )}
-            </div>
+            <CustomButton 
+              variant="outline" 
+              size="sm" 
+              className="text-sm py-1 px-3"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleBrowseClick()
+              }}
+            >
+              Sfoglia File
+            </CustomButton>
           </>
         )}
       </div>
@@ -453,89 +323,6 @@ export function MediaUpload({
       {error && (
         <p className="mt-2 text-xs text-red-500">{error}</p>
       )}
-
-      {/* Dialog per selezione tipo di prompt AI */}
-      <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wand2 className="w-5 h-5 text-purple-500" />
-              Genera Immagine con AI
-            </DialogTitle>
-            <DialogDescription>
-              Scegli come generare l'immagine del piatto con Imagen 4 Ultra
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Prompt automatico */}
-            <div className="border rounded-lg p-4 space-y-2">
-              <h3 className="font-medium text-sm">🤖 Prompt Automatico</h3>
-              <p className="text-xs text-gray-600">
-                Genera automaticamente un prompt professionale basato su:
-              </p>
-              <ul className="text-xs text-gray-500 space-y-1">
-                <li>• Nome piatto: {dishName || "Non specificato"}</li>
-                <li>• Ingredienti: {dishIngredients.length > 0 ? dishIngredients.slice(0, 3).join(", ") : "Non specificati"}</li>
-                <li>• Stile: Fotografia professionale per Instagram</li>
-              </ul>
-              <CustomButton 
-                onClick={handleAutoPromptGenerate}
-                disabled={isGeneratingImage}
-                className="w-full"
-              >
-                {isGeneratingImage ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
-                )}
-                Genera Automaticamente
-              </CustomButton>
-            </div>
-
-            {/* Prompt personalizzato */}
-            <div className="border rounded-lg p-4 space-y-2">
-              <h3 className="font-medium text-sm">✏️ Prompt Personalizzato</h3>
-              <p className="text-xs text-gray-600 mb-2">
-                Scrivi una descrizione dettagliata del piatto che vuoi generare:
-              </p>
-              <Textarea
-                placeholder="Es: Una pizza margherita con mozzarella filante, pomodoro fresco e basilico, fotografata dall'alto su un tavolo di legno rustico..."
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                rows={4}
-                className="text-sm"
-              />
-              <CustomButton 
-                onClick={handleCustomPromptGenerate}
-                disabled={isGeneratingImage || !customPrompt.trim()}
-                variant="secondary"
-                className="w-full"
-              >
-                {isGeneratingImage ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Wand2 className="w-4 h-4 mr-2" />
-                )}
-                Genera con Prompt Personalizzato
-              </CustomButton>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <CustomButton 
-              variant="outline" 
-              onClick={() => {
-                setShowAIDialog(false)
-                setCustomPrompt("")
-              }}
-              disabled={isGeneratingImage}
-            >
-              Annulla
-            </CustomButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 } 

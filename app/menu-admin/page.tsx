@@ -550,10 +550,6 @@ const DishAccordionItem = ({
               maxSize={10}
               label={dish.photoUrl ? "Sostituisci immagine" : "Carica immagine"}
               className="w-full"
-              enableAI={true}
-              dishId={dish.id}
-              dishName={dish.name}
-              dishIngredients={dish.ingredients || []}
             />
             
             <div className="flex justify-between gap-2">
