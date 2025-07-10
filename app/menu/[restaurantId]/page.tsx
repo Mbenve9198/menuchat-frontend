@@ -667,11 +667,8 @@ export default function PublicMenuPage() {
                             </h3>
                             {designSettings.showPrices && (
                               <span 
-                                className="font-bold text-xl whitespace-nowrap px-3 py-1 rounded-lg shadow-sm"
-                                style={{ 
-                                  color: designSettings.primaryColor,
-                                  backgroundColor: `${designSettings.primaryColor}15`
-                                }}
+                                className="font-bold text-lg whitespace-nowrap"
+                                style={{ color: designSettings.primaryColor }}
                               >
                                 €{dish.price.toFixed(2)}
                               </span>
