@@ -10,14 +10,22 @@ export async function GET(
   try {
     const session = await auth()
     
-    if (!session?.user?.id) {
+    if (!session?.user?.restaurantId) {
       return NextResponse.json(
-        { success: false, error: 'Non autorizzato' },
+        { success: false, error: 'Non autenticato' },
         { status: 401 }
       )
     }
 
     const { restaurantId } = params
+
+    // Verifica che l'utente stia accedendo al proprio ristorante
+    if (session.user.restaurantId !== restaurantId) {
+      return NextResponse.json(
+        { success: false, error: 'Non autorizzato' },
+        { status: 403 }
+      )
+    }
 
     // Aggiungi l'authorization header se abbiamo una sessione con token
     const headers: HeadersInit = {
@@ -58,15 +66,23 @@ export async function PUT(
   try {
     const session = await auth()
     
-    if (!session?.user?.id) {
+    if (!session?.user?.restaurantId) {
       return NextResponse.json(
-        { success: false, error: 'Non autorizzato' },
+        { success: false, error: 'Non autenticato' },
         { status: 401 }
       )
     }
 
     const { restaurantId } = params
     const body = await request.json()
+
+    // Verifica che l'utente stia aggiornando il proprio ristorante
+    if (session.user.restaurantId !== restaurantId) {
+      return NextResponse.json(
+        { success: false, error: 'Non autorizzato' },
+        { status: 403 }
+      )
+    }
 
     // Aggiungi l'authorization header se abbiamo una sessione con token
     const headers: HeadersInit = {
