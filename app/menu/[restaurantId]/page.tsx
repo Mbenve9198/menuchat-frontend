@@ -881,6 +881,7 @@ export default function PublicMenuPage() {
                 transition={{ delay: 0.6 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={closeDishModal}
                 className="w-full py-4 rounded-2xl text-white font-bold text-center text-lg shadow-lg cursor-pointer transition-all hover:shadow-xl"
                 style={{ backgroundColor: designSettings.primaryColor }}
               >
