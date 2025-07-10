@@ -59,8 +59,8 @@ export default function OptinPage() {
     try {
       setIsLoading(true)
       
-      // Fetch configurazione opt-in
-      const optinResponse = await fetch(`/api/marketing-optin?restaurantId=${restaurantId}`)
+      // Fetch configurazione opt-in (endpoint pubblico)
+      const optinResponse = await fetch(`/api/marketing-optin/public?restaurantId=${restaurantId}`)
       const optinData = await optinResponse.json()
       
       if (!optinResponse.ok || !optinData.success) {
