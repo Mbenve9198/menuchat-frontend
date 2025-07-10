@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { motion } from "framer-motion"
@@ -89,6 +89,28 @@ export default function PublicMenuPage() {
   // Stati per il modal di dettaglio piatto
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
   const [showDishModal, setShowDishModal] = useState(false)
+  
+  // Stati per navigation intelligente
+  const [showNavigation, setShowNavigation] = useState(false)
+  const navigationRef = useRef<HTMLDivElement>(null)
+  const coverRef = useRef<HTMLDivElement>(null)
+
+  // Aggiunge CSS per nascondere scrollbar
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.textContent = `
+      .scrollbar-hide {
+        -webkit-overflow-scrolling: touch;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+    `
+    document.head.appendChild(style)
+    return () => {
+      document.head.removeChild(style)
+    }
+  }, [])
 
   // Load data
   useEffect(() => {
@@ -141,6 +163,46 @@ export default function PublicMenuPage() {
       categoryElements.forEach((el) => observer.unobserve(el))
     }
   }, [menuData])
+
+  // Intersection Observer per mostrare/nascondere navigation quando la copertina non è visibile
+  useEffect(() => {
+    const coverElement = coverRef.current
+    if (!coverElement) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        setShowNavigation(!entry.isIntersecting)
+      },
+      { threshold: 0.1 }
+    )
+
+    observer.observe(coverElement)
+    return () => observer.unobserve(coverElement)
+  }, [])
+
+  // Auto-scroll orizzontale quando cambia categoria attiva
+  useEffect(() => {
+    if (!activeCategory || !navigationRef.current) return
+
+    const navigationElement = navigationRef.current
+    const activeCategoryButton = navigationElement.querySelector(`[data-category-id="${activeCategory}"]`) as HTMLElement
+
+    if (activeCategoryButton) {
+      const navRect = navigationElement.getBoundingClientRect()
+      const buttonRect = activeCategoryButton.getBoundingClientRect()
+      
+      const isVisible = buttonRect.left >= navRect.left && buttonRect.right <= navRect.right
+      
+      if (!isVisible) {
+        const scrollLeft = activeCategoryButton.offsetLeft - (navRect.width / 2) + (buttonRect.width / 2)
+        navigationElement.scrollTo({
+          left: scrollLeft,
+          behavior: 'smooth'
+        })
+      }
+    }
+  }, [activeCategory])
 
   // Load menu data
   const loadData = async () => {
@@ -341,7 +403,7 @@ export default function PublicMenuPage() {
     >
       {/* Cover Image */}
       {designSettings.coverImageUrl && (
-        <div className="relative h-48 w-full">
+        <div ref={coverRef} className="relative h-48 w-full">
           <Image
             src={designSettings.coverImageUrl}
             alt="Cover"
@@ -355,10 +417,10 @@ export default function PublicMenuPage() {
 
       {/* Header with floating profile */}
       <div className="relative">
-        {/* Profile Image floating between cover and content */}
+        {/* Profile Image floating - moved to left */}
         {(designSettings.logoUrl || restaurantInfo?.profileImage) && (
-          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg">
+          <div className={`absolute ${designSettings.coverImageUrl ? '-top-12' : 'top-4'} left-6 z-10`}>
+            <div className="w-20 h-20 rounded-full bg-white p-1 shadow-xl">
               <img
                 src={designSettings.logoUrl || restaurantInfo?.profileImage}
                 alt={restaurantInfo?.name || 'Restaurant'}
@@ -368,39 +430,39 @@ export default function PublicMenuPage() {
           </div>
         )}
 
-        {/* Main content with wave top */}
-        <div className="bg-white shadow-sm" style={{
-          clipPath: 'ellipse(100% 100% at 50% 0%)',
-          paddingTop: '60px'
-        }}>
-          <div className="max-w-4xl mx-auto p-4 pt-16">
-            <div className="text-center">
-              {/* Personalized Greeting */}
+        {/* Main content with wave top - più compatto */}
+        <div 
+          className="bg-white shadow-sm" 
+          style={designSettings.coverImageUrl ? {
+            clipPath: 'ellipse(100% 100% at 50% 0%)',
+            paddingTop: '40px'
+          } : {}}
+          ref={!designSettings.coverImageUrl ? coverRef : undefined}
+        >
+          <div className={`max-w-4xl mx-auto px-4 ${designSettings.coverImageUrl ? 'pt-8 pb-4' : 'pt-16 pb-4'}`}>
+            <div className="text-left ml-28">
+              {/* Personalized Greeting - più piccolo */}
               {customerName && (
                 <motion.p
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="text-lg font-medium mb-2"
+                  className="text-base font-medium mb-1"
                   style={{ color: designSettings.primaryColor }}
                 >
                   Ciao <span className="font-bold">{customerName}</span>! 👋
                 </motion.p>
               )}
 
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                {restaurantInfo?.name || 'Menu'}
-              </h1>
-
               {restaurantInfo?.address && (
-                <div className="flex items-center justify-center gap-1 text-gray-600 text-sm mb-2">
+                <div className="flex items-center gap-1 text-gray-600 text-sm mb-1">
                   <MapPin className="w-4 h-4" />
                   <span>{restaurantInfo.address.formattedAddress}</span>
                 </div>
               )}
 
               {restaurantInfo?.googleRating && (
-                <div className="flex items-center justify-center gap-2 text-sm">
+                <div className="flex items-center gap-2 text-sm">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-medium">{restaurantInfo.googleRating.rating.toFixed(1)}</span>
@@ -415,81 +477,111 @@ export default function PublicMenuPage() {
         </div>
       </div>
 
-      {/* Search & Filters */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto p-4">
-          {/* Filter Tags */}
-          {menuData.availableTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {menuData.availableTags.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all transform active:scale-95 ${
-                    selectedTags.includes(tag.id)
-                      ? `${tag.color} text-white shadow-lg`
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+      {/* Smart Navigation - appare solo quando la copertina non è visibile */}
+      {showNavigation && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          transition={{ 
+            duration: 0.3,
+            type: "spring",
+            stiffness: 300,
+            damping: 25
+          }}
+          className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg"
+        >
+          <div className="max-w-4xl mx-auto p-3">
+            {/* Filter Tags - più compatti */}
+            {menuData.availableTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {menuData.availableTags.map((tag) => (
+                  <motion.button
+                    key={tag.id}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleTag(tag.id)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-all ${
+                      selectedTags.includes(tag.id)
+                        ? `${tag.color} text-white shadow-md`
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    <span className="text-sm">{getTagEmoji(tag.text)}</span>
+                    {tag.text}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {selectedTags.length > 0 && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-2"
+              >
+                <X className="w-3 h-3" />
+                Cancella filtri
+              </motion.button>
+            )}
+
+            {/* Category Navigation - più compatta */}
+            <div 
+              ref={navigationRef}
+              className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {filteredCategories.map((category) => (
+                <motion.button
+                  key={category.id}
+                  data-category-id={category.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => scrollToCategory(category.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg whitespace-nowrap transition-all text-sm font-medium ${
+                    activeCategory === category.id
+                      ? "text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
+                  style={{
+                    backgroundColor: activeCategory === category.id ? designSettings.primaryColor : undefined
+                  }}
                 >
-                  <span className="text-lg">{getTagEmoji(tag.text)}</span>
-                  {tag.text}
-                </button>
+                  <span className="text-base">{category.icon}</span>
+                  <span>{category.name}</span>
+                  <span className="text-xs opacity-75">({category.dishes.length})</span>
+                </motion.button>
               ))}
             </div>
-          )}
-
-          {/* Clear Filters */}
-          {selectedTags.length > 0 && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3"
-            >
-              <X className="w-4 h-4" />
-              Cancella filtri
-            </button>
-          )}
-
-          {/* Category Navigation */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mb-2">
-            {filteredCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => scrollToCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
-                  activeCategory === category.id
-                    ? "text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                style={{
-                  backgroundColor: activeCategory === category.id ? designSettings.primaryColor : undefined
-                }}
-              >
-                <span className="text-lg">{category.icon}</span>
-                <span className="font-medium">{category.name}</span>
-                <span className="text-sm opacity-75">({category.dishes.length})</span>
-              </button>
-            ))}
           </div>
-        </div>
-      </div>
+        </motion.div>
+      )}
 
       {/* Menu Content */}
-      <div className="max-w-4xl mx-auto p-4 pb-8">
+      <div className={`max-w-4xl mx-auto p-4 pb-8 ${showNavigation ? 'pt-24' : ''}`}>
         {filteredCategories.length === 0 ? (
-          <div className="text-center py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-12"
+          >
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Nessun piatto trovato</h3>
             <p className="text-gray-600 mb-4">
-              Prova a modificare i filtri o la ricerca
+              Prova a modificare i filtri
             </p>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={clearFilters}
-              className="px-4 py-2 text-white rounded-lg"
+              className="px-4 py-2 text-white rounded-lg shadow-md"
               style={{ backgroundColor: designSettings.primaryColor }}
             >
               Cancella filtri
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         ) : (
           <div className="space-y-8">
             {filteredCategories.map((category) => (
