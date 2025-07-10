@@ -1596,96 +1596,112 @@ export default function MenuAdminPage() {
           </div>
         )}
 
-        {/* Brand & Design Dialog */}
+        {/* Brand Dialog - Mobile Optimized */}
         <Dialog open={showBrandDialog} onOpenChange={setShowBrandDialog}>
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Brand & Design</DialogTitle>
-              <DialogDescription>
-                Personalizza l'aspetto del tuo menu pubblico con colori e immagini del tuo brand.
+          <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800">🎨 Brand</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Personalizza l'aspetto del tuo menu pubblico
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
               {/* Sezione Colori */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                   🎨 Colori Brand
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-6">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
                       Colore Primario
                     </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={brandSettings.primaryColor}
-                        onChange={(e) => {
-                          setBrandSettings({...brandSettings, primaryColor: e.target.value})
-                          handleBrandColorUpdate('primary', e.target.value)
-                        }}
-                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <Input
-                        value={brandSettings.primaryColor}
-                        onChange={(e) => {
-                          setBrandSettings({...brandSettings, primaryColor: e.target.value})
-                          handleBrandColorUpdate('primary', e.target.value)
-                        }}
-                        className="flex-1"
-                        placeholder="#3B82F6"
-                      />
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <input
+                          type="color"
+                          value={brandSettings.primaryColor}
+                          onChange={(e) => {
+                            setBrandSettings({...brandSettings, primaryColor: e.target.value})
+                            handleBrandColorUpdate('primary', e.target.value)
+                          }}
+                          className="w-16 h-16 rounded-xl border-2 border-gray-300 cursor-pointer appearance-none"
+                        />
+                        <div 
+                          className="absolute inset-2 rounded-lg pointer-events-none"
+                          style={{ backgroundColor: brandSettings.primaryColor }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          value={brandSettings.primaryColor}
+                          onChange={(e) => {
+                            setBrandSettings({...brandSettings, primaryColor: e.target.value})
+                            handleBrandColorUpdate('primary', e.target.value)
+                          }}
+                          className="h-12 text-base"
+                          placeholder="#3B82F6"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Header, pulsanti, accenti
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Header, pulsanti, accenti
-                    </p>
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
                       Colore Secondario
                     </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={brandSettings.secondaryColor}
-                        onChange={(e) => {
-                          setBrandSettings({...brandSettings, secondaryColor: e.target.value})
-                          handleBrandColorUpdate('secondary', e.target.value)
-                        }}
-                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <Input
-                        value={brandSettings.secondaryColor}
-                        onChange={(e) => {
-                          setBrandSettings({...brandSettings, secondaryColor: e.target.value})
-                          handleBrandColorUpdate('secondary', e.target.value)
-                        }}
-                        className="flex-1"
-                        placeholder="#64748B"
-                      />
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <input
+                          type="color"
+                          value={brandSettings.secondaryColor}
+                          onChange={(e) => {
+                            setBrandSettings({...brandSettings, secondaryColor: e.target.value})
+                            handleBrandColorUpdate('secondary', e.target.value)
+                          }}
+                          className="w-16 h-16 rounded-xl border-2 border-gray-300 cursor-pointer appearance-none"
+                        />
+                        <div 
+                          className="absolute inset-2 rounded-lg pointer-events-none"
+                          style={{ backgroundColor: brandSettings.secondaryColor }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          value={brandSettings.secondaryColor}
+                          onChange={(e) => {
+                            setBrandSettings({...brandSettings, secondaryColor: e.target.value})
+                            handleBrandColorUpdate('secondary', e.target.value)
+                          }}
+                          className="h-12 text-base"
+                          placeholder="#64748B"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Tag, testi secondari
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Tag, testi secondari
-                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Sezione Immagine Copertina */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                   📷 Immagine Copertina
                 </h3>
                 
                 {brandSettings.coverImageUrl && (
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <img
                       src={brandSettings.coverImageUrl}
                       alt="Copertina menu"
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-40 object-cover rounded-xl border border-gray-200"
                     />
                   </div>
                 )}
@@ -1701,27 +1717,27 @@ export default function MenuAdminPage() {
                   selectedFile={isUpdatingBrand ? "updating" : ""}
                   mediaType="image"
                   maxSize={10}
-                  label={brandSettings.coverImageUrl ? "Sostituisci immagine copertina" : "Carica immagine copertina"}
+                  label={brandSettings.coverImageUrl ? "Sostituisci Copertina" : "Carica Copertina"}
                   className="w-full"
                 />
                 
-                <p className="text-xs text-gray-500 mt-2">
-                  Immagine mostrata in alto nel menu pubblico. Consigliato: 1200x400px
+                <p className="text-xs text-gray-500 mt-3 bg-gray-50 p-3 rounded-lg">
+                  💡 Immagine mostrata in alto nel menu pubblico. Consigliato: 1200x400px
                 </p>
               </div>
 
               {/* Sezione Logo */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                   🏪 Logo Ristorante
                 </h3>
                 
                 {brandSettings.logoUrl && (
-                  <div className="mb-4">
+                  <div className="mb-6 flex justify-center">
                     <img
                       src={brandSettings.logoUrl}
                       alt="Logo ristorante"
-                      className="w-24 h-24 object-contain rounded-lg border border-gray-200"
+                      className="w-32 h-32 object-contain rounded-xl border border-gray-200 bg-gray-50"
                     />
                   </div>
                 )}
@@ -1737,36 +1753,38 @@ export default function MenuAdminPage() {
                   selectedFile={isUpdatingBrand ? "updating" : ""}
                   mediaType="image"
                   maxSize={5}
-                  label={brandSettings.logoUrl ? "Sostituisci logo" : "Carica logo"}
+                  label={brandSettings.logoUrl ? "Sostituisci Logo" : "Carica Logo"}
                   className="w-full"
                 />
                 
-                <p className="text-xs text-gray-500 mt-2">
-                  Logo mostrato nell'header. Consigliato: formato quadrato, sfondo trasparente
+                <p className="text-xs text-gray-500 mt-3 bg-gray-50 p-3 rounded-lg">
+                  💡 Logo mostrato nell'header. Consigliato: formato quadrato, sfondo trasparente
                 </p>
               </div>
 
               {/* Anteprima URL Menu Pubblico */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 mb-2">📱 Menu Pubblico</h4>
-                <p className="text-sm text-blue-800 mb-2">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
+                <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                  📱 Menu Pubblico
+                </h4>
+                <p className="text-sm text-blue-800 mb-4">
                   Il tuo menu sarà visibile pubblicamente a questo indirizzo:
                 </p>
-                <div className="bg-white rounded border border-blue-200 p-2 font-mono text-sm text-blue-700">
+                <div className="bg-white rounded-xl border border-blue-200 p-4 font-mono text-sm text-blue-700 break-all">
                   {typeof window !== 'undefined' ? window.location.origin : ''}/menu/{restaurantId}
                 </div>
-                <p className="text-xs text-blue-600 mt-2">
-                  Puoi condividere questo link con i tuoi clienti o aggiungerlo nelle campagne WhatsApp.
+                <p className="text-xs text-blue-600 mt-3 bg-blue-100 p-3 rounded-lg">
+                  💡 Puoi condividere questo link con i tuoi clienti o aggiungerlo nelle campagne WhatsApp.
                 </p>
               </div>
             </div>
             
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
               <CustomButton 
-                variant="outline" 
+                className="w-full h-14 text-base font-semibold"
                 onClick={() => setShowBrandDialog(false)}
               >
-                Chiudi
+                ✅ Fatto
               </CustomButton>
             </div>
           </DialogContent>
