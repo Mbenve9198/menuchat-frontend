@@ -9,8 +9,6 @@ import {
   MapPin, 
   Star, 
   Clock,
-  Search,
-  Filter,
   X
 } from "lucide-react"
 
@@ -85,17 +83,66 @@ export default function PublicMenuPage() {
   const [error, setError] = useState<string | null>(null)
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null)
   const [menuData, setMenuData] = useState<MenuData | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<string>("")
+  
+  // Stati per il modal di dettaglio piatto
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null)
+  const [showDishModal, setShowDishModal] = useState(false)
 
   // Load data
   useEffect(() => {
-    if (restaurantId) {
-      loadData()
-    }
+    loadData()
   }, [restaurantId])
 
+  // Gestione tasto ESC per chiudere il modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showDishModal) {
+        closeDishModal()
+      }
+    }
+
+    if (showDishModal) {
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden' // Previene scroll della pagina
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset' // Ripristina scroll
+    }
+  }, [showDishModal])
+
+  // Auto-selezione categoria durante scroll
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: '-20% 0px -70% 0px',
+      threshold: 0
+    }
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const categoryId = entry.target.id.replace('category-', '')
+          setActiveCategory(categoryId)
+        }
+      })
+    }
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions)
+
+    // Osserva tutte le categorie
+    const categoryElements = document.querySelectorAll('[id^="category-"]')
+    categoryElements.forEach((el) => observer.observe(el))
+
+    return () => {
+      categoryElements.forEach((el) => observer.unobserve(el))
+    }
+  }, [menuData])
+
+  // Load menu data
   const loadData = async () => {
     try {
       setIsLoading(true)
@@ -152,12 +199,6 @@ export default function PublicMenuPage() {
     const allCategories = menuData.categories.map(category => ({
       ...category,
       dishes: category.dishes.filter(dish => {
-        // Search filter
-        const matchesSearch = !searchTerm || 
-          dish.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          dish.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          dish.ingredients?.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase()))
-
         // Tag filter
         const matchesTags = selectedTags.length === 0 || 
           selectedTags.some(tagId => dish.tags.some(tag => tag.id === tagId))
@@ -165,12 +206,11 @@ export default function PublicMenuPage() {
         // Available filter
         const isAvailable = dish.available
 
-        return matchesSearch && matchesTags && isAvailable
+        return matchesTags && isAvailable
       })
     })).filter(category => category.dishes.length > 0)
     
     console.log('🔍 Filtri applicati:')
-    console.log('   - Termine di ricerca:', searchTerm)
     console.log('   - Tag selezionati:', selectedTags)
     console.log('   - Categorie totali:', menuData.categories.length)
     console.log('   - Categorie dopo filtro:', allCategories.length)
@@ -204,8 +244,37 @@ export default function PublicMenuPage() {
   }
 
   const clearFilters = () => {
-    setSearchTerm("")
     setSelectedTags([])
+  }
+
+  const openDishModal = (dish: Dish) => {
+    setSelectedDish(dish)
+    setShowDishModal(true)
+  }
+
+  const closeDishModal = () => {
+    setSelectedDish(null)
+    setShowDishModal(false)
+  }
+
+  // Funzione per ottenere emoji appropriate per i tag
+  const getTagEmoji = (tagText: string) => {
+    const text = tagText.toLowerCase()
+    if (text.includes('vegano') || text.includes('vegan')) return '🌱'
+    if (text.includes('vegetariano') || text.includes('vegetarian')) return '🥬'
+    if (text.includes('glutine') || text.includes('gluten')) return '🌾'
+    if (text.includes('piccante') || text.includes('spicy')) return '🌶️'
+    if (text.includes('bio') || text.includes('organic')) return '🌿'
+    if (text.includes('senza lattosio') || text.includes('lactose')) return '🥛'
+    if (text.includes('proteico') || text.includes('protein')) return '💪'
+    if (text.includes('dolce') || text.includes('sweet')) return '🍯'
+    if (text.includes('fresco') || text.includes('fresh')) return '❄️'
+    if (text.includes('caldo') || text.includes('hot')) return '🔥'
+    if (text.includes('stagionale') || text.includes('seasonal')) return '🍂'
+    if (text.includes('locale') || text.includes('local')) return '🏘️'
+    if (text.includes('mare') || text.includes('sea') || text.includes('pesce')) return '🐟'
+    if (text.includes('carne') || text.includes('meat')) return '🥩'
+    return '🏷️'
   }
 
   if (isLoading) {
@@ -284,55 +353,54 @@ export default function PublicMenuPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="relative bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto p-4">
-          <div className="flex items-center gap-4">
-            {/* Logo/Profile */}
-            <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-              {(designSettings.logoUrl || restaurantInfo?.profileImage) ? (
-                <img
-                  src={designSettings.logoUrl || restaurantInfo?.profileImage}
-                  alt={restaurantInfo?.name || 'Restaurant'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div 
-                  className="w-full h-full flex items-center justify-center text-white font-bold text-xl"
-                  style={{ backgroundColor: designSettings.primaryColor }}
-                >
-                  {restaurantInfo?.name?.charAt(0) || 'R'}
-                </div>
-              )}
+      {/* Header with floating profile */}
+      <div className="relative">
+        {/* Profile Image floating between cover and content */}
+        {(designSettings.logoUrl || restaurantInfo?.profileImage) && (
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-10">
+            <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg">
+              <img
+                src={designSettings.logoUrl || restaurantInfo?.profileImage}
+                alt={restaurantInfo?.name || 'Restaurant'}
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
+          </div>
+        )}
 
-            <div className="flex-1">
+        {/* Main content with wave top */}
+        <div className="bg-white shadow-sm" style={{
+          clipPath: 'ellipse(100% 100% at 50% 0%)',
+          paddingTop: '60px'
+        }}>
+          <div className="max-w-4xl mx-auto p-4 pt-16">
+            <div className="text-center">
               {/* Personalized Greeting */}
               {customerName && (
                 <motion.p
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="text-lg font-medium mb-1"
+                  className="text-lg font-medium mb-2"
                   style={{ color: designSettings.primaryColor }}
                 >
                   Ciao <span className="font-bold">{customerName}</span>! 👋
                 </motion.p>
               )}
 
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">
                 {restaurantInfo?.name || 'Menu'}
               </h1>
 
               {restaurantInfo?.address && (
-                <div className="flex items-center gap-1 text-gray-600 text-sm mt-1">
+                <div className="flex items-center justify-center gap-1 text-gray-600 text-sm mb-2">
                   <MapPin className="w-4 h-4" />
                   <span>{restaurantInfo.address.formattedAddress}</span>
                 </div>
               )}
 
               {restaurantInfo?.googleRating && (
-                <div className="flex items-center gap-2 text-sm mt-1">
+                <div className="flex items-center justify-center gap-2 text-sm">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-medium">{restaurantInfo.googleRating.rating.toFixed(1)}</span>
@@ -350,18 +418,6 @@ export default function PublicMenuPage() {
       {/* Search & Filters */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto p-4">
-          {/* Search Bar */}
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Cerca piatti, ingredienti..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
           {/* Filter Tags */}
           {menuData.availableTags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -369,12 +425,13 @@ export default function PublicMenuPage() {
                 <button
                   key={tag.id}
                   onClick={() => toggleTag(tag.id)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all transform active:scale-95 ${
                     selectedTags.includes(tag.id)
-                      ? `${tag.color} text-white`
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? `${tag.color} text-white shadow-lg`
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                   }`}
                 >
+                  <span className="text-lg">{getTagEmoji(tag.text)}</span>
                   {tag.text}
                 </button>
               ))}
@@ -382,10 +439,10 @@ export default function PublicMenuPage() {
           )}
 
           {/* Clear Filters */}
-          {(searchTerm || selectedTags.length > 0) && (
+          {selectedTags.length > 0 && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3"
             >
               <X className="w-4 h-4" />
               Cancella filtri
@@ -452,37 +509,51 @@ export default function PublicMenuPage() {
                 </div>
 
                 {/* Dishes */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {category.dishes.map((dish) => (
                     <motion.div
                       key={dish.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ 
+                        duration: 0.2,
+                        type: "spring", 
+                        stiffness: 300,
+                        damping: 20
+                      }}
+                      onClick={() => openDishModal(dish)}
+                      className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-xl transition-all cursor-pointer transform hover:-translate-y-1"
+                      style={{
+                        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+                      }}
                     >
-                      <div className="flex gap-4">
-                        {/* Dish Image */}
+                      <div className="flex gap-5">
+                        {/* Dish Image - Larger */}
                         {designSettings.showImages && dish.photoUrl && (
-                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="w-32 h-32 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
                             <img
                               src={dish.photoUrl}
                               alt={dish.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                             />
                           </div>
                         )}
 
                         {/* Dish Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-2">
-                            <h3 className="font-bold text-lg text-gray-900 leading-tight">
+                          <div className="flex justify-between items-start gap-3 mb-2">
+                            <h3 className="font-bold text-xl text-gray-900 leading-tight">
                               {dish.name}
                             </h3>
                             {designSettings.showPrices && (
                               <span 
-                                className="font-bold text-lg whitespace-nowrap"
-                                style={{ color: designSettings.primaryColor }}
+                                className="font-bold text-xl whitespace-nowrap px-3 py-1 rounded-lg shadow-sm"
+                                style={{ 
+                                  color: designSettings.primaryColor,
+                                  backgroundColor: `${designSettings.primaryColor}15`
+                                }}
                               >
                                 €{dish.price.toFixed(2)}
                               </span>
@@ -490,24 +561,26 @@ export default function PublicMenuPage() {
                           </div>
 
                           {dish.description && (
-                            <p className="text-gray-600 text-sm mt-1 leading-relaxed">
+                            <p className="text-gray-600 text-base mt-2 leading-relaxed">
                               {dish.description}
                             </p>
                           )}
 
                           {dish.ingredients && dish.ingredients.length > 0 && (
-                            <p className="text-gray-500 text-xs mt-2">
-                              <span className="font-medium">Ingredienti:</span> {dish.ingredients.join(', ')}
-                            </p>
+                            <div className="mt-3">
+                              <span className="text-gray-700 font-medium text-sm">Ingredienti: </span>
+                              <span className="text-gray-500 text-sm">{dish.ingredients.join(', ')}</span>
+                            </div>
                           )}
 
                           {dish.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-3">
                               {dish.tags.map((tag) => (
                                 <span
                                   key={tag.id}
-                                  className={`px-2 py-1 rounded text-xs font-medium text-white ${tag.color}`}
+                                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${tag.color}`}
                                 >
+                                  <span>{getTagEmoji(tag.text)}</span>
                                   {tag.text}
                                 </span>
                               ))}
@@ -530,6 +603,178 @@ export default function PublicMenuPage() {
           <p>Powered by <span className="font-medium">MenuChat</span></p>
         </div>
       </div>
+
+      {/* Dish Detail Modal */}
+      {showDishModal && selectedDish && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
+          {/* Overlay */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+            onClick={closeDishModal}
+          />
+          
+          {/* Modal Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 100, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            transition={{ 
+              duration: 0.3,
+              type: "spring",
+              stiffness: 300,
+              damping: 30
+            }}
+            className="relative bg-white w-full max-w-2xl mx-4 md:mx-0 rounded-t-3xl md:rounded-3xl max-h-[90vh] overflow-hidden shadow-2xl"
+            style={{
+              background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+            }}
+          >
+            {/* Close Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={closeDishModal}
+              className="absolute top-4 right-4 z-10 w-12 h-12 bg-white bg-opacity-95 rounded-full flex items-center justify-center shadow-xl hover:shadow-2xl transition-all"
+            >
+              <X className="w-6 h-6 text-gray-700" />
+            </motion.button>
+
+            {/* Dish Image */}
+            {designSettings.showImages && selectedDish.photoUrl && (
+              <div className="relative h-64 md:h-80 bg-gray-200 overflow-hidden">
+                <motion.img
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  src={selectedDish.photoUrl}
+                  alt={selectedDish.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="p-6 space-y-5 max-h-96 overflow-y-auto">
+              {/* Title and Price */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="space-y-3"
+              >
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+                  {selectedDish.name}
+                </h2>
+                
+                {designSettings.showPrices && (
+                  <div className="flex items-center">
+                    <span 
+                      className="text-3xl font-bold px-4 py-2 rounded-xl shadow-lg"
+                      style={{ 
+                        color: designSettings.primaryColor,
+                        backgroundColor: `${designSettings.primaryColor}15`
+                      }}
+                    >
+                      €{selectedDish.price.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Description */}
+              {selectedDish.description && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-3"
+                >
+                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <span>📝</span> Descrizione
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed text-lg">
+                    {selectedDish.description}
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Ingredients */}
+              {selectedDish.ingredients && selectedDish.ingredients.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-3"
+                >
+                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <span>🥘</span> Ingredienti
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedDish.ingredients.map((ingredient, index) => (
+                      <motion.span
+                        key={index}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4 + index * 0.1 }}
+                        className="px-4 py-2 bg-gray-50 text-gray-700 rounded-full text-sm font-medium shadow-sm border"
+                      >
+                        {ingredient}
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Tags */}
+              {selectedDish.tags.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-3"
+                >
+                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <span>⭐</span> Caratteristiche
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedDish.tags.map((tag, index) => (
+                      <motion.span
+                        key={tag.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5 + index * 0.1 }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white shadow-lg ${tag.color}`}
+                      >
+                        <span>{getTagEmoji(tag.text)}</span>
+                        {tag.text}
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Bottom Action */}
+            <div className="p-6 pt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 rounded-2xl text-white font-bold text-center text-lg shadow-lg cursor-pointer transition-all hover:shadow-xl"
+                style={{ backgroundColor: designSettings.primaryColor }}
+              >
+                Visualizza nel menu ✨
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 } 
