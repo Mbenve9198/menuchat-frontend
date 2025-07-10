@@ -18,6 +18,8 @@ import {
   Loader2,
   Zap,
   Check,
+  Camera,
+  X,
 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -27,6 +29,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { MultipleMediaUpload } from "@/components/ui/multiple-media-upload"
+import { MediaUpload } from "@/components/ui/media-upload"
 import { AsyncTaskProgress } from "@/components/ui/async-task-progress"
 
 // --- TYPES ---
@@ -93,6 +96,14 @@ const DishAccordionItem = ({
   const [ingredients, setIngredients] = React.useState((dish.ingredients || []).join(", "))
   const [newTagText, setNewTagText] = React.useState("")
   const [isCreatingTag, setIsCreatingTag] = React.useState(false)
+  
+  // Stati per gestione immagine
+  const [showImageDialog, setShowImageDialog] = React.useState(false)
+  const [isUpdatingImage, setIsUpdatingImage] = React.useState(false)
+  
+  // Stati per generazione AI
+  const [isGeneratingDescription, setIsGeneratingDescription] = React.useState(false)
+  const [isGeneratingIngredients, setIsGeneratingIngredients] = React.useState(false)
 
   React.useEffect(() => {
     setName(dish.name)
@@ -204,171 +215,376 @@ const DishAccordionItem = ({
     }
   }
 
+  const handleImageUpload = async (fileUrl: string, fileType: "image" | "video" | "pdf") => {
+    if (fileType !== "image") {
+      alert("Solo le immagini sono supportate per i piatti")
+      return
+    }
+
+    try {
+      setIsUpdatingImage(true)
+      const response = await fetch(`/api/menu/item/${dish.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoUrl: fileUrl })
+      })
+      
+      if (response.ok) {
+        onUpdateDish({ ...dish, photoUrl: fileUrl })
+        setShowImageDialog(false)
+      } else {
+        alert("Errore nell'aggiornamento dell'immagine")
+      }
+    } catch (err) {
+      console.error('Error updating image:', err)
+      alert("Errore nell'aggiornamento dell'immagine")
+    } finally {
+      setIsUpdatingImage(false)
+    }
+  }
+
+  const handleImageDelete = async () => {
+    if (!dish.photoUrl) return
+    
+    if (!confirm("Sei sicuro di voler eliminare l'immagine di questo piatto?")) {
+      return
+    }
+
+    try {
+      setIsUpdatingImage(true)
+      const response = await fetch(`/api/menu/item/${dish.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoUrl: "" })
+      })
+      
+      if (response.ok) {
+        onUpdateDish({ ...dish, photoUrl: "" })
+        setShowImageDialog(false)
+      } else {
+        alert("Errore nell'eliminazione dell'immagine")
+      }
+    } catch (err) {
+      console.error('Error deleting image:', err)
+      alert("Errore nell'eliminazione dell'immagine")
+    } finally {
+      setIsUpdatingImage(false)
+    }
+  }
+
+  const handleGenerateDescription = async () => {
+    try {
+      setIsGeneratingDescription(true)
+      const response = await fetch(`/api/menu/item/${dish.id}/generate-content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'description',
+          autoUpdate: true
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data?.description) {
+          setDescription(result.data.description)
+          onUpdateDish({ ...dish, description: result.data.description })
+        } else {
+          alert('Errore nella generazione della descrizione')
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Errore: ${errorData.error || 'Errore nella generazione della descrizione'}`)
+      }
+    } catch (err) {
+      console.error('Error generating description:', err)
+      alert('Errore nella generazione della descrizione')
+    } finally {
+      setIsGeneratingDescription(false)
+    }
+  }
+
+  const handleGenerateIngredients = async () => {
+    try {
+      setIsGeneratingIngredients(true)
+      const response = await fetch(`/api/menu/item/${dish.id}/generate-content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'ingredients',
+          autoUpdate: true
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data?.ingredients) {
+          const ingredientsText = result.data.ingredients.join(', ')
+          setIngredients(ingredientsText)
+          onUpdateDish({ ...dish, ingredients: result.data.ingredients })
+        } else {
+          alert('Errore nella generazione degli ingredienti')
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Errore: ${errorData.error || 'Errore nella generazione degli ingredienti'}`)
+      }
+    } catch (err) {
+      console.error('Error generating ingredients:', err)
+      alert('Errore nella generazione degli ingredienti')
+    } finally {
+      setIsGeneratingIngredients(false)
+    }
+  }
+
   return (
-    <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-gray-200">
-      <AccordionItem value={dish.id} className="border-b-0">
-        <AccordionTrigger className="p-3 hover:no-underline data-[state=open]:border-b">
-          <div className="flex items-center gap-4 w-full">
-            {showBulkCheckbox && (
-              <div onClick={(e) => e.stopPropagation()}>
-                <input
-                  type="checkbox"
-                  checked={isSelectedForBulk}
-                  onChange={() => onBulkToggle?.(dish.id)}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+    <>
+      <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-gray-200">
+        <AccordionItem value={dish.id} className="border-b-0">
+          <AccordionTrigger className="p-3 hover:no-underline data-[state=open]:border-b">
+            <div className="flex items-center gap-4 w-full">
+              {showBulkCheckbox && (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={isSelectedForBulk}
+                    onChange={() => onBulkToggle?.(dish.id)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </div>
+              )}
+              <div className="w-16 h-16 shrink-0 relative group" onClick={(e) => e.stopPropagation()}>
+                {dish.photoUrl ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={dish.photoUrl}
+                      alt={dish.name}
+                      className="w-full h-full rounded-lg object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                      <Camera 
+                        className="w-6 h-6 text-white cursor-pointer" 
+                        onClick={() => setShowImageDialog(true)}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    className="w-16 h-16 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    onClick={() => setShowImageDialog(true)}
+                  >
+                    <Camera className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-grow text-left" onClick={(e) => e.stopPropagation()}>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={() => handleFieldBlur("name")}
+                  className="font-bold text-gray-800 text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent w-full"
+                />
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-gray-400">€</span>
+                  <Input
+                    type="text"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    onBlur={() => handleFieldBlur("price")}
+                    className="w-20 h-8 p-1 text-lg font-semibold border-gray-300 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-2 px-2" onClick={(e) => e.stopPropagation()}>
+                <Switch
+                  checked={dish.available}
+                  onCheckedChange={handleAvailabilityChange}
+                />
+                <div className="flex items-center gap-1">
+                  <button
+                    className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                    onClick={onDuplicateDish}
+                    title="Duplica piatto"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
+                    onClick={onDeleteDish}
+                    title="Elimina piatto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 pt-2">
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-gray-600">Descrizione</label>
+                  <button
+                    className="h-6 w-6 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
+                    onClick={handleGenerateDescription}
+                    title="Genera descrizione con AI"
+                    disabled={isGeneratingDescription}
+                  >
+                    {isGeneratingDescription ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  onBlur={() => handleFieldBlur("description")}
+                  className="mt-1 w-full border rounded-md p-2 h-20 text-sm"
+                  placeholder="Descrizione breve del piatto..."
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-gray-600">Ingredienti (separati da virgola)</label>
+                  <button
+                    className="h-6 w-6 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
+                    onClick={handleGenerateIngredients}
+                    title="Genera ingredienti con AI"
+                    disabled={isGeneratingIngredients}
+                  >
+                    {isGeneratingIngredients ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <Input
+                  value={ingredients}
+                  onChange={(e) => setIngredients(e.target.value)}
+                  onBlur={() => handleFieldBlur("ingredients")}
+                  className="mt-1 w-full text-sm"
+                  placeholder="Salmone, Olio, Sale..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-600">Etichette</label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {availableTags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      onClick={() => toggleTag(tag)}
+                      className={cn(
+                        "cursor-pointer",
+                        dish.tags.some((t) => t.id === tag.id)
+                          ? `${tag.color} text-white`
+                          : "bg-gray-200 text-gray-700",
+                      )}
+                    >
+                      {tag.text}
+                    </Badge>
+                  ))}
+                  {isCreatingTag ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newTagText}
+                        onChange={(e) => setNewTagText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") createNewTag()
+                          if (e.key === "Escape") {
+                            setIsCreatingTag(false)
+                            setNewTagText("")
+                          }
+                        }}
+                        onBlur={createNewTag}
+                        className="h-6 text-xs px-2 w-24"
+                        placeholder="Nuova etichetta"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <Badge
+                      onClick={() => setIsCreatingTag(true)}
+                      className="cursor-pointer bg-gray-100 text-gray-500 border-2 border-dashed border-gray-300 hover:bg-gray-200"
+                    >
+                      + Aggiungi
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Dialog per gestione immagine */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gestisci Immagine Piatto</DialogTitle>
+            <DialogDescription>
+              {dish.photoUrl 
+                ? "Puoi sostituire o eliminare l'immagine esistente." 
+                : "Carica un'immagine per questo piatto."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {dish.photoUrl && (
+              <div className="text-center">
+                <img
+                  src={dish.photoUrl}
+                  alt={dish.name}
+                  className="w-full max-w-xs mx-auto rounded-lg object-cover"
                 />
               </div>
             )}
-            <div className="w-16 h-16 shrink-0" onClick={(e) => e.stopPropagation()}>
-              {dish.photoUrl ? (
-                <img
-                  src={dish.photoUrl || "/placeholder.svg"}
-                  alt={dish.name}
-                  className="w-full h-full rounded-lg object-cover"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-lg bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-gray-400" />
-                </div>
+            
+            <MediaUpload
+              onFileSelect={handleImageUpload}
+              selectedFile={isUpdatingImage ? "updating" : ""}
+              mediaType="image"
+              maxSize={10}
+              label={dish.photoUrl ? "Sostituisci immagine" : "Carica immagine"}
+              className="w-full"
+            />
+            
+            <div className="flex justify-between gap-2">
+              <CustomButton 
+                variant="outline" 
+                onClick={() => setShowImageDialog(false)}
+                disabled={isUpdatingImage}
+              >
+                Annulla
+              </CustomButton>
+              
+              {dish.photoUrl && (
+                <CustomButton 
+                  variant="destructive"
+                  onClick={handleImageDelete}
+                  disabled={isUpdatingImage}
+                >
+                  {isUpdatingImage ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Eliminazione...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Elimina Immagine
+                    </>
+                  )}
+                </CustomButton>
               )}
             </div>
-            <div className="flex-grow text-left" onClick={(e) => e.stopPropagation()}>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={() => handleFieldBlur("name")}
-                className="font-bold text-gray-800 text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent w-full"
-              />
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-gray-400">€</span>
-                <Input
-                  type="text"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  onBlur={() => handleFieldBlur("price")}
-                  className="w-20 h-8 p-1 text-lg font-semibold border-gray-300 focus:ring-green-500"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col items-center gap-2 px-2" onClick={(e) => e.stopPropagation()}>
-              <Switch
-                checked={dish.available}
-                onCheckedChange={handleAvailabilityChange}
-              />
-              <div className="flex items-center gap-1">
-                <button
-                  className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-150"
-                  onClick={onDuplicateDish}
-                  title="Duplica piatto"
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-                <button
-                  className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
-                  onClick={onDeleteDish}
-                  title="Elimina piatto"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
           </div>
-        </AccordionTrigger>
-        <AccordionContent className="p-4 pt-2">
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-gray-600">Descrizione</label>
-                <button
-                  className="h-6 w-6 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
-                  onClick={() => {
-                    // TODO: Implement AI description generation
-                    console.log("Generate description for:", dish.name)
-                  }}
-                  title="Genera descrizione con AI"
-                >
-                  <Sparkles className="h-4 w-4" />
-                </button>
-              </div>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onBlur={() => handleFieldBlur("description")}
-                className="mt-1 w-full border rounded-md p-2 h-20 text-sm"
-                placeholder="Descrizione breve del piatto..."
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-gray-600">Ingredienti (separati da virgola)</label>
-                <button
-                  className="h-6 w-6 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
-                  onClick={() => {
-                    // TODO: Implement AI ingredients generation
-                    console.log("Generate ingredients for:", dish.name)
-                  }}
-                  title="Genera ingredienti con AI"
-                >
-                  <Sparkles className="h-4 w-4" />
-                </button>
-              </div>
-              <Input
-                value={ingredients}
-                onChange={(e) => setIngredients(e.target.value)}
-                onBlur={() => handleFieldBlur("ingredients")}
-                className="mt-1 w-full text-sm"
-                placeholder="Salmone, Olio, Sale..."
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-600">Etichette</label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {availableTags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    onClick={() => toggleTag(tag)}
-                    className={cn(
-                      "cursor-pointer",
-                      dish.tags.some((t) => t.id === tag.id)
-                        ? `${tag.color} text-white`
-                        : "bg-gray-200 text-gray-700",
-                    )}
-                  >
-                    {tag.text}
-                  </Badge>
-                ))}
-                {isCreatingTag ? (
-                  <div className="flex items-center gap-1">
-                    <Input
-                      value={newTagText}
-                      onChange={(e) => setNewTagText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") createNewTag()
-                        if (e.key === "Escape") {
-                          setIsCreatingTag(false)
-                          setNewTagText("")
-                        }
-                      }}
-                      onBlur={createNewTag}
-                      className="h-6 text-xs px-2 w-24"
-                      placeholder="Nuova etichetta"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <Badge
-                    onClick={() => setIsCreatingTag(true)}
-                    className="cursor-pointer bg-gray-100 text-gray-500 border-2 border-dashed border-gray-300 hover:bg-gray-200"
-                  >
-                    + Aggiungi
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

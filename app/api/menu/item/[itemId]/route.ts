@@ -58,9 +58,6 @@ export async function DELETE(
     
     const response = await fetch(`${backendUrl}/api/menu/item/${itemId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       cache: 'no-store'
     });
 
