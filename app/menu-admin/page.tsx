@@ -783,6 +783,16 @@ export default function MenuAdminPage() {
   const [showAnalysisPreview, setShowAnalysisPreview] = React.useState(false)
   const [addIngredientsDescription, setAddIngredientsDescription] = React.useState(false)
 
+  // Stati per la sezione Brand
+  const [showBrandDialog, setShowBrandDialog] = React.useState(false)
+  const [brandSettings, setBrandSettings] = React.useState({
+    primaryColor: '#3B82F6',
+    secondaryColor: '#64748B',
+    coverImageUrl: '',
+    logoUrl: ''
+  })
+  const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
+
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
 
@@ -826,6 +836,16 @@ export default function MenuAdminPage() {
       setCategories(data.data.categories)
       setOriginalCategories(JSON.parse(JSON.stringify(data.data.categories)))
       setAvailableTags(data.data.availableTags)
+      
+      // Carica le impostazioni brand dal menu
+      if (data.data.menu?.designSettings) {
+        setBrandSettings({
+          primaryColor: data.data.menu.designSettings.primaryColor || '#3B82F6',
+          secondaryColor: data.data.menu.designSettings.secondaryColor || '#64748B',
+          coverImageUrl: data.data.menu.designSettings.coverImageUrl || '',
+          logoUrl: data.data.menu.designSettings.logoUrl || ''
+        })
+      }
       
     } catch (err: any) {
       console.error('Error loading menu data:', err)
@@ -1036,6 +1056,61 @@ export default function MenuAdminPage() {
     }
   }
 
+  // Funzioni per gestione Brand
+  const handleBrandImageUpload = async (fileUrl: string, imageType: 'cover' | 'logo') => {
+    try {
+      setIsUpdatingBrand(true)
+      
+      const updatedSettings = {
+        ...brandSettings,
+        [imageType === 'cover' ? 'coverImageUrl' : 'logoUrl']: fileUrl
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+        alert(`${imageType === 'cover' ? 'Immagine copertina' : 'Logo'} aggiornato con successo!`)
+      } else {
+        alert('Errore nell\'aggiornamento dell\'immagine')
+      }
+    } catch (err) {
+      console.error('Error updating brand image:', err)
+      alert('Errore nell\'aggiornamento dell\'immagine')
+    } finally {
+      setIsUpdatingBrand(false)
+    }
+  }
+
+  const handleBrandColorUpdate = async (colorType: 'primary' | 'secondary', color: string) => {
+    try {
+      const updatedSettings = {
+        ...brandSettings,
+        [colorType === 'primary' ? 'primaryColor' : 'secondaryColor']: color
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+      }
+    } catch (err) {
+      console.error('Error updating brand color:', err)
+    }
+  }
+
   if (status === "loading" || isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -1081,6 +1156,9 @@ export default function MenuAdminPage() {
 
         {!bulkMode && (
           <div className="mb-6 flex gap-3">
+            <CustomButton variant="outline" onClick={() => setShowBrandDialog(true)}>
+              <ImageIcon className="mr-2 h-5 w-5" /> Brand & Design
+            </CustomButton>
             <CustomButton variant="outline" onClick={handleBulkPriceUpdate}>
               <DollarSign className="mr-2 h-5 w-5" /> Aggiorna Prezzi
             </CustomButton>
@@ -1520,6 +1598,182 @@ export default function MenuAdminPage() {
             </div>
           </div>
         )}
+
+        {/* Brand & Design Dialog */}
+        <Dialog open={showBrandDialog} onOpenChange={setShowBrandDialog}>
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Brand & Design</DialogTitle>
+              <DialogDescription>
+                Personalizza l'aspetto del tuo menu pubblico con colori e immagini del tuo brand.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Sezione Colori */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  🎨 Colori Brand
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Colore Primario
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={brandSettings.primaryColor}
+                        onChange={(e) => {
+                          setBrandSettings({...brandSettings, primaryColor: e.target.value})
+                          handleBrandColorUpdate('primary', e.target.value)
+                        }}
+                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                      />
+                      <Input
+                        value={brandSettings.primaryColor}
+                        onChange={(e) => {
+                          setBrandSettings({...brandSettings, primaryColor: e.target.value})
+                          handleBrandColorUpdate('primary', e.target.value)
+                        }}
+                        className="flex-1"
+                        placeholder="#3B82F6"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Header, pulsanti, accenti
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Colore Secondario
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={brandSettings.secondaryColor}
+                        onChange={(e) => {
+                          setBrandSettings({...brandSettings, secondaryColor: e.target.value})
+                          handleBrandColorUpdate('secondary', e.target.value)
+                        }}
+                        className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                      />
+                      <Input
+                        value={brandSettings.secondaryColor}
+                        onChange={(e) => {
+                          setBrandSettings({...brandSettings, secondaryColor: e.target.value})
+                          handleBrandColorUpdate('secondary', e.target.value)
+                        }}
+                        className="flex-1"
+                        placeholder="#64748B"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tag, testi secondari
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sezione Immagine Copertina */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  📷 Immagine Copertina
+                </h3>
+                
+                {brandSettings.coverImageUrl && (
+                  <div className="mb-4">
+                    <img
+                      src={brandSettings.coverImageUrl}
+                      alt="Copertina menu"
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+                
+                <MediaUpload
+                  onFileSelect={(fileUrl, fileType) => {
+                    if (fileType === "image") {
+                      handleBrandImageUpload(fileUrl, 'cover')
+                    } else {
+                      alert("Solo le immagini sono supportate")
+                    }
+                  }}
+                  selectedFile={isUpdatingBrand ? "updating" : ""}
+                  mediaType="image"
+                  maxSize={10}
+                  label={brandSettings.coverImageUrl ? "Sostituisci immagine copertina" : "Carica immagine copertina"}
+                  className="w-full"
+                />
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  Immagine mostrata in alto nel menu pubblico. Consigliato: 1200x400px
+                </p>
+              </div>
+
+              {/* Sezione Logo */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  🏪 Logo Ristorante
+                </h3>
+                
+                {brandSettings.logoUrl && (
+                  <div className="mb-4">
+                    <img
+                      src={brandSettings.logoUrl}
+                      alt="Logo ristorante"
+                      className="w-24 h-24 object-contain rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+                
+                <MediaUpload
+                  onFileSelect={(fileUrl, fileType) => {
+                    if (fileType === "image") {
+                      handleBrandImageUpload(fileUrl, 'logo')
+                    } else {
+                      alert("Solo le immagini sono supportate")
+                    }
+                  }}
+                  selectedFile={isUpdatingBrand ? "updating" : ""}
+                  mediaType="image"
+                  maxSize={5}
+                  label={brandSettings.logoUrl ? "Sostituisci logo" : "Carica logo"}
+                  className="w-full"
+                />
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  Logo mostrato nell'header. Consigliato: formato quadrato, sfondo trasparente
+                </p>
+              </div>
+
+              {/* Anteprima URL Menu Pubblico */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">📱 Menu Pubblico</h4>
+                <p className="text-sm text-blue-800 mb-2">
+                  Il tuo menu sarà visibile pubblicamente a questo indirizzo:
+                </p>
+                <div className="bg-white rounded border border-blue-200 p-2 font-mono text-sm text-blue-700">
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/menu/{restaurantId}
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  Puoi condividere questo link con i tuoi clienti o aggiungerlo nelle campagne WhatsApp.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <CustomButton 
+                variant="outline" 
+                onClick={() => setShowBrandDialog(false)}
+              >
+                Chiudi
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )
