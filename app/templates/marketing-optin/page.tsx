@@ -53,6 +53,7 @@ interface OptinConfig {
     url: string
     linkText: Record<string, string>
   }
+  customProfileImage?: string | null
   stats: {
     totalViews: number
     totalOptins: number
@@ -67,7 +68,8 @@ function OptinPreview({
   restaurantPhoto = "",
   customerName = "Marco",
   language = "it",
-  privacyPolicy
+  privacyPolicy,
+  customProfileImage
 }: { 
   message: OptinMessage, 
   restaurantName?: string,
@@ -79,7 +81,8 @@ function OptinPreview({
     type: 'url' | 'pdf'
     url: string
     linkText: Record<string, string>
-  }
+  },
+  customProfileImage?: string | null
 }) {
   const [isChecked, setIsChecked] = useState(false)
 
@@ -105,9 +108,10 @@ function OptinPreview({
         {/* Header con logo ristorante */}
         <div className="flex items-center mb-4">
           <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden flex-shrink-0 mr-3">
-            {restaurantPhoto ? (
+            {/* Usa foto personalizzata optin se presente, altrimenti quella generale */}
+            {(customProfileImage || restaurantPhoto) ? (
               <img 
-                src={restaurantPhoto} 
+                src={customProfileImage || restaurantPhoto} 
                 alt={restaurantName} 
                 className="w-full h-full object-cover"
               />
@@ -207,6 +211,7 @@ export default function MarketingOptinPage() {
         'de': 'Datenschutzrichtlinie'
       }
     },
+    customProfileImage: null,
     stats: {
       totalViews: 0,
       totalOptins: 0,
@@ -852,6 +857,92 @@ export default function MarketingOptinPage() {
                 </div>
               )}
 
+              {/* Configurazione Foto Profilo Personalizzata */}
+              {config.enabled && (
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Foto Profilo Optin</h3>
+                      <p className="text-sm text-gray-600">Carica una foto personalizzata per la landing page optin</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Anteprima foto attuale */}
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                        {(config.customProfileImage || restaurantPhoto) ? (
+                          <img 
+                            src={config.customProfileImage || restaurantPhoto} 
+                            alt="Anteprima" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                            {restaurantName?.charAt(0) || 'R'}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {config.customProfileImage ? 'Foto personalizzata caricata' : 'Usando foto profilo generale'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {config.customProfileImage ? 'Questa foto apparirà nella pagina optin' : 'Carica una foto specifica per l\'optin'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Upload foto */}
+                    <div>
+                      <MediaUpload
+                        onFileSelect={(fileUrl, fileType) => {
+                          if (fileType === 'image' && fileUrl) {
+                            setConfig(prev => ({
+                              ...prev,
+                              customProfileImage: fileUrl
+                            }))
+                          }
+                        }}
+                        selectedFile={config.customProfileImage ?? null}
+                        mediaType="image"
+                        maxSize={2}
+                        label="Carica foto profilo optin"
+                        className="w-full"
+                      >
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer">
+                          <div className="flex items-center justify-center space-x-2">
+                            <FileText className="w-5 h-5 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                              Clicca per caricare una nuova foto
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            PNG, JPG fino a 2MB
+                          </p>
+                        </div>
+                      </MediaUpload>
+                    </div>
+
+                    {/* Rimuovi foto personalizzata */}
+                    {config.customProfileImage && (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setConfig(prev => ({
+                            ...prev,
+                            customProfileImage: null
+                          }))}
+                          className="text-sm text-red-600 hover:text-red-700 underline"
+                        >
+                          Rimuovi foto personalizzata
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Pulsante salva */}
               <CustomButton
                 onClick={saveConfig}
@@ -883,6 +974,7 @@ export default function MarketingOptinPage() {
                     restaurantPhoto={restaurantPhoto}
                     language={currentLanguage}
                     privacyPolicy={config.privacyPolicy}
+                    customProfileImage={config.customProfileImage}
                   />
                 </div>
               </div>

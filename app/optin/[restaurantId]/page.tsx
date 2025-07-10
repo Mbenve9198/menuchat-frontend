@@ -46,6 +46,7 @@ export default function OptinPage() {
   const [message, setMessage] = useState<OptinMessage | null>(null)
   const [restaurant, setRestaurant] = useState<RestaurantInfo | null>(null)
   const [privacyPolicy, setPrivacyPolicy] = useState<PrivacyPolicyConfig | null>(null)
+  const [customProfileImage, setCustomProfileImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -86,6 +87,11 @@ export default function OptinPage() {
       // Ottieni la configurazione della privacy policy se abilitata
       if (optinData.config.privacyPolicy?.enabled && optinData.config.privacyPolicy?.url) {
         setPrivacyPolicy(optinData.config.privacyPolicy)
+      }
+      
+      // Ottieni la foto profilo personalizzata se presente
+      if (optinData.config.customProfileImage) {
+        setCustomProfileImage(optinData.config.customProfileImage)
       }
       
       // Fetch info ristorante pubbliche
@@ -243,9 +249,10 @@ export default function OptinPage() {
         {/* Header con logo ristorante */}
         <div className="flex items-center mb-6">
           <div className="w-16 h-16 rounded-full bg-gray-300 overflow-hidden flex-shrink-0 mr-4">
-            {restaurant.profileImage ? (
+            {/* Usa foto personalizzata optin se presente, altrimenti quella generale */}
+            {(customProfileImage || restaurant.profileImage) ? (
               <img 
-                src={restaurant.profileImage} 
+                src={customProfileImage || restaurant.profileImage} 
                 alt={restaurant.name} 
                 className="w-full h-full object-cover"
               />
