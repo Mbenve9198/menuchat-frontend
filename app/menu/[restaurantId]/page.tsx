@@ -61,14 +61,24 @@ interface Category {
   dishes: Dish[]
 }
 
+// Aggiungo l'interfaccia per le lingue supportate
+interface SupportedLanguage {
+  code: string
+  name: string
+  flag: string
+  isDefault: boolean
+}
+
 interface MenuData {
   menu: {
     id: string
     name: string
     designSettings: DesignSettings
+    supportedLanguages?: SupportedLanguage[]
   }
   categories: Category[]
   availableTags: Tag[]
+  currentLanguage?: string
 }
 
 export default function PublicMenuPage() {
@@ -94,6 +104,13 @@ export default function PublicMenuPage() {
   const [showNavigation, setShowNavigation] = useState(true) // Mostra sempre inizialmente
   const navigationRef = useRef<HTMLDivElement>(null)
   const coverRef = useRef<HTMLDivElement>(null)
+
+  // Stati per la gestione delle lingue
+  const [currentLanguage, setCurrentLanguage] = useState('it')
+  const [hasMultipleLanguages, setHasMultipleLanguages] = useState(false)
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+  const [availableLanguages, setAvailableLanguages] = useState<SupportedLanguage[]>([])
+  const [isLoadingLanguage, setIsLoadingLanguage] = useState(false)
 
   // Aggiunge CSS per nascondere scrollbar
   useEffect(() => {
@@ -231,16 +248,18 @@ export default function PublicMenuPage() {
     }
   }, [activeCategory])
 
-  // Load menu data
-  const loadData = async () => {
+  // Load menu data with language support
+  const loadData = async (languageCode?: string) => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Load restaurant info (parallel)
+      const langToUse = languageCode || currentLanguage
+      
+      // Load restaurant info and menu data (parallel)
       const [restaurantResponse, menuResponse] = await Promise.all([
         fetch(`/api/restaurants-public/${restaurantId}`),
-        fetch(`/api/menu/${restaurantId}`)
+        fetch(`/api/menu/${restaurantId}${langToUse !== 'it' ? `?lang=${langToUse}` : ''}`)
       ])
 
       // Handle restaurant info
@@ -265,6 +284,16 @@ export default function PublicMenuPage() {
       
       setMenuData(menuData.data)
       
+      // Update available languages and current language
+      if (menuData.data.menu?.supportedLanguages) {
+        setAvailableLanguages(menuData.data.menu.supportedLanguages)
+        setHasMultipleLanguages(menuData.data.menu.supportedLanguages.length > 1)
+      }
+      
+      if (menuData.data.currentLanguage) {
+        setCurrentLanguage(menuData.data.currentLanguage)
+      }
+      
       // Set first category as active
       if (menuData.data.categories && menuData.data.categories.length > 0) {
         setActiveCategory(menuData.data.categories[0].id)
@@ -279,6 +308,15 @@ export default function PublicMenuPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Handle language change
+  const handleLanguageChange = async (languageCode: string) => {
+    if (languageCode === currentLanguage) return
+    
+    setIsLoadingLanguage(true)
+    await loadData(languageCode)
+    setIsLoadingLanguage(false)
   }
 
   // Filter dishes based on search and tags
@@ -385,7 +423,7 @@ export default function PublicMenuPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-2">Oops!</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
-            onClick={loadData}
+            onClick={() => loadData()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Riprova
@@ -452,6 +490,59 @@ export default function PublicMenuPage() {
                 alt={restaurantInfo?.name || 'Restaurant'}
                 className="w-full h-full object-cover rounded-full"
               />
+            </div>
+          </div>
+        )}
+
+        {/* Language Selector - top right */}
+        {hasMultipleLanguages && availableLanguages.length > 1 && (
+          <div className={`absolute ${designSettings.coverImageUrl ? '-top-8' : 'top-8'} right-6 z-10`}>
+            <div className="relative">
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className="w-12 h-12 bg-white/95 backdrop-blur-sm rounded-full shadow-xl flex items-center justify-center border-2 border-white hover:shadow-2xl transition-all duration-200"
+                disabled={isLoadingLanguage}
+              >
+                {isLoadingLanguage ? (
+                  <div className="animate-spin w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full"></div>
+                ) : (
+                  <span className="text-xl">
+                    {availableLanguages.find(lang => lang.code === currentLanguage)?.flag || '🌍'}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown menu */}
+              {showLanguageDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="absolute top-14 right-0 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden min-w-[160px] z-50"
+                >
+                  {availableLanguages.map((language) => (
+                    <button
+                      key={language.code}
+                      onClick={() => {
+                        handleLanguageChange(language.code)
+                        setShowLanguageDropdown(false)
+                      }}
+                      disabled={isLoadingLanguage || language.code === currentLanguage}
+                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                        language.code === currentLanguage 
+                          ? 'bg-blue-50 text-blue-700 font-medium' 
+                          : 'text-gray-700'
+                      } ${isLoadingLanguage ? 'opacity-50' : ''}`}
+                    >
+                      <span className="text-lg">{language.flag}</span>
+                      <span className="flex-1">{language.name}</span>
+                      {language.code === currentLanguage && (
+                        <span className="text-blue-500 text-sm">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
             </div>
           </div>
         )}

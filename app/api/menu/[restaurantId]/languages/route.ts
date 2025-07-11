@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -7,8 +7,6 @@ export async function GET(
 ) {
   try {
     const { restaurantId } = params
-    const { searchParams } = new URL(request.url)
-    const lang = searchParams.get('lang')
 
     if (!restaurantId) {
       return NextResponse.json({
@@ -17,17 +15,9 @@ export async function GET(
       }, { status: 400 })
     }
 
-    // Costruisci l'URL del backend
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
-    let apiUrl = `${backendUrl}/api/menu/${restaurantId}`
     
-    // Aggiungi il parametro lingua se specificato
-    if (lang) {
-      apiUrl += `?lang=${encodeURIComponent(lang)}`
-    }
-    
-    // Chiama l'API del backend per ottenere i dati del menu
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`${backendUrl}/api/menu/${restaurantId}/languages`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -39,14 +29,14 @@ export async function GET(
     if (!response.ok) {
       return NextResponse.json({
         success: false,
-        error: data.error || 'Errore nel recupero del menu'
+        error: data.error || 'Errore nel recupero delle lingue supportate'
       }, { status: response.status })
     }
 
     return NextResponse.json(data)
 
   } catch (error) {
-    console.error('Error fetching menu:', error)
+    console.error('Error fetching supported languages:', error)
     return NextResponse.json({
       success: false,
       error: 'Errore interno del server'
@@ -86,11 +76,9 @@ export async function PUT(
       }, { status: 403 })
     }
 
-    // Costruisci l'URL del backend
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
     
-    // Chiama l'API del backend per aggiornare le impostazioni design
-    const response = await fetch(`${backendUrl}/api/menu/${restaurantId}`, {
+    const response = await fetch(`${backendUrl}/api/menu/${restaurantId}/languages`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -104,14 +92,14 @@ export async function PUT(
     if (!response.ok) {
       return NextResponse.json({
         success: false,
-        error: data.error || 'Errore nell\'aggiornamento delle impostazioni'
+        error: data.error || 'Errore nell\'aggiornamento delle lingue supportate'
       }, { status: response.status })
     }
 
     return NextResponse.json(data)
 
   } catch (error) {
-    console.error('Error updating menu design settings:', error)
+    console.error('Error updating supported languages:', error)
     return NextResponse.json({
       success: false,
       error: 'Errore interno del server'

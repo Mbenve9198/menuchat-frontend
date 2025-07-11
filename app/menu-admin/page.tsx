@@ -793,6 +793,17 @@ export default function MenuAdminPage() {
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
 
+  // Stati per le traduzioni
+  const [showTranslationsDialog, setShowTranslationsDialog] = React.useState(false)
+  const [supportedLanguages, setSupportedLanguages] = React.useState<Array<{
+    code: string
+    name: string
+    flag: string
+    isDefault: boolean
+  }>>([])
+  const [isGeneratingTranslation, setIsGeneratingTranslation] = React.useState(false)
+  const [selectedLanguageForTranslation, setSelectedLanguageForTranslation] = React.useState('')
+
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
 
@@ -819,6 +830,13 @@ export default function MenuAdminPage() {
     window.addEventListener('tagsUpdated', handleTagsUpdate as EventListener)
     return () => window.removeEventListener('tagsUpdated', handleTagsUpdate as EventListener)
   }, [])
+
+  // Load supported languages
+  React.useEffect(() => {
+    if (restaurantId) {
+      loadSupportedLanguages()
+    }
+  }, [restaurantId])
 
   const loadMenuData = async () => {
     try {
@@ -853,6 +871,88 @@ export default function MenuAdminPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Load supported languages
+  const loadSupportedLanguages = async () => {
+    try {
+      const response = await fetch(`/api/menu/${restaurantId}/languages`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setSupportedLanguages(data.languages)
+      }
+    } catch (err) {
+      console.error('Error loading supported languages:', err)
+    }
+  }
+
+  // Generate translations for a specific language
+  const handleGenerateTranslation = async (languageCode: string, languageName: string) => {
+    if (!selectedLanguageForTranslation) return
+    
+    setIsGeneratingTranslation(true)
+    
+    try {
+      const response = await fetch('/api/menu/translations/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantId,
+          targetLanguage: languageName,
+          targetLanguageCode: languageCode
+        })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        alert(`✅ Traduzioni generate con successo in ${languageName}!\n\n${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`)
+        loadSupportedLanguages() // Reload to show the new language
+      } else {
+        alert(`❌ Errore nella generazione delle traduzioni: ${result.error}`)
+      }
+    } catch (err) {
+      console.error('Error generating translations:', err)
+      alert('❌ Errore nella generazione delle traduzioni')
+    } finally {
+      setIsGeneratingTranslation(false)
+    }
+  }
+
+  // Predefined languages available for translation
+  const availableLanguages = [
+    { code: 'en', name: 'English', flag: '🇬🇧' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹' },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' },
+    { code: 'ko', name: '한국어', flag: '🇰🇷' },
+    { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+    { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
+    { code: 'sv', name: 'Svenska', flag: '🇸🇪' },
+    { code: 'da', name: 'Dansk', flag: '🇩🇰' },
+    { code: 'no', name: 'Norsk', flag: '🇳🇴' },
+    { code: 'pl', name: 'Polski', flag: '🇵🇱' },
+    { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+    { code: 'el', name: 'Ελληνικά', flag: '🇬🇷' },
+    { code: 'he', name: 'עברית', flag: '🇮🇱' },
+    { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+    { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+    { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+    { code: 'cs', name: 'Čeština', flag: '🇨🇿' },
+    { code: 'hu', name: 'Magyar', flag: '🇭🇺' },
+    { code: 'ro', name: 'Română', flag: '🇷🇴' },
+    { code: 'fi', name: 'Suomi', flag: '🇫🇮' }
+  ]
+
+  // Get languages not yet translated
+  const getUntranslatedLanguages = () => {
+    const supportedCodes = supportedLanguages.map(lang => lang.code)
+    return availableLanguages.filter(lang => !supportedCodes.includes(lang.code))
   }
 
   // Handler functions
@@ -1829,9 +1929,156 @@ export default function MenuAdminPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Translations Dialog */}
+        <Dialog open={showTranslationsDialog} onOpenChange={setShowTranslationsDialog}>
+          <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800">🌍 Traduzioni Menu</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Gestisci le traduzioni del tuo menu in diverse lingue
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+              {/* Lingue già supportate */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  ✅ Lingue Supportate
+                </h3>
+                
+                {supportedLanguages.length > 0 ? (
+                  <div className="space-y-3">
+                    {supportedLanguages.map((lang) => (
+                      <div key={lang.code} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{lang.flag}</span>
+                          <div>
+                            <span className="font-medium text-gray-900">{lang.name}</span>
+                            {lang.isDefault && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-500 uppercase font-medium">
+                          {lang.code}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm bg-gray-50 p-4 rounded-xl">
+                    Solo la lingua di default è configurata
+                  </p>
+                )}
+              </div>
+
+              {/* Aggiungi nuova traduzione */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  ➕ Aggiungi Traduzione
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
+                      Seleziona Lingua
+                    </label>
+                    <select
+                      value={selectedLanguageForTranslation}
+                      onChange={(e) => setSelectedLanguageForTranslation(e.target.value)}
+                      className="w-full h-12 px-4 border border-gray-300 rounded-xl text-base bg-white"
+                      disabled={isGeneratingTranslation}
+                    >
+                      <option value="">Scegli una lingua...</option>
+                      {getUntranslatedLanguages().map((lang) => (
+                        <option key={lang.code} value={`${lang.code}|${lang.name}`}>
+                          {lang.flag} {lang.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedLanguageForTranslation && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
+                      <ul className="text-sm text-blue-800 space-y-1">
+                        <li>• L'AI tradurrà automaticamente tutti i nomi delle categorie</li>
+                        <li>• Tutti i nomi dei piatti verranno tradotti</li>
+                        <li>• Le descrizioni e gli ingredienti saranno tradotti</li>
+                        <li>• I prezzi rimangono invariati</li>
+                        <li>• Le traduzioni mantengono lo stile professionale</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  <CustomButton
+                    className="w-full h-12 text-base font-semibold"
+                    onClick={() => {
+                      if (selectedLanguageForTranslation) {
+                        const [code, name] = selectedLanguageForTranslation.split('|')
+                        handleGenerateTranslation(code, name)
+                      }
+                    }}
+                    disabled={!selectedLanguageForTranslation || isGeneratingTranslation}
+                  >
+                    {isGeneratingTranslation ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generazione traduzioni...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Genera Traduzioni con AI
+                      </>
+                    )}
+                  </CustomButton>
+                </div>
+              </div>
+
+              {getUntranslatedLanguages().length === 0 && supportedLanguages.length > 1 && (
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
+                  <div className="text-4xl mb-3">🎉</div>
+                  <h4 className="font-bold text-green-900 mb-2">Fantastico!</h4>
+                  <p className="text-sm text-green-800">
+                    Hai già tradotto il menu in tutte le lingue disponibili!
+                  </p>
+                </div>
+              )}
+
+              {/* Anteprima URL Menu Pubblico */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
+                <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                  🔗 Menu Multilingue
+                </h4>
+                <p className="text-sm text-purple-800 mb-4">
+                  I clienti potranno scegliere la lingua dal menu pubblico:
+                </p>
+                <div className="bg-white rounded-xl border border-purple-200 p-4 font-mono text-sm text-purple-700 break-all">
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/menu/{restaurantId}
+                </div>
+                <p className="text-xs text-purple-600 mt-3 bg-purple-100 p-3 rounded-lg">
+                  💡 Il selettore di lingua apparirà automaticamente quando ci sono traduzioni disponibili.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
+              <CustomButton 
+                className="w-full h-14 text-base font-semibold"
+                onClick={() => setShowTranslationsDialog(false)}
+              >
+                ✅ Fatto
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Fixed Bottom Actions */}
         <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-transparent backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-20">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <CustomButton
               className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
               onClick={() => setShowBrandDialog(true)}
@@ -1849,6 +2096,16 @@ export default function MenuAdminPage() {
               <DollarSign className="w-5 h-5 mb-1 flex-shrink-0" />
               <span className="text-center break-words hyphens-auto max-w-full">
                 Aggiorna Prezzi
+              </span>
+            </CustomButton>
+
+            <CustomButton
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
+              onClick={() => setShowTranslationsDialog(true)}
+            >
+              <span className="text-xl mb-1 flex-shrink-0">🌍</span>
+              <span className="text-center break-words hyphens-auto max-w-full">
+                Traduzioni
               </span>
             </CustomButton>
           </div>
