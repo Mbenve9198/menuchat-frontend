@@ -1645,7 +1645,7 @@ export default function MenuAdminPage() {
             items={categories.map(cat => cat.id)}
             strategy={verticalListSortingStrategy}
           >
-            <Accordion type="multiple" className="w-full space-y-4" defaultValue={categories.map(cat => cat.id)}>
+            <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
               {categories.map((category) => (
                 <SortableCategory
                   key={category.id}
