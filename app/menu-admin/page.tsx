@@ -195,6 +195,12 @@ const DishAccordionItem = ({
   const [isGeneratingDescription, setIsGeneratingDescription] = React.useState(false)
   const [isGeneratingIngredients, setIsGeneratingIngredients] = React.useState(false)
 
+  // Stati per generazione immagine AI
+  const [showAIImageDialog, setShowAIImageDialog] = React.useState(false)
+  const [aiImagePrompt, setAiImagePrompt] = React.useState("")
+  const [isGeneratingAIImage, setIsGeneratingAIImage] = React.useState(false)
+  const [showPromptEditor, setShowPromptEditor] = React.useState(false)
+
   React.useEffect(() => {
     setName(dish.name)
     setPrice(dish.price.toFixed(2))
@@ -427,6 +433,71 @@ const DishAccordionItem = ({
     }
   }
 
+  // Funzione per aprire il dialog di generazione AI
+  const handleOpenAIImageGeneration = () => {
+    setShowImageDialog(false) // Chiude il dialog principale
+    
+    // Genera prompt automatico basato sui dati del piatto
+    const ingredients = dish.ingredients && dish.ingredients.length > 0 
+      ? dish.ingredients.join(', ') 
+      : 'fresh ingredients'
+    
+    const description = dish.description && dish.description.trim() 
+      ? dish.description 
+      : 'delicious dish'
+
+    // Prompt ottimizzato per fotografia food professionale
+    // Nota: Il backend tradurrà automaticamente questo prompt in inglese perfetto per Imagen
+    const autoPrompt = `Fotografia professionale di ${dish.name}, ${description}. Ingredienti principali: ${ingredients}. Scattata con obiettivo macro 100mm, illuminazione da studio, sfondo bianco, alta qualità dei dettagli, messa a fuoco nitida, presentazione appetitosa, qualità ristorante, stile fotografia food Instagram, fotorealistica, styling culinario di alto livello, qualità 4K`
+    
+    setAiImagePrompt(autoPrompt)
+    setShowPromptEditor(false) // Inizia con prompt automatico
+    setShowAIImageDialog(true)
+  }
+
+  // Funzione per generare immagine con AI
+  const handleGenerateAIImage = async () => {
+    if (!aiImagePrompt.trim()) {
+      alert("Inserisci un prompt per generare l'immagine")
+      return
+    }
+
+    try {
+      setIsGeneratingAIImage(true)
+      
+      const response = await fetch('/api/menu/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dishId: dish.id,
+          prompt: aiImagePrompt.trim(),
+          dishName: dish.name
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.imageUrl) {
+          // Aggiorna il piatto con la nuova immagine
+          onUpdateDish({ ...dish, photoUrl: result.imageUrl })
+          setShowAIImageDialog(false)
+          setAiImagePrompt("")
+          alert("✨ Immagine generata con successo!")
+        } else {
+          alert("Errore nella generazione: " + (result.error || "Errore sconosciuto"))
+        }
+      } else {
+        const errorData = await response.json()
+        alert(`Errore: ${errorData.error || 'Errore nella generazione dell\'immagine'}`)
+      }
+    } catch (err) {
+      console.error('Error generating AI image:', err)
+      alert('Errore nella generazione dell\'immagine con AI')
+    } finally {
+      setIsGeneratingAIImage(false)
+    }
+  }
+
   return (
     <>
       <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-gray-200">
@@ -651,6 +722,26 @@ const DishAccordionItem = ({
               label={dish.photoUrl ? "Sostituisci immagine" : "Carica immagine"}
               className="w-full"
             />
+
+            {/* Bottone per generare con AI */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">oppure</span>
+              </div>
+            </div>
+
+            <CustomButton
+              variant="outline"
+              onClick={handleOpenAIImageGeneration}
+              disabled={isUpdatingImage}
+              className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              ✨ Genera con Imagen 4 Ultra
+            </CustomButton>
             
             <div className="flex justify-between gap-2">
               <CustomButton 
@@ -681,6 +772,172 @@ const DishAccordionItem = ({
                 </CustomButton>
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per generazione immagine AI */}
+      <Dialog open={showAIImageDialog} onOpenChange={setShowAIImageDialog}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              ✨ Genera Immagine con Imagen 4 Ultra
+            </DialogTitle>
+            <DialogDescription>
+              Crea un'immagine fotografica professionale del piatto "{dish.name}" usando l'intelligenza artificiale di Google.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Info sul piatto */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 mb-2">📋 Dati del piatto:</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Nome:</strong> {dish.name}</p>
+                {dish.description && <p><strong>Descrizione:</strong> {dish.description}</p>}
+                {dish.ingredients && dish.ingredients.length > 0 && (
+                  <p><strong>Ingredienti:</strong> {dish.ingredients.join(', ')}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Scelta modalità */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-gray-800">🎯 Modalità di generazione:</h4>
+                <div className="flex gap-2">
+                  <CustomButton
+                    variant={!showPromptEditor ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowPromptEditor(false)}
+                  >
+                    🚀 Automatico
+                  </CustomButton>
+                  <CustomButton
+                    variant={showPromptEditor ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowPromptEditor(true)}
+                  >
+                    ✏️ Personalizza
+                  </CustomButton>
+                </div>
+              </div>
+
+              {!showPromptEditor ? (
+                // Modalità automatica
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-100 rounded-full p-2">
+                      <Zap className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-blue-900 mb-2">Generazione Automatica</h5>
+                      <p className="text-sm text-blue-800 mb-3">
+                        Creeremo automaticamente un prompt ottimizzato per fotografia food professionale usando:
+                      </p>
+                      <ul className="text-sm text-blue-700 space-y-1">
+                        <li>• 📸 Setup fotografico professionale (macro lens, studio lighting)</li>
+                        <li>• 🍽️ Nome e descrizione del piatto</li>
+                        <li>• 🥘 Ingredienti principali per composizione accurata</li>
+                        <li>• ✨ Stile Instagram food photography iper-realistico</li>
+                        <li>• 🌍 Traduzione automatica in inglese (richiesto da Imagen)</li>
+                        <li>• 🏆 Qualità 4K da servizio fotografico</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Modalità personalizzata
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🎨 Prompt personalizzato (in inglese):
+                    </label>
+                    <textarea
+                      value={aiImagePrompt}
+                      onChange={(e) => setAiImagePrompt(e.target.value)}
+                      className="w-full h-32 p-3 border border-gray-300 rounded-lg text-sm"
+                      placeholder="Descrivi come vuoi che sia l'immagine del piatto..."
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Tip: Usa termini come "professional food photography", "macro lens", "studio lighting", "photorealistic"
+                    </p>
+                    <p className="text-xs text-blue-600 mt-2 bg-blue-50 p-2 rounded">
+                      🌍 Il prompt verrà automaticamente tradotto in inglese prima dell'invio a Imagen 4 Ultra
+                    </p>
+                  </div>
+
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h5 className="font-medium text-orange-900 mb-2">📝 Esempi di prompt efficaci:</h5>
+                    <div className="text-sm text-orange-800 space-y-1">
+                      <p>• "Professional macro photography of pasta carbonara, creamy sauce, pancetta, studio lighting, white background"</p>
+                      <p>• "High-end food photography of margherita pizza, fresh basil, melted mozzarella, rustic wooden table, 4K"</p>
+                      <p>• "Restaurant quality photo of chocolate cake, professional food styling, dramatic lighting, Instagram worthy"</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Informazioni tecniche */}
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <h5 className="font-medium text-purple-900 mb-2">🔧 Specifiche tecniche:</h5>
+              <div className="text-sm text-purple-800 space-y-1">
+                <p>• 🤖 <strong>Modello:</strong> Google Imagen 4 Ultra (top quality)</p>
+                <p>• 📐 <strong>Formato:</strong> Quadrato 1:1 (ottimale per piatti)</p>
+                <p>• ⚡ <strong>Tempo:</strong> ~30-60 secondi per generazione</p>
+                <p>• 🎯 <strong>Stile:</strong> Fotografia professionale iper-realistica</p>
+                <p>• 🌍 <strong>Lingua:</strong> Traduzione automatica in inglese</p>
+                <p>• 💾 <strong>Salvataggio:</strong> Automatico come foto del piatto</p>
+              </div>
+            </div>
+
+            {/* Bottoni azione */}
+            <div className="flex justify-between gap-3">
+              <CustomButton 
+                variant="outline" 
+                onClick={() => {
+                  setShowAIImageDialog(false)
+                  setShowImageDialog(true) // Torna al dialog principale
+                }}
+                disabled={isGeneratingAIImage}
+              >
+                ← Torna Indietro
+              </CustomButton>
+              
+              <CustomButton
+                onClick={handleGenerateAIImage}
+                disabled={isGeneratingAIImage || !aiImagePrompt.trim()}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
+                {isGeneratingAIImage ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generazione in corso...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    ✨ Genera Immagine
+                  </>
+                )}
+              </CustomButton>
+            </div>
+
+            {isGeneratingAIImage && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 text-yellow-600 animate-spin" />
+                  <div>
+                    <p className="font-medium text-yellow-900">🎨 Generazione in corso...</p>
+                    <p className="text-sm text-yellow-800">
+                      Imagen 4 Ultra sta creando la tua immagine professionale. Questo può richiedere fino a 60 secondi.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
