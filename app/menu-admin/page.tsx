@@ -803,6 +803,7 @@ export default function MenuAdminPage() {
   }>>([])
   const [isGeneratingTranslation, setIsGeneratingTranslation] = React.useState(false)
   const [selectedLanguageForTranslation, setSelectedLanguageForTranslation] = React.useState('')
+  const [translationTaskId, setTranslationTaskId] = React.useState<string | null>(null)
 
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
@@ -887,11 +888,12 @@ export default function MenuAdminPage() {
     }
   }
 
-  // Generate translations for a specific language
+  // Generate translations for a specific language (async)
   const handleGenerateTranslation = async (languageCode: string, languageName: string) => {
     if (!selectedLanguageForTranslation) return
     
     setIsGeneratingTranslation(true)
+    setTranslationTaskId(null)
     
     try {
       const response = await fetch('/api/menu/translations/generate', {
@@ -906,18 +908,40 @@ export default function MenuAdminPage() {
 
       const result = await response.json()
       
-      if (response.ok && result.success) {
-        alert(`✅ Traduzioni generate con successo in ${languageName}!\n\n${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`)
-        loadSupportedLanguages() // Reload to show the new language
+      if (response.ok && result.success && result.taskId) {
+        setTranslationTaskId(result.taskId)
+        console.log(`🌍 Task traduzioni avviato: ${result.taskId} per ${languageName}`)
       } else {
-        alert(`❌ Errore nella generazione delle traduzioni: ${result.error}`)
+        alert(`❌ Errore nell'avvio delle traduzioni: ${result.error}`)
+        setIsGeneratingTranslation(false)
       }
     } catch (err) {
-      console.error('Error generating translations:', err)
-      alert('❌ Errore nella generazione delle traduzioni')
-    } finally {
+      console.error('Error starting translation task:', err)
+      alert('❌ Errore nell\'avvio delle traduzioni')
       setIsGeneratingTranslation(false)
     }
+  }
+
+  // Handler per quando le traduzioni sono completate
+  const handleTranslationComplete = (result: any) => {
+    console.log('✅ Traduzioni completate:', result)
+    if (result.stats) {
+      alert(`✅ ${result.message || 'Traduzioni completate'}!\n\n${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`)
+    } else {
+      alert('✅ Traduzioni completate con successo!')
+    }
+    setTranslationTaskId(null)
+    setIsGeneratingTranslation(false)
+    setSelectedLanguageForTranslation('')
+    loadSupportedLanguages() // Reload to show the new language
+  }
+
+  // Handler per quando le traduzioni falliscono
+  const handleTranslationError = (error: any) => {
+    console.error('❌ Traduzioni fallite:', error)
+    alert(`❌ Errore nelle traduzioni: ${error?.message || 'Errore sconosciuto'}`)
+    setTranslationTaskId(null)
+    setIsGeneratingTranslation(false)
   }
 
   // Predefined languages available for translation
@@ -1980,65 +2004,85 @@ export default function MenuAdminPage() {
                   ➕ Aggiungi Traduzione
                 </h3>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
-                      Seleziona Lingua
-                    </label>
-                    <select
-                      value={selectedLanguageForTranslation}
-                      onChange={(e) => setSelectedLanguageForTranslation(e.target.value)}
-                      className="w-full h-12 px-4 border border-gray-300 rounded-xl text-base bg-white"
-                      disabled={isGeneratingTranslation}
-                    >
-                      <option value="">Scegli una lingua...</option>
-                      {getUntranslatedLanguages().map((lang) => (
-                        <option key={lang.code} value={`${lang.code}|${lang.name}`}>
-                          {lang.flag} {lang.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {selectedLanguageForTranslation && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• L'AI tradurrà automaticamente tutti i nomi delle categorie</li>
-                        <li>• Tutti i nomi dei piatti verranno tradotti</li>
-                        <li>• Le descrizioni e gli ingredienti saranno tradotti</li>
-                        <li>• I prezzi rimangono invariati</li>
-                        <li>• Le traduzioni mantengono lo stile professionale</li>
-                      </ul>
-                    </div>
-                  )}
-
-                  <CustomButton
-                    className="w-full h-12 text-base font-semibold"
-                    onClick={() => {
-                      if (selectedLanguageForTranslation) {
-                        const [code, name] = selectedLanguageForTranslation.split('|')
-                        handleGenerateTranslation(code, name)
-                      }
+                {translationTaskId ? (
+                  // Mostra progresso traduzione asincrona
+                  <AsyncTaskProgress
+                    taskId={translationTaskId}
+                    title="Generazione Traduzioni con AI"
+                    description={`Stiamo traducendo il tuo menu in ${selectedLanguageForTranslation.split('|')[1] || 'una nuova lingua'}...`}
+                    onComplete={handleTranslationComplete}
+                    onError={handleTranslationError}
+                    onCancel={() => {
+                      setTranslationTaskId(null)
+                      setIsGeneratingTranslation(false)
+                      setSelectedLanguageForTranslation('')
                     }}
-                    disabled={!selectedLanguageForTranslation || isGeneratingTranslation}
-                  >
-                    {isGeneratingTranslation ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generazione traduzioni...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Genera Traduzioni con AI
-                      </>
+                    pollingInterval={2000}
+                    className="my-4"
+                  />
+                ) : (
+                  // Mostra form di selezione lingua
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-700 mb-3 block">
+                        Seleziona Lingua
+                      </label>
+                      <select
+                        value={selectedLanguageForTranslation}
+                        onChange={(e) => setSelectedLanguageForTranslation(e.target.value)}
+                        className="w-full h-12 px-4 border border-gray-300 rounded-xl text-base bg-white"
+                        disabled={isGeneratingTranslation}
+                      >
+                        <option value="">Scegli una lingua...</option>
+                        {getUntranslatedLanguages().map((lang) => (
+                          <option key={lang.code} value={`${lang.code}|${lang.name}`}>
+                            {lang.flag} {lang.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {selectedLanguageForTranslation && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
+                        <ul className="text-sm text-blue-800 space-y-1">
+                          <li>• L'AI tradurrà automaticamente tutti i nomi delle categorie</li>
+                          <li>• Tutti i nomi dei piatti verranno tradotti</li>
+                          <li>• Le descrizioni e gli ingredienti saranno tradotti</li>
+                          <li>• I prezzi rimangono invariati</li>
+                          <li>• Le traduzioni mantengono lo stile professionale</li>
+                          <li>• 🕒 Il processo può richiedere alcuni minuti</li>
+                        </ul>
+                      </div>
                     )}
-                  </CustomButton>
-                </div>
+
+                    <CustomButton
+                      className="w-full h-12 text-base font-semibold"
+                      onClick={() => {
+                        if (selectedLanguageForTranslation) {
+                          const [code, name] = selectedLanguageForTranslation.split('|')
+                          handleGenerateTranslation(code, name)
+                        }
+                      }}
+                      disabled={!selectedLanguageForTranslation || isGeneratingTranslation}
+                    >
+                      {isGeneratingTranslation ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Avvio traduzioni...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Genera Traduzioni con AI
+                        </>
+                      )}
+                    </CustomButton>
+                  </div>
+                )}
               </div>
 
-              {getUntranslatedLanguages().length === 0 && supportedLanguages.length > 1 && (
+              {!translationTaskId && getUntranslatedLanguages().length === 0 && supportedLanguages.length > 1 && (
                 <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
                   <div className="text-4xl mb-3">🎉</div>
                   <h4 className="font-bold text-green-900 mb-2">Fantastico!</h4>
@@ -2048,29 +2092,50 @@ export default function MenuAdminPage() {
                 </div>
               )}
 
-              {/* Anteprima URL Menu Pubblico */}
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
-                <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
-                  🔗 Menu Multilingue
-                </h4>
-                <p className="text-sm text-purple-800 mb-4">
-                  I clienti potranno scegliere la lingua dal menu pubblico:
-                </p>
-                <div className="bg-white rounded-xl border border-purple-200 p-4 font-mono text-sm text-purple-700 break-all">
-                  {typeof window !== 'undefined' ? window.location.origin : ''}/menu/{restaurantId}
+              {!translationTaskId && (
+                /* Anteprima URL Menu Pubblico */
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
+                  <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                    🔗 Menu Multilingue
+                  </h4>
+                  <p className="text-sm text-purple-800 mb-4">
+                    I clienti potranno scegliere la lingua dal menu pubblico:
+                  </p>
+                  <div className="bg-white rounded-xl border border-purple-200 p-4 font-mono text-sm text-purple-700 break-all">
+                    {typeof window !== 'undefined' ? window.location.origin : ''}/menu/{restaurantId}
+                  </div>
+                  <p className="text-xs text-purple-600 mt-3 bg-purple-100 p-3 rounded-lg">
+                    💡 Il selettore di lingua apparirà automaticamente quando ci sono traduzioni disponibili.
+                  </p>
                 </div>
-                <p className="text-xs text-purple-600 mt-3 bg-purple-100 p-3 rounded-lg">
-                  💡 Il selettore di lingua apparirà automaticamente quando ci sono traduzioni disponibili.
-                </p>
-              </div>
+              )}
             </div>
             
             <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
               <CustomButton 
                 className="w-full h-14 text-base font-semibold"
-                onClick={() => setShowTranslationsDialog(false)}
+                onClick={() => {
+                  if (translationTaskId) {
+                    // Se c'è un task in corso, chiedi conferma
+                    if (confirm('🚧 C\'è una traduzione in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.')) {
+                      setShowTranslationsDialog(false)
+                    }
+                  } else {
+                    setShowTranslationsDialog(false)
+                  }
+                }}
+                disabled={false}
               >
-                ✅ Fatto
+                {translationTaskId ? (
+                  <>
+                    <span className="mr-2">🚧</span>
+                    Chiudi (Traduzione in corso)
+                  </>
+                ) : (
+                  <>
+                    ✅ Fatto
+                  </>
+                )}
               </CustomButton>
             </div>
           </DialogContent>
