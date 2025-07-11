@@ -27,6 +27,7 @@ import {
   Camera,
   X,
   GripVertical,
+  Search,
 } from "lucide-react"
 import {
   DndContext,
@@ -1015,6 +1016,11 @@ export default function MenuAdminPage() {
   const [selectedLanguageForTranslation, setSelectedLanguageForTranslation] = React.useState('')
   const [translationTaskId, setTranslationTaskId] = React.useState<string | null>(null)
 
+  // Stati per la ricerca
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [filteredCategories, setFilteredCategories] = React.useState<Category[]>([])
+  const [openCategories, setOpenCategories] = React.useState<string[]>([])
+
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
 
@@ -1054,6 +1060,58 @@ export default function MenuAdminPage() {
       loadSupportedLanguages()
     }
   }, [restaurantId])
+
+  // Initialize filtered categories when categories change
+  React.useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredCategories(categories)
+    }
+  }, [categories, searchQuery])
+
+  // Search logic - filter categories and dishes
+  React.useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredCategories(categories)
+      setOpenCategories([])
+      return
+    }
+
+    const query = searchQuery.toLowerCase().trim()
+    const categoriesWithResults: Category[] = []
+    const categoriesToOpen: string[] = []
+
+    categories.forEach(category => {
+      // Check if category name matches
+      const categoryMatches = category.name.toLowerCase().includes(query)
+      
+      // Check if any dish in this category matches
+      const matchingDishes = category.dishes.filter(dish => {
+        const dishNameMatches = dish.name.toLowerCase().includes(query)
+        const dishDescriptionMatches = dish.description?.toLowerCase().includes(query) || false
+        const dishIngredientsMatch = dish.ingredients?.some(ingredient => 
+          ingredient.toLowerCase().includes(query)
+        ) || false
+        
+        return dishNameMatches || dishDescriptionMatches || dishIngredientsMatch
+      })
+
+      // If category matches or has matching dishes, include it
+      if (categoryMatches || matchingDishes.length > 0) {
+        categoriesWithResults.push({
+          ...category,
+          dishes: categoryMatches ? category.dishes : matchingDishes
+        })
+
+        // If there are matching dishes (not just category), auto-open the category
+        if (matchingDishes.length > 0) {
+          categoriesToOpen.push(category.id)
+        }
+      }
+    })
+
+    setFilteredCategories(categoriesWithResults)
+    setOpenCategories(categoriesToOpen)
+  }, [searchQuery, categories])
 
   const loadMenuData = async () => {
     try {
@@ -1147,6 +1205,7 @@ export default function MenuAdminPage() {
       setTranslationTaskId(null)
       setIsGeneratingTranslation(false)
       setSelectedLanguageForTranslation('')
+      setShowTranslationsDialog(false) // Chiude automaticamente il dialog
       
       // Mostra messaggio di successo
       if (result.stats) {
@@ -1174,6 +1233,7 @@ export default function MenuAdminPage() {
       setTranslationTaskId(null)
       setIsGeneratingTranslation(false)
       setSelectedLanguageForTranslation('')
+      setShowTranslationsDialog(false) // Chiude il dialog anche in caso di errore
       
       // Prova un reload semplificato
       try {
@@ -1192,6 +1252,7 @@ export default function MenuAdminPage() {
     alert(`❌ Errore nelle traduzioni: ${error?.message || 'Errore sconosciuto'}`)
     setTranslationTaskId(null)
     setIsGeneratingTranslation(false)
+    setShowTranslationsDialog(false) // Chiude il dialog in caso di errore
   }
 
   // Predefined languages available for translation
@@ -1614,11 +1675,11 @@ export default function MenuAdminPage() {
               <button
                 className="px-3 py-1 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
                 onClick={() => {
-                  const allDishIds = categories.flatMap(cat => cat.dishes.map(dish => dish.id))
-                  setSelectedBulkItems(allDishIds)
+                  const visibleDishIds = filteredCategories.flatMap(cat => cat.dishes.map(dish => dish.id))
+                  setSelectedBulkItems(visibleDishIds)
                 }}
               >
-                Seleziona Tutto
+                Seleziona Tutto{searchQuery && " (Visibili)"}
               </button>
               <button
                 className="px-3 py-1 text-sm bg-gray-100 border border-gray-300 rounded text-gray-700 hover:bg-gray-200"
@@ -1637,17 +1698,57 @@ export default function MenuAdminPage() {
           </div>
         )}
 
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Cerca categorie, piatti, ingredienti..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full text-base border-gray-300 rounded-xl focus:border-blue-500 focus:ring-blue-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          
+          {searchQuery && (
+            <div className="mt-2 text-sm text-gray-600">
+              {filteredCategories.length === 0 ? (
+                <span className="text-orange-600">🔍 Nessun risultato trovato per "{searchQuery}"</span>
+              ) : (
+                <span className="text-blue-600">
+                  🔍 {filteredCategories.reduce((sum, cat) => sum + cat.dishes.length, 0)} risultati trovati in {filteredCategories.length} categorie
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         <DndContext
-          sensors={sensors}
+          sensors={searchQuery ? [] : sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleCategoryDragEnd}
         >
           <SortableContext
-            items={categories.map(cat => cat.id)}
+            items={filteredCategories.map(cat => cat.id)}
             strategy={verticalListSortingStrategy}
           >
-            <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-              {categories.map((category) => (
+            <Accordion 
+              type="multiple" 
+              className="w-full space-y-4" 
+              value={searchQuery ? openCategories : undefined}
+              defaultValue={searchQuery ? undefined : []}
+              onValueChange={searchQuery ? undefined : setOpenCategories}
+            >
+              {filteredCategories.map((category) => (
                 <SortableCategory
                   key={category.id}
                   category={category}
