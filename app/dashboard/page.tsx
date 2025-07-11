@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Star, ChevronRight, MessageSquare, Edit3, Share2, Calendar, ArrowUp, ChevronDown, RefreshCw, Phone, XCircle } from "lucide-react"
+import { Star, ChevronRight, MessageSquare, Edit3, Share2, Calendar, ArrowUp, ChevronDown, RefreshCw, Phone, XCircle, Menu } from "lucide-react"
 import Image from "next/image"
 import { Progress } from "@/components/ui/progress"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -1143,11 +1143,16 @@ export default function Dashboard() {
 
             <CustomButton
               className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
-              onClick={() => {}}
+              onClick={() => {
+                const restaurantId = session?.user?.restaurantId
+                if (restaurantId) {
+                  router.push(`/menu/${restaurantId}`)
+                }
+              }}
             >
-              <Share2 className="w-5 h-5 mb-1 flex-shrink-0" />
+              <Menu className="w-5 h-5 mb-1 flex-shrink-0" />
               <span className="text-center break-words hyphens-auto max-w-full">
-                {t("dashboard.shareSuccess")}
+                Menù
               </span>
             </CustomButton>
           </div>

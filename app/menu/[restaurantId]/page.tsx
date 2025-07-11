@@ -833,7 +833,7 @@ export default function PublicMenuPage() {
               stiffness: 300,
               damping: 30
             }}
-            className="relative bg-white w-full max-w-2xl mx-4 md:mx-0 rounded-t-3xl md:rounded-3xl max-h-[90vh] overflow-hidden shadow-2xl"
+            className="relative bg-white w-full max-w-2xl mx-0 rounded-t-3xl md:rounded-3xl md:mx-4 max-h-[95vh] md:max-h-[90vh] overflow-hidden shadow-2xl"
             style={{
               background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
             }}
@@ -843,14 +843,14 @@ export default function PublicMenuPage() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={closeDishModal}
-              className="absolute top-4 right-4 z-10 w-12 h-12 bg-white bg-opacity-95 rounded-full flex items-center justify-center shadow-xl hover:shadow-2xl transition-all"
+              className="absolute top-3 right-3 md:top-4 md:right-4 z-10 w-10 h-10 md:w-12 md:h-12 bg-white bg-opacity-95 rounded-full flex items-center justify-center shadow-xl hover:shadow-2xl transition-all"
             >
-              <X className="w-6 h-6 text-gray-700" />
+              <X className="w-5 h-5 md:w-6 md:h-6 text-gray-700" />
             </motion.button>
 
             {/* Dish Image */}
             {designSettings.showImages && selectedDish.photoUrl && (
-              <div className="relative h-64 md:h-80 bg-gray-200 overflow-hidden">
+              <div className="relative h-48 md:h-80 bg-gray-200 overflow-hidden">
                 <motion.img
                   initial={{ scale: 1.1 }}
                   animate={{ scale: 1 }}
@@ -864,7 +864,8 @@ export default function PublicMenuPage() {
             )}
 
             {/* Content */}
-            <div className="p-6 space-y-5 max-h-96 overflow-y-auto">
+            <div className="p-4 md:p-6 space-y-4 md:space-y-5 overflow-y-auto pb-6 md:pb-8"
+                 style={{ maxHeight: 'calc(95vh - 120px)' }}>
               {/* Title and Price */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -872,14 +873,14 @@ export default function PublicMenuPage() {
                 transition={{ delay: 0.1 }}
                 className="space-y-3"
               >
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+                <h2 className="text-2xl md:text-4xl font-bold text-gray-900 leading-tight">
                   {selectedDish.name}
                 </h2>
                 
                 {designSettings.showPrices && (
                   <div className="flex items-center">
                     <span 
-                      className="text-3xl font-bold px-4 py-2 rounded-xl shadow-lg"
+                      className="text-2xl md:text-3xl font-bold px-3 py-2 md:px-4 rounded-xl shadow-lg"
                       style={{ 
                         color: designSettings.primaryColor,
                         backgroundColor: `${designSettings.primaryColor}15`
@@ -899,10 +900,10 @@ export default function PublicMenuPage() {
                   transition={{ delay: 0.2 }}
                   className="space-y-3"
                 >
-                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 flex items-center gap-2">
                     <span>📝</span> Descrizione
                   </h3>
-                  <p className="text-gray-600 leading-relaxed text-lg">
+                  <p className="text-gray-600 leading-relaxed text-base md:text-lg">
                     {selectedDish.description}
                   </p>
                 </motion.div>
@@ -916,7 +917,7 @@ export default function PublicMenuPage() {
                   transition={{ delay: 0.3 }}
                   className="space-y-3"
                 >
-                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 flex items-center gap-2">
                     <span>🥘</span> Ingredienti
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -943,7 +944,7 @@ export default function PublicMenuPage() {
                   transition={{ delay: 0.4 }}
                   className="space-y-3"
                 >
-                  <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 flex items-center gap-2">
                     <span>⭐</span> Caratteristiche
                   </h3>
                   <div className="flex flex-wrap gap-3">
@@ -962,22 +963,6 @@ export default function PublicMenuPage() {
                   </div>
                 </motion.div>
               )}
-            </div>
-
-            {/* Bottom Action */}
-            <div className="p-6 pt-0">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={closeDishModal}
-                className="w-full py-4 rounded-2xl text-white font-bold text-center text-lg shadow-lg cursor-pointer transition-all hover:shadow-xl"
-                style={{ backgroundColor: designSettings.primaryColor }}
-              >
-                Visualizza nel menu ✨
-              </motion.div>
             </div>
           </motion.div>
         </div>
