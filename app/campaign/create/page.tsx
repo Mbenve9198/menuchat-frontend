@@ -144,6 +144,9 @@ export default function CreateCampaign() {
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [isPaymentCompleted, setIsPaymentCompleted] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  // Bulk delete state variables
+  const [isDeletingContacts, setIsDeletingContacts] = useState(false)
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false)
 
   // Steps array using translations - now includes payment
   const steps = [
@@ -1007,6 +1010,62 @@ export default function CreateCampaign() {
     })
   }
 
+  // Funzione per gestire la cancellazione bulk dei contatti
+  const handleDeleteSelectedContacts = async () => {
+    const selectedContactIds = contacts.filter(contact => contact.selected).map(contact => contact.id)
+    
+    if (selectedContactIds.length === 0) {
+      toast({
+        title: t("common.error"),
+        description: "Nessun contatto selezionato per la cancellazione",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsDeletingContacts(true)
+
+    try {
+      const response = await fetch('/api/campaign/contacts', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contactIds: selectedContactIds
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Errore nella cancellazione dei contatti')
+      }
+
+      const data = await response.json()
+
+      // Rimuovi i contatti cancellati dalla lista locale
+      setContacts(prevContacts => 
+        prevContacts.filter(contact => !selectedContactIds.includes(contact.id))
+      )
+
+      toast({
+        title: "Contatti cancellati",
+        description: `${data.deletedCount} contatti sono stati cancellati con successo`,
+      })
+
+      setShowDeleteConfirmDialog(false)
+    } catch (error: any) {
+      console.error('Errore nella cancellazione dei contatti:', error)
+      toast({
+        title: t("common.error"),
+        description: error.message || "Errore durante la cancellazione dei contatti",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeletingContacts(false)
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
@@ -1189,17 +1248,42 @@ export default function CreateCampaign() {
                       </div>
                     )}
 
-                    {/* Select all */}
-                    <div className="flex items-center py-2 border-b border-gray-100">
-                      <Checkbox
-                        id="select-all"
-                        checked={allSelected}
-                        onCheckedChange={toggleSelectAll}
-                        className="mr-3 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
-                      />
-                      <Label htmlFor="select-all" className="text-sm font-medium text-gray-700 flex items-center">
-                        {t("campaignCreate.selectAllContactsLabel")}
-                      </Label>
+                    {/* Select all and bulk actions */}
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <div className="flex items-center">
+                        <Checkbox
+                          id="select-all"
+                          checked={allSelected}
+                          onCheckedChange={toggleSelectAll}
+                          className="mr-3 data-[state=checked]:bg-[#EF476F] data-[state=checked]:border-[#EF476F]"
+                        />
+                        <Label htmlFor="select-all" className="text-sm font-medium text-gray-700 flex items-center">
+                          {t("campaignCreate.selectAllContactsLabel")}
+                        </Label>
+                      </div>
+                      
+                      {/* Bulk delete button - only show when contacts are selected */}
+                      {selectedCount > 0 && (
+                        <CustomButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowDeleteConfirmDialog(true)}
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 text-xs py-1 px-2"
+                          disabled={isDeletingContacts}
+                        >
+                          {isDeletingContacts ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Cancellazione...
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3 mr-1" />
+                              Elimina ({selectedCount})
+                            </>
+                          )}
+                        </CustomButton>
+                      )}
                     </div>
 
                     {/* Contact list - with loading state */}
@@ -1669,6 +1753,61 @@ export default function CreateCampaign() {
                             </>
                           ) : (
                             <>Generate Image</>
+                          )}
+                        </CustomButton>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Delete Confirmation Dialog */}
+                  <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+                    <DialogContent className="sm:max-w-md rounded-xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-red-600">Conferma Cancellazione</DialogTitle>
+                        <DialogDescription>
+                          Sei sicuro di voler cancellare {selectedCount} contatto{selectedCount > 1 ? 'i' : ''}? 
+                          Questa azione non può essere annullata.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                              <X className="w-4 h-4 text-red-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-red-800">Attenzione!</p>
+                              <p className="text-xs text-red-600">
+                                I contatti selezionati verranno eliminati definitivamente dal database.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter className="flex gap-2">
+                        <CustomButton
+                          variant="outline"
+                          onClick={() => setShowDeleteConfirmDialog(false)}
+                          className="flex-1"
+                          disabled={isDeletingContacts}
+                        >
+                          Annulla
+                        </CustomButton>
+                        <CustomButton
+                          onClick={handleDeleteSelectedContacts}
+                          className="flex-1 bg-red-600 hover:bg-red-700"
+                          disabled={isDeletingContacts}
+                        >
+                          {isDeletingContacts ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Cancellazione...
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-4 h-4 mr-2" />
+                              Elimina {selectedCount} contatto{selectedCount > 1 ? 'i' : ''}
+                            </>
                           )}
                         </CustomButton>
                       </DialogFooter>
