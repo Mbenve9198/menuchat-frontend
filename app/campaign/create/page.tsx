@@ -148,6 +148,22 @@ export default function CreateCampaign() {
   const [isDeletingContacts, setIsDeletingContacts] = useState(false)
   const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false)
 
+  // Debug per il dialog
+  useEffect(() => {
+    console.log('🔍 showDeleteConfirmDialog cambiato a:', showDeleteConfirmDialog)
+    
+    // Check se il dialog esiste nel DOM
+    setTimeout(() => {
+      const dialogElement = document.querySelector('[role="dialog"]')
+      console.log('🔍 Dialog element nel DOM:', dialogElement ? 'TROVATO' : 'NON TROVATO')
+      if (dialogElement) {
+        console.log('🔍 Dialog styles:', window.getComputedStyle(dialogElement).display)
+        console.log('🔍 Dialog visibility:', window.getComputedStyle(dialogElement).visibility)
+        console.log('🔍 Dialog opacity:', window.getComputedStyle(dialogElement).opacity)
+      }
+    }, 100)
+  }, [showDeleteConfirmDialog])
+
   // Steps array using translations - now includes payment
   const steps = [
     t("campaignCreate.steps.selectContacts"),
@@ -1355,8 +1371,21 @@ export default function CreateCampaign() {
                       
                       {/* Debug info - solo in sviluppo */}
                       {process.env.NODE_ENV === 'development' && (
-                        <div className="text-xs text-gray-500 mt-2">
-                          Debug: selectedCount={selectedCount}, showButton={selectedCount > 0 ? 'YES' : 'NO'}
+                        <div className="text-xs text-gray-500 mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                          <div>Debug: selectedCount={selectedCount}, showButton={selectedCount > 0 ? 'YES' : 'NO'}</div>
+                          <div>showDeleteConfirmDialog: {showDeleteConfirmDialog ? 'TRUE' : 'FALSE'}</div>
+                          <div>isDeletingContacts: {isDeletingContacts ? 'TRUE' : 'FALSE'}</div>
+                          <CustomButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              console.log('🧪 TEST: Forzo apertura dialog')
+                              setShowDeleteConfirmDialog(true)
+                            }}
+                            className="mt-1 text-xs"
+                          >
+                            🧪 Test Dialog
+                          </CustomButton>
                         </div>
                       )}
                     </div>
@@ -1835,8 +1864,17 @@ export default function CreateCampaign() {
                   </Dialog>
 
                   {/* Delete Confirmation Dialog */}
-                  <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
-                    <DialogContent className="sm:max-w-md rounded-xl">
+                  <Dialog 
+                    open={showDeleteConfirmDialog} 
+                    onOpenChange={(open) => {
+                      console.log('🔴 Dialog onOpenChange chiamato con:', open)
+                      setShowDeleteConfirmDialog(open)
+                    }}
+                  >
+                    <DialogContent 
+                      className="sm:max-w-md rounded-xl"
+                      onOpenAutoFocus={() => console.log('🔴 Dialog ha ricevuto focus')}
+                    >
                       <DialogHeader>
                         <DialogTitle className="text-red-600">Conferma Cancellazione</DialogTitle>
                         <DialogDescription>
