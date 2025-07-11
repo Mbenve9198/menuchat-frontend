@@ -1012,9 +1012,14 @@ export default function CreateCampaign() {
 
   // Funzione per gestire la cancellazione bulk dei contatti
   const handleDeleteSelectedContacts = async () => {
+    console.log('🗑️ Inizio cancellazione bulk contatti')
+    
     const selectedContactIds = contacts.filter(contact => contact.selected).map(contact => contact.id)
     
+    console.log('🗑️ Contatti selezionati per cancellazione:', selectedContactIds)
+    
     if (selectedContactIds.length === 0) {
+      console.log('🗑️ Nessun contatto selezionato')
       toast({
         title: t("common.error"),
         description: "Nessun contatto selezionato per la cancellazione",
@@ -1026,6 +1031,8 @@ export default function CreateCampaign() {
     setIsDeletingContacts(true)
 
     try {
+      console.log('🗑️ Invio richiesta DELETE a /api/campaign/contacts')
+      
       const response = await fetch('/api/campaign/contacts', {
         method: 'DELETE',
         headers: {
@@ -1036,33 +1043,75 @@ export default function CreateCampaign() {
         })
       })
 
+      console.log('🗑️ Risposta ricevuta:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Errore nella cancellazione dei contatti')
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.error('🗑️ Errore nel parsing della risposta:', parseError)
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+        }
+        
+        console.error('🗑️ Errore dalla API:', errorData)
+        
+        // Gestione specifica per JWT scaduto
+        if (response.status === 401) {
+          toast({
+            title: "Sessione scaduta",
+            description: "La tua sessione è scaduta. Effettua nuovamente il login.",
+            variant: "destructive",
+          })
+          // Reindirizza al login dopo un breve delay
+          setTimeout(() => {
+            window.location.href = '/auth/login'
+          }, 2000)
+          return
+        }
+        
+        throw new Error(errorData.error || `Errore HTTP ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('🗑️ Dati di risposta:', data)
 
       // Rimuovi i contatti cancellati dalla lista locale
       setContacts(prevContacts => 
         prevContacts.filter(contact => !selectedContactIds.includes(contact.id))
       )
 
+      console.log('🗑️ Contatti rimossi dalla lista locale')
+
       toast({
         title: "Contatti cancellati",
-        description: `${data.deletedCount} contatti sono stati cancellati con successo`,
+        description: `${data.deletedCount || selectedContactIds.length} contatti sono stati cancellati con successo`,
       })
 
       setShowDeleteConfirmDialog(false)
     } catch (error: any) {
-      console.error('Errore nella cancellazione dei contatti:', error)
+      console.error('🗑️ Errore nella cancellazione dei contatti:', error)
+      
+      // Mostra un errore più dettagliato
+      let errorMessage = "Errore durante la cancellazione dei contatti"
+      if (error.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      
       toast({
         title: t("common.error"),
-        description: error.message || "Errore durante la cancellazione dei contatti",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
       setIsDeletingContacts(false)
+      console.log('🗑️ Fine operazione cancellazione')
     }
   }
 
@@ -1196,29 +1245,30 @@ export default function CreateCampaign() {
                           </button>
                         )}
                       </div>
-                      <div className="overflow-x-auto pb-2">
-                        <div className="flex flex-nowrap gap-2 min-w-max">
+                      <div className="overflow-x-auto pb-2 pt-2">
+                        <div className="flex flex-nowrap gap-2 min-w-max relative" style={{ zIndex: 5 }}>
                           {countryCodes.map((country) => {
                             // Conta quanti contatti ci sono per questo paese
                             const contactsForCountry = contacts.filter(contact => contact.countryCode === country.code).length;
                             
                             return (
-                              <button
-                                key={country.code}
-                                onClick={() => filterByCountry(country.code)}
-                                className={`text-xl px-3 py-2 rounded-full relative ${
-                                  selectedCountryCode === country.code
-                                    ? "bg-[#EF476F] text-white"
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                }`}
-                                title={`${country.name} (${contactsForCountry} contatti)`}
-                              >
+                                                        <button
+                            key={country.code}
+                            onClick={() => filterByCountry(country.code)}
+                            className={`text-xl px-3 py-2 rounded-full relative overflow-visible ${
+                              selectedCountryCode === country.code
+                                ? "bg-[#EF476F] text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                            title={`${country.name} (${contactsForCountry} contatti)`}
+                            style={{ zIndex: 10 }}
+                          >
                                 {country.flag}
-                                {contactsForCountry > 0 && (
-                                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                    {contactsForCountry}
-                                  </span>
-                                )}
+                                                            {contactsForCountry > 0 && (
+                              <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center z-50 shadow-md">
+                                {contactsForCountry}
+                              </span>
+                            )}
                               </button>
                             );
                           })}
