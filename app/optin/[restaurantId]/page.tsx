@@ -161,7 +161,7 @@ export default function OptinPage() {
         body: JSON.stringify({
           restaurantId,
           phoneNumber: phoneNumber || 'anonymous',
-          action: optinChoice ? 'optin' : 'skip',
+          action: optinChoice ? 'optin' : 'optout',
           ipAddress: null,
           userAgent: navigator.userAgent
         }),
