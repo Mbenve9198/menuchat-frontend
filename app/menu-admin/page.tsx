@@ -202,6 +202,7 @@ const DishAccordionItem = ({
   const [isGeneratingImage, setIsGeneratingImage] = React.useState(false)
   const [customPrompt, setCustomPrompt] = React.useState('')
   const [useAutoPrompt, setUseAutoPrompt] = React.useState(true)
+  const [imageGenerationTaskId, setImageGenerationTaskId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     setName(dish.name)
@@ -438,13 +439,14 @@ const DishAccordionItem = ({
   const handleGenerateImage = async () => {
     try {
       setIsGeneratingImage(true)
+      setImageGenerationTaskId(null)
       
       const requestBody = {
         useAutoPrompt,
         ...(useAutoPrompt ? {} : { customPrompt })
       }
       
-      console.log('🎨 Avvio generazione immagine AI...', requestBody)
+      console.log('🎨 Avvio generazione immagine AI asincrona...', requestBody)
       
       const response = await fetch(`/api/menu/item/${dish.id}/generate-image`, {
         method: 'POST',
@@ -454,34 +456,70 @@ const DishAccordionItem = ({
       
       if (response.ok) {
         const result = await response.json()
-        if (result.success && result.data?.photoUrl) {
-          console.log('✅ Immagine generata:', result.data.photoUrl)
-          onUpdateDish({ ...dish, photoUrl: result.data.photoUrl })
-          setShowImageGenerationDialog(false)
-          setShowImageDialog(false)
-          alert('🎉 Immagine generata con successo!')
+        if (result.success && result.taskId) {
+          console.log('✅ Task generazione immagine avviato:', result.taskId)
+          setImageGenerationTaskId(result.taskId)
         } else {
           console.error('❌ Errore nella risposta:', result)
-          alert('❌ Errore nella generazione dell\'immagine')
+          alert('❌ Errore nell\'avvio della generazione immagine')
+          setIsGeneratingImage(false)
         }
       } else {
         const errorData = await response.json()
         console.error('❌ Errore HTTP:', response.status, errorData)
-        
-        if (errorData.type === 'safety_error') {
-          alert('⚠️ ' + errorData.error)
-        } else if (errorData.type === 'quota_error') {
-          alert('🔒 ' + errorData.error)
-        } else {
-          alert(`❌ Errore: ${errorData.error || 'Errore nella generazione dell\'immagine'}`)
-        }
+        alert(`❌ Errore: ${errorData.error || 'Errore nell\'avvio della generazione'}`)
+        setIsGeneratingImage(false)
       }
     } catch (err) {
       console.error('❌ Errore di rete:', err)
       alert('❌ Errore di connessione nella generazione dell\'immagine')
-    } finally {
       setIsGeneratingImage(false)
     }
+  }
+
+  const handleImageGenerationComplete = (result: any) => {
+    try {
+      console.log('✅ Generazione immagine completata:', result)
+      
+      // Reset stati prima di tutto
+      setImageGenerationTaskId(null)
+      setIsGeneratingImage(false)
+      setShowImageGenerationDialog(false)
+      setShowImageDialog(false)
+      
+      if (result.photoUrl) {
+        console.log('🖼️ Aggiornamento piatto con nuova immagine:', result.photoUrl)
+        onUpdateDish({ ...dish, photoUrl: result.photoUrl })
+        alert('🎉 Immagine generata con successo!')
+      } else {
+        alert('⚠️ Immagine generata ma URL non disponibile')
+      }
+      
+    } catch (error) {
+      console.error('❌ Errore nel gestire completamento generazione immagine:', error)
+      setImageGenerationTaskId(null)
+      setIsGeneratingImage(false)
+      setShowImageGenerationDialog(false)
+      alert('⚠️ L\'immagine è stata generata ma c\'è stato un problema nell\'aggiornamento. Ricarica la pagina.')
+    }
+  }
+
+  const handleImageGenerationError = (error: any) => {
+    console.error('❌ Generazione immagine fallita:', error)
+    
+    let errorMessage = '❌ Errore nella generazione dell\'immagine'
+    
+    if (error?.type === 'safety_error') {
+      errorMessage = '⚠️ ' + error.message
+    } else if (error?.type === 'quota_error') {
+      errorMessage = '🔒 ' + error.message
+    } else if (error?.message) {
+      errorMessage = '❌ ' + error.message
+    }
+    
+    alert(errorMessage)
+    setImageGenerationTaskId(null)
+    setIsGeneratingImage(false)
   }
 
   return (
@@ -760,134 +798,221 @@ const DishAccordionItem = ({
         </DialogContent>
       </Dialog>
 
-      {/* Dialog per generazione immagine AI */}
+      {/* Dialog per generazione immagine AI - Mobile Optimized */}
       <Dialog open={showImageGenerationDialog} onOpenChange={setShowImageGenerationDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wand2 className="h-5 w-5 text-purple-500" />
+        <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+          <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+            <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Wand2 className="h-6 w-6 text-purple-500" />
               Genera Immagine con AI
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600">
               Crea un'immagine professionale per <strong>{dish.name}</strong> usando Google Imagen 4 Ultra
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6">
-            {/* Opzione automatica */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="auto-prompt"
-                  name="prompt-type"
-                  checked={useAutoPrompt}
-                  onChange={() => setUseAutoPrompt(true)}
-                  className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                />
-                <label htmlFor="auto-prompt" className="flex items-center gap-2 cursor-pointer">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
-                  <span className="font-medium">Generazione Automatica</span>
-                </label>
-              </div>
-              
-              {useAutoPrompt && (
-                <div className="ml-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <p className="text-sm text-purple-800 mb-3">
-                    <strong>✨ Modalità automatica:</strong> L'AI creerà automaticamente un prompt fotografico professionale usando:
-                  </p>
-                  <ul className="text-sm text-purple-700 space-y-1">
-                    <li>• <strong>Nome:</strong> {dish.name}</li>
-                    {description && <li>• <strong>Descrizione:</strong> {description}</li>}
-                    {ingredients && <li>• <strong>Ingredienti:</strong> {ingredients}</li>}
-                    <li>• <strong>Stile:</strong> Fotografia professionale, macro 60mm, studio lighting</li>
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Opzione personalizzata */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="custom-prompt"
-                  name="prompt-type"
-                  checked={!useAutoPrompt}
-                  onChange={() => setUseAutoPrompt(false)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                />
-                <label htmlFor="custom-prompt" className="flex items-center gap-2 cursor-pointer">
-                  <Edit3 className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium">Prompt Personalizzato</span>
-                </label>
-              </div>
-              
-              {!useAutoPrompt && (
-                <div className="ml-6 space-y-3">
-                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <p className="text-xs text-yellow-800 mb-2">
-                      <strong>⚠️ Importante:</strong> Il prompt deve essere in inglese per migliori risultati
-                    </p>
-                    <p className="text-xs text-yellow-700">
-                      <strong>Esempio:</strong> "Professional food photography of pasta carbonara, macro lens 60mm, studio lighting, beautifully plated, restaurant quality"
-                    </p>
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
+            {imageGenerationTaskId ? (
+              // Mostra progresso generazione immagine asincrona
+              <AsyncTaskProgress
+                taskId={imageGenerationTaskId}
+                title="Generazione Immagine con AI"
+                description={`Stiamo creando un'immagine professionale per "${dish.name}" usando Imagen 4 Ultra...`}
+                onComplete={handleImageGenerationComplete}
+                onError={handleImageGenerationError}
+                onCancel={() => {
+                  setImageGenerationTaskId(null)
+                  setIsGeneratingImage(false)
+                }}
+                pollingInterval={2000}
+                className="my-4"
+              />
+            ) : (
+              <>
+                {/* Opzione automatica */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="relative">
+                      <input
+                        type="radio"
+                        id="auto-prompt"
+                        name="prompt-type"
+                        checked={useAutoPrompt}
+                        onChange={() => setUseAutoPrompt(true)}
+                        className="w-6 h-6 text-purple-600 border-2 border-gray-300 focus:ring-purple-500"
+                      />
+                    </div>
+                    <label htmlFor="auto-prompt" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Sparkles className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <div>
+                        <span className="text-lg font-bold text-gray-800 block">Generazione Automatica</span>
+                        <span className="text-sm text-gray-600">L'AI crea il prompt per te</span>
+                      </div>
+                    </label>
                   </div>
                   
-                  <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    className="w-full h-24 p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Professional food photography of [your dish], macro lens 60mm, studio lighting, high detail, beautifully plated..."
-                    maxLength={480}
-                  />
-                  <p className="text-xs text-gray-500 text-right">
-                    {customPrompt.length}/480 caratteri
-                  </p>
+                  {useAutoPrompt && (
+                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                      <p className="text-sm text-purple-800 mb-3 font-medium">
+                        ✨ L'AI creerà automaticamente un prompt fotografico professionale usando:
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-purple-600 font-medium text-sm">•</span>
+                          <span className="text-sm text-purple-700"><strong>Nome:</strong> {dish.name}</span>
+                        </div>
+                        {description && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-purple-600 font-medium text-sm">•</span>
+                            <span className="text-sm text-purple-700"><strong>Descrizione:</strong> {description.substring(0, 50)}{description.length > 50 ? '...' : ''}</span>
+                          </div>
+                        )}
+                        {ingredients && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-purple-600 font-medium text-sm">•</span>
+                            <span className="text-sm text-purple-700"><strong>Ingredienti:</strong> {ingredients.substring(0, 50)}{ingredients.length > 50 ? '...' : ''}</span>
+                          </div>
+                        )}
+                        <div className="flex items-start gap-2">
+                          <span className="text-purple-600 font-medium text-sm">•</span>
+                          <span className="text-sm text-purple-700"><strong>Stile:</strong> Fotografia professionale, macro 60mm, studio lighting</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Info aggiuntive */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" />
-                Imagen 4 Ultra
-              </h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Qualità fotografica iper-realistica</li>
-                <li>• Ottimizzato per fotografia di cibo</li>
-                <li>• Formato quadrato (800x800px)</li>
-                <li>• ⏱️ Generazione: 10-30 secondi</li>
-              </ul>
-            </div>
+                {/* Opzione personalizzata */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="relative">
+                      <input
+                        type="radio"
+                        id="custom-prompt"
+                        name="prompt-type"
+                        checked={!useAutoPrompt}
+                        onChange={() => setUseAutoPrompt(false)}
+                        className="w-6 h-6 text-blue-600 border-2 border-gray-300 focus:ring-blue-500"
+                      />
+                    </div>
+                    <label htmlFor="custom-prompt" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Edit3 className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <span className="text-lg font-bold text-gray-800 block">Prompt Personalizzato</span>
+                        <span className="text-sm text-gray-600">Scrivi il tuo prompt in inglese</span>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {!useAutoPrompt && (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-800 mb-2 font-medium">
+                          ⚠️ Il prompt deve essere in inglese per migliori risultati
+                        </p>
+                        <p className="text-xs text-yellow-700">
+                          <strong>Esempio:</strong> "Professional food photography of pasta carbonara, macro lens 60mm, studio lighting, beautifully plated, restaurant quality"
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <textarea
+                          value={customPrompt}
+                          onChange={(e) => setCustomPrompt(e.target.value)}
+                          className="w-full h-32 p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Professional food photography of [your dish], macro lens 60mm, studio lighting, high detail, beautifully plated..."
+                          maxLength={480}
+                        />
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Limite caratteri Imagen</span>
+                          <span className={`text-xs font-medium ${customPrompt.length > 400 ? 'text-orange-600' : 'text-gray-500'}`}>
+                            {customPrompt.length}/480
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info Imagen 4 Ultra */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
+                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Imagen 4 Ultra
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span>Qualità iper-realistica</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span>Formato 800x800px</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span>Ottimizzato per cibo</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <span>⏱️ 10-30 secondi</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           
-          <div className="flex gap-3 pt-4">
-            <CustomButton 
-              variant="outline" 
-              onClick={() => setShowImageGenerationDialog(false)}
-              disabled={isGeneratingImage}
-              className="flex-1"
-            >
-              Annulla
-            </CustomButton>
+          <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200 space-y-3">
+            {!imageGenerationTaskId && (
+              <CustomButton
+                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                onClick={handleGenerateImage}
+                disabled={isGeneratingImage || (!useAutoPrompt && !customPrompt.trim())}
+              >
+                {isGeneratingImage ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Avvio Generazione...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-5 w-5" />
+                    🎨 Genera Immagine
+                  </>
+                )}
+              </CustomButton>
+            )}
             
-            <CustomButton 
-              onClick={handleGenerateImage}
-              disabled={isGeneratingImage || (!useAutoPrompt && !customPrompt.trim())}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            <CustomButton
+              className="w-full h-12 text-base"
+              variant="outline"
+              onClick={() => {
+                if (imageGenerationTaskId) {
+                  // Se c'è un task in corso, chiedi conferma
+                  if (confirm('🚧 C\'è una generazione in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.')) {
+                    setShowImageGenerationDialog(false)
+                  }
+                } else {
+                  setShowImageGenerationDialog(false)
+                }
+              }}
             >
-              {isGeneratingImage ? (
+              {imageGenerationTaskId ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generando...
+                  <span className="mr-2">🚧</span>
+                  Chiudi (Generazione in corso)
                 </>
               ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Genera Immagine
-                </>
+                'Annulla'
               )}
             </CustomButton>
           </div>
