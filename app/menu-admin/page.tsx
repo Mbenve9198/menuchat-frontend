@@ -1891,6 +1891,7 @@ export default function MenuAdminPage() {
                       }}
                       pollingInterval={2000}
                       hideProgress={true}
+                      showDetails={false}
                       className="my-4"
                     />
                   ) : (
