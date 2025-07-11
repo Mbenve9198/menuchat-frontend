@@ -1379,6 +1379,27 @@ export default function MenuAdminPage() {
   const [selectedLanguageForTranslation, setSelectedLanguageForTranslation] = React.useState('')
   const [translationTaskId, setTranslationTaskId] = React.useState<string | null>(null)
 
+  // Stati per l'AI
+  const [showAIDialog, setShowAIDialog] = React.useState(false)
+  const [aiConfig, setAiConfig] = React.useState({
+    enabled: false,
+    authorizedNumbers: [],
+    permissions: {},
+    defaultLanguage: 'it',
+    stats: {
+      totalCommands: 0,
+      successfulCommands: 0,
+      lastCommandAt: null as string | null
+    }
+  })
+  const [isLoadingAIConfig, setIsLoadingAIConfig] = React.useState(false)
+  const [newAuthorizedNumber, setNewAuthorizedNumber] = React.useState({
+    phoneNumber: '',
+    name: '',
+    permission: 'basic'
+  })
+  const [isAddingNumber, setIsAddingNumber] = React.useState(false)
+
   // Stati per la ricerca
   const [searchQuery, setSearchQuery] = React.useState('')
   const [filteredCategories, setFilteredCategories] = React.useState<Category[]>([])
@@ -1652,6 +1673,110 @@ export default function MenuAdminPage() {
     const supportedCodes = supportedLanguages.map(lang => lang.code)
     return availableLanguages.filter(lang => !supportedCodes.includes(lang.code))
   }
+
+  // Load AI configuration
+  const loadAIConfig = async () => {
+    try {
+      setIsLoadingAIConfig(true)
+      const response = await fetch('/api/ai-commands/config')
+      const data = await response.json()
+      
+      if (data.success) {
+        setAiConfig(data.data)
+      }
+    } catch (err) {
+      console.error('Error loading AI config:', err)
+    } finally {
+      setIsLoadingAIConfig(false)
+    }
+  }
+
+  // Update AI configuration
+  const updateAIConfig = async (updates: Partial<typeof aiConfig>) => {
+    try {
+      const response = await fetch('/api/ai-commands/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setAiConfig(prev => ({ ...prev, ...updates }))
+        alert('✅ Configurazione AI aggiornata con successo!')
+      } else {
+        alert('❌ Errore nell\'aggiornamento: ' + data.message)
+      }
+    } catch (err) {
+      console.error('Error updating AI config:', err)
+      alert('❌ Errore nell\'aggiornamento della configurazione AI')
+    }
+  }
+
+  // Add authorized number
+  const addAuthorizedNumber = async () => {
+    if (!newAuthorizedNumber.phoneNumber || !newAuthorizedNumber.name) {
+      alert('Inserisci numero di telefono e nome')
+      return
+    }
+
+    try {
+      setIsAddingNumber(true)
+      const response = await fetch('/api/ai-commands/authorized-numbers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAuthorizedNumber)
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        await loadAIConfig() // Reload config
+        setNewAuthorizedNumber({ phoneNumber: '', name: '', permission: 'basic' })
+        alert('✅ Numero autorizzato aggiunto con successo!')
+      } else {
+        alert('❌ Errore: ' + data.message)
+      }
+    } catch (err) {
+      console.error('Error adding authorized number:', err)
+      alert('❌ Errore nell\'aggiunta del numero autorizzato')
+    } finally {
+      setIsAddingNumber(false)
+    }
+  }
+
+  // Remove authorized number
+  const removeAuthorizedNumber = async (numberId: string) => {
+    if (!confirm('Sei sicuro di voler rimuovere questo numero autorizzato?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/ai-commands/authorized-numbers/${numberId}`, {
+        method: 'DELETE'
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        await loadAIConfig() // Reload config
+        alert('✅ Numero rimosso con successo!')
+      } else {
+        alert('❌ Errore: ' + data.message)
+      }
+    } catch (err) {
+      console.error('Error removing authorized number:', err)
+      alert('❌ Errore nella rimozione del numero')
+    }
+  }
+
+  // Load AI config when dialog opens
+  React.useEffect(() => {
+    if (showAIDialog && restaurantId) {
+      loadAIConfig()
+    }
+  }, [showAIDialog, restaurantId])
 
   // Handler functions
   const handleAddDish = async (categoryId: string) => {
@@ -2976,9 +3101,235 @@ export default function MenuAdminPage() {
           </DialogContent>
         </Dialog>
 
+        {/* AI Commands Dialog */}
+        <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
+          <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800">🤖 Comandi AI</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Gestisci i numeri autorizzati per i comandi vocali/testuali via WhatsApp
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+              {isLoadingAIConfig ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                  <span className="ml-2 text-gray-600">Caricamento configurazione...</span>
+                </div>
+              ) : (
+                <>
+                  {/* Attivazione AI */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-800">🚀 Attivazione AI</h3>
+                        <p className="text-sm text-gray-600">Abilita i comandi intelligenti via WhatsApp</p>
+                      </div>
+                      <Switch
+                        checked={aiConfig.enabled}
+                        onCheckedChange={(enabled) => updateAIConfig({ enabled })}
+                      />
+                    </div>
+                    
+                    {aiConfig.enabled && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
+                        <ul className="text-sm text-blue-800 space-y-1">
+                          <li>• I numeri autorizzati possono inviare comandi vocali o testuali</li>
+                          <li>• L'AI interpreta automaticamente le richieste</li>
+                          <li>• Ogni comando richiede conferma prima dell'esecuzione</li>
+                          <li>• I permessi sono configurabili per livello di sicurezza</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Lingua predefinita */}
+                  {aiConfig.enabled && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">🌍 Lingua Predefinita</h3>
+                      <select
+                        value={aiConfig.defaultLanguage}
+                        onChange={(e) => updateAIConfig({ defaultLanguage: e.target.value })}
+                        className="w-full h-12 px-4 border border-gray-300 rounded-xl text-base bg-white"
+                      >
+                        <option value="it">🇮🇹 Italiano</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Aggiungi Numero Autorizzato */}
+                  {aiConfig.enabled && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">➕ Aggiungi Numero Autorizzato</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                            Numero di Telefono
+                          </label>
+                          <Input
+                            type="tel"
+                            value={newAuthorizedNumber.phoneNumber}
+                            onChange={(e) => setNewAuthorizedNumber(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                            placeholder="+39 123 456 7890"
+                            className="h-12 text-base"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                            Nome/Descrizione
+                          </label>
+                          <Input
+                            value={newAuthorizedNumber.name}
+                            onChange={(e) => setNewAuthorizedNumber(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Es: Marco - Chef"
+                            className="h-12 text-base"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                            Livello Permessi
+                          </label>
+                          <select
+                            value={newAuthorizedNumber.permission}
+                            onChange={(e) => setNewAuthorizedNumber(prev => ({ ...prev, permission: e.target.value }))}
+                            className="w-full h-12 px-4 border border-gray-300 rounded-xl text-base bg-white"
+                          >
+                            <option value="basic">🟢 Basic - Nascondere/mostrare piatti, modifiche base</option>
+                            <option value="advanced">🟡 Advanced - Creare piatti, categorie, immagini AI</option>
+                            <option value="admin">🔴 Admin - Controllo completo</option>
+                          </select>
+                        </div>
+                        
+                        <CustomButton
+                          className="w-full h-12 text-base font-semibold"
+                          onClick={addAuthorizedNumber}
+                          disabled={isAddingNumber || !newAuthorizedNumber.phoneNumber || !newAuthorizedNumber.name}
+                        >
+                          {isAddingNumber ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Aggiunta...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Aggiungi Numero
+                            </>
+                          )}
+                        </CustomButton>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Numeri Autorizzati */}
+                  {aiConfig.enabled && aiConfig.authorizedNumbers && aiConfig.authorizedNumbers.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">📱 Numeri Autorizzati</h3>
+                      
+                      <div className="space-y-3">
+                        {aiConfig.authorizedNumbers.map((auth: any) => (
+                          <div key={auth.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900">{auth.name}</span>
+                                <Badge 
+                                  variant={auth.permission === 'admin' ? 'destructive' : auth.permission === 'advanced' ? 'default' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {auth.permission}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {auth.displayNumber}
+                              </div>
+                              {auth.lastCommandAt && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Ultimo comando: {new Date(auth.lastCommandAt).toLocaleDateString('it-IT')}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <button
+                              className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
+                              onClick={() => removeAuthorizedNumber(auth.id)}
+                              title="Rimuovi numero"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Esempi Comandi */}
+                  {aiConfig.enabled && (
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
+                      <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        💬 Esempi di Comandi
+                      </h4>
+                      <div className="text-sm text-purple-800 space-y-2">
+                        <div><strong>Nascondere piatti:</strong> "Nascondi la carbonara"</div>
+                        <div><strong>Modificare prezzi:</strong> "Cambia il prezzo della margherita a 8 euro"</div>
+                        <div><strong>Creare piatti:</strong> "Crea nuovo piatto tiramisu in categoria dolci"</div>
+                        <div><strong>Generare immagini:</strong> "Genera immagine AI per la carbonara"</div>
+                        <div><strong>Vocali:</strong> Registra un messaggio vocale con le tue richieste</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Statistiche */}
+                  {aiConfig.enabled && aiConfig.stats && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">📊 Statistiche</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{aiConfig.stats?.totalCommands || 0}</div>
+                          <div className="text-sm text-gray-600">Comandi Totali</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{aiConfig.stats?.successfulCommands || 0}</div>
+                          <div className="text-sm text-gray-600">Completati</div>
+                        </div>
+                      </div>
+                      
+                      {aiConfig.stats?.lastCommandAt && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <div className="text-sm text-gray-600">
+                            Ultimo comando: {new Date(aiConfig.stats.lastCommandAt).toLocaleString('it-IT')}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
+              <CustomButton 
+                className="w-full h-14 text-base font-semibold"
+                onClick={() => setShowAIDialog(false)}
+              >
+                ✅ Fatto
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Fixed Bottom Actions */}
         <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-transparent backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-20">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <CustomButton
               className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
               onClick={() => setShowBrandDialog(true)}
@@ -3006,6 +3357,16 @@ export default function MenuAdminPage() {
               <span className="text-xl mb-1 flex-shrink-0">🌍</span>
               <span className="text-center break-words hyphens-auto max-w-full">
                 Traduzioni
+              </span>
+            </CustomButton>
+
+            <CustomButton
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+              onClick={() => setShowAIDialog(true)}
+            >
+              <span className="text-xl mb-1 flex-shrink-0">🤖</span>
+              <span className="text-center break-words hyphens-auto max-w-full">
+                AI
               </span>
             </CustomButton>
           </div>
