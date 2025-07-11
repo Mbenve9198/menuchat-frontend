@@ -1144,10 +1144,7 @@ export default function Dashboard() {
             <CustomButton
               className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
               onClick={() => {
-                const restaurantId = session?.user?.restaurantId
-                if (restaurantId) {
-                  router.push(`/menu/${restaurantId}`)
-                }
+                router.push('/menu-admin')
               }}
             >
               <Menu className="w-5 h-5 mb-1 flex-shrink-0" />
