@@ -923,17 +923,51 @@ export default function MenuAdminPage() {
   }
 
   // Handler per quando le traduzioni sono completate
-  const handleTranslationComplete = (result: any) => {
-    console.log('✅ Traduzioni completate:', result)
-    if (result.stats) {
-      alert(`✅ ${result.message || 'Traduzioni completate'}!\n\n${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`)
-    } else {
-      alert('✅ Traduzioni completate con successo!')
+  const handleTranslationComplete = async (result: any) => {
+    try {
+      console.log('✅ Traduzioni completate:', result)
+      
+      // Reset stati prima di tutto
+      setTranslationTaskId(null)
+      setIsGeneratingTranslation(false)
+      setSelectedLanguageForTranslation('')
+      
+      // Mostra messaggio di successo
+      if (result.stats) {
+        alert(`✅ ${result.message || 'Traduzioni completate'}!\n\n${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`)
+      } else {
+        alert('✅ Traduzioni completate con successo!')
+      }
+      
+      // Ricarica i dati in sequenza con un piccolo delay
+      console.log('🔄 Ricaricamento lingue supportate...')
+      await loadSupportedLanguages()
+      
+      // Piccolo delay prima del reload del menu
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      console.log('🔄 Ricaricamento dati menu...')
+      await loadMenuData()
+      
+      console.log('✅ Reload completato')
+      
+    } catch (error) {
+      console.error('❌ Errore nel gestire completamento traduzioni:', error)
+      
+      // Fallback: almeno resettiamo gli stati e ricarichiamo solo i dati base
+      setTranslationTaskId(null)
+      setIsGeneratingTranslation(false)
+      setSelectedLanguageForTranslation('')
+      
+      // Prova un reload semplificato
+      try {
+        console.log('🔄 Tentativo reload semplificato...')
+        await loadMenuData()
+      } catch (fallbackError) {
+        console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
+        alert('⚠️ Le traduzioni sono state completate ma c\'è stato un problema nel ricaricamento della pagina. Aggiorna manualmente la pagina.')
+      }
     }
-    setTranslationTaskId(null)
-    setIsGeneratingTranslation(false)
-    setSelectedLanguageForTranslation('')
-    loadSupportedLanguages() // Reload to show the new language
   }
 
   // Handler per quando le traduzioni falliscono
