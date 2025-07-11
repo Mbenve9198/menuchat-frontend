@@ -208,6 +208,24 @@ export function AsyncTaskProgress({
             <AlertDescription>
               <div className="space-y-1">
                 <p className="font-medium">Elaborazione completata con successo!</p>
+                
+                {/* Mostra lingua riconosciuta per analisi menu */}
+                {task.result?.menuData?.language && (
+                  <div className="flex items-center space-x-2 text-sm">
+                    <span>🌍</span>
+                    <span className="text-muted-foreground">
+                      Lingua riconosciuta: <span className="font-medium text-foreground">
+                        {task.result.menuData.language.name} ({task.result.menuData.language.code})
+                      </span>
+                      {task.result.menuData.language.confidence && (
+                        <span className="ml-1 text-xs">
+                          - {Math.round(task.result.menuData.language.confidence * 100)}% di confidenza
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+                
                 {task.result?.stats && (
                   <p className="text-sm text-muted-foreground">
                     {Object.entries(task.result.stats).map(([key, value]) => 
