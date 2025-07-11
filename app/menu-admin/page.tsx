@@ -743,86 +743,128 @@ const DishAccordionItem = ({
         </AccordionItem>
       </Accordion>
 
-      {/* Dialog per gestione immagine */}
+      {/* Dialog per gestione immagine - Mobile Optimized */}
       <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gestisci Immagine Piatto</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+          <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+            <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Camera className="h-6 w-6 text-blue-500" />
+              Gestisci Immagine Piatto
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
               {dish.photoUrl 
-                ? "Puoi sostituire o eliminare l'immagine esistente." 
-                : "Carica un'immagine per questo piatto."
+                ? "Puoi sostituire o eliminare l'immagine esistente per questo piatto." 
+                : "Carica una nuova immagine per questo piatto."
               }
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+            {/* Anteprima Immagine Attuale */}
             {dish.photoUrl && (
-              <div className="text-center">
-                <img
-                  src={dish.photoUrl}
-                  alt={dish.name}
-                  className="w-full max-w-xs mx-auto rounded-lg object-cover"
-                />
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  🖼️ Immagine Attuale
+                </h3>
+                <div className="text-center">
+                  <img
+                    src={dish.photoUrl}
+                    alt={dish.name}
+                    className="w-full max-w-sm mx-auto rounded-xl object-cover shadow-md border border-gray-200"
+                    style={{ maxHeight: '300px' }}
+                  />
+                  <p className="text-sm text-gray-500 mt-3">
+                    Immagine di <strong>{dish.name}</strong>
+                  </p>
+                </div>
               </div>
             )}
             
-            <MediaUpload
-              onFileSelect={handleImageUpload}
-              selectedFile={isUpdatingImage ? "updating" : ""}
-              mediaType="image"
-              maxSize={10}
-              label={dish.photoUrl ? "Sostituisci immagine" : "Carica immagine"}
-              className="w-full"
-            />
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">oppure</span>
+            {/* Carica Nuova Immagine */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                📤 {dish.photoUrl ? "Sostituisci Immagine" : "Carica Immagine"}
+              </h3>
+              
+              <MediaUpload
+                onFileSelect={handleImageUpload}
+                selectedFile={isUpdatingImage ? "updating" : ""}
+                mediaType="image"
+                maxSize={10}
+                label={dish.photoUrl ? "Seleziona nuova immagine" : "Seleziona immagine"}
+                className="w-full"
+              />
+              
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-sm text-blue-800">
+                  <strong>💡 Consiglio:</strong> Usa immagini di alta qualità (JPG/PNG) per risultati migliori. Dimensione massima: 10MB.
+                </p>
               </div>
             </div>
             
-            <CustomButton
-              className="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold"
-              onClick={() => setShowImageGenerationDialog(true)}
-              disabled={isUpdatingImage || isGeneratingImage}
-            >
-              <Wand2 className="mr-2 h-5 w-5" />
-              Genera con AI (Imagen 4 Ultra)
-            </CustomButton>
-            
-            <div className="flex justify-between gap-2">
-              <CustomButton 
-                variant="outline" 
-                onClick={() => setShowImageDialog(false)}
-                disabled={isUpdatingImage}
+            {/* Genera con AI */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Wand2 className="h-5 w-5 text-purple-500" />
+                Genera con AI
+              </h3>
+              
+              <CustomButton
+                className="w-full h-12 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold"
+                onClick={() => setShowImageGenerationDialog(true)}
+                disabled={isUpdatingImage || isGeneratingImage}
               >
-                Annulla
+                <Wand2 className="mr-2 h-5 w-5" />
+                Crea con Imagen 4 Ultra
               </CustomButton>
               
-              {dish.photoUrl && (
+              <p className="text-xs text-purple-600 mt-3 bg-purple-50 p-3 rounded-lg">
+                🎨 L'AI creerà un'immagine professionale basata sui dettagli del piatto
+              </p>
+            </div>
+
+            {/* Elimina Immagine */}
+            {dish.photoUrl && (
+              <div className="bg-white rounded-2xl border border-red-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-red-700 mb-4 flex items-center gap-2">
+                  🗑️ Elimina Immagine
+                </h3>
+                
+                <p className="text-sm text-red-600 mb-4">
+                  <strong>⚠️ Attenzione:</strong> Questa azione rimuoverà definitivamente l'immagine del piatto.
+                </p>
+                
                 <CustomButton 
                   variant="destructive"
                   onClick={handleImageDelete}
                   disabled={isUpdatingImage}
+                  className="w-full h-12"
                 >
                   {isUpdatingImage ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Eliminazione...
+                      Eliminazione in corso...
                     </>
                   ) : (
                     <>
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Elimina Immagine
+                      Elimina Immagine Definitivamente
                     </>
                   )}
                 </CustomButton>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
+            <CustomButton 
+              className="w-full h-14 text-base font-semibold"
+              variant="outline"
+              onClick={() => setShowImageDialog(false)}
+              disabled={isUpdatingImage}
+            >
+              ✅ Chiudi
+            </CustomButton>
           </div>
         </DialogContent>
       </Dialog>
