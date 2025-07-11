@@ -1878,47 +1878,21 @@ export default function MenuAdminPage() {
               {!showAnalysisPreview && (
                 <>
                   {analysisTaskId ? (
-                    // Mostra animazione di caricamento pulita
-                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm text-center">
-                      <div className="mb-6">
-                        <div className="w-16 h-16 mx-auto mb-4 relative">
-                          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-2">🤖 Analisi in Corso</h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          L'AI sta analizzando {importedFiles.length} immagini del tuo menu...
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          ⏱️ Il processo può richiedere alcuni minuti
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-2 text-xs text-gray-600">
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                          <span>Identificazione testo e layout</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse animation-delay-300"></div>
-                          <span>Estrazione categorie e piatti</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse animation-delay-600"></div>
-                          <span>Riconoscimento prezzi e ingredienti</span>
-                        </div>
-                      </div>
-                      
-                      <CustomButton
-                        variant="outline"
-                        className="mt-6"
-                        onClick={() => {
-                          setAnalysisTaskId(null)
-                          setImportedFiles([])
-                        }}
-                      >
-                        ❌ Annulla
-                      </CustomButton>
-                    </div>
+                    // Mostra progresso analisi asincrona
+                    <AsyncTaskProgress
+                      taskId={analysisTaskId}
+                      title="Analisi Menu con AI"
+                      description={`Stiamo analizzando ${importedFiles.length} immagini del tuo menu...`}
+                      onComplete={handleAnalysisComplete}
+                      onError={handleAnalysisError}
+                      onCancel={() => {
+                        setAnalysisTaskId(null)
+                        setImportedFiles([])
+                      }}
+                      pollingInterval={2000}
+                      hideProgress={true}
+                      className="my-4"
+                    />
                   ) : (
                     // Mostra interfaccia normale di upload
                     <>

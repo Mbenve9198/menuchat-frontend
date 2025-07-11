@@ -26,6 +26,7 @@ interface AsyncTaskProgressProps {
   onError?: (error: any) => void;
   onCancel?: () => void;
   showDetails?: boolean;
+  hideProgress?: boolean;
   className?: string;
 }
 
@@ -38,6 +39,7 @@ export function AsyncTaskProgress({
   onError,
   onCancel,
   showDetails = true,
+  hideProgress = false,
   className = ""
 }: AsyncTaskProgressProps) {
   
@@ -149,7 +151,7 @@ export function AsyncTaskProgress({
 
       <CardContent className="space-y-4">
         {/* Barra di progresso */}
-        {task && (
+        {task && !hideProgress && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Progresso</span>
@@ -159,6 +161,30 @@ export function AsyncTaskProgress({
             <p className="text-sm text-muted-foreground">
               {task.progressMessage}
             </p>
+          </div>
+        )}
+
+        {/* Animazione di caricamento quando hideProgress è true */}
+        {task && hideProgress && (task.status === 'pending' || task.status === 'processing') && (
+          <div className="flex flex-col items-center space-y-4 py-4">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {task.progressMessage || 'Elaborazione in corso...'}
+              </p>
+              <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span>Identificazione testo e layout</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '300ms'}}></div>
+                <span>Estrazione categorie e piatti</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{animationDelay: '600ms'}}></div>
+                <span>Riconoscimento prezzi e ingredienti</span>
+              </div>
+            </div>
           </div>
         )}
 
