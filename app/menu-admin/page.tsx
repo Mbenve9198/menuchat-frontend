@@ -1992,9 +1992,20 @@ export default function MenuAdminPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm bg-gray-50 p-4 rounded-xl">
-                    Solo la lingua di default è configurata
-                  </p>
+                  <div className="text-gray-500 text-sm bg-gray-50 p-4 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🇮🇹</span>
+                      <div>
+                        <span className="font-medium text-gray-900">Italiano</span>
+                        <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          Default
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-600">
+                      Questa è la lingua principale del menu. Aggiungi traduzioni per supportare altre lingue.
+                    </p>
+                  </div>
                 )}
               </div>
 
