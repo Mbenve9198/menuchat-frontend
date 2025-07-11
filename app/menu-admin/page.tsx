@@ -481,26 +481,45 @@ const DishAccordionItem = ({
     try {
       console.log('✅ Generazione immagine completata:', result)
       
-      // Reset stati prima di tutto
-      setImageGenerationTaskId(null)
-      setIsGeneratingImage(false)
-      setShowImageGenerationDialog(false)
-      setShowImageDialog(false)
+      // Reset stati in modo più robusto con timeout per evitare re-render issues
+      setTimeout(() => {
+        setImageGenerationTaskId(null)
+        setIsGeneratingImage(false)
+        setShowImageGenerationDialog(false)
+        setShowImageDialog(false)
+        setCustomPrompt('') // Reset anche il prompt personalizzato
+        setUseAutoPrompt(true) // Reset alla modalità automatica
+      }, 100)
       
       if (result.photoUrl) {
         console.log('🖼️ Aggiornamento piatto con nuova immagine:', result.photoUrl)
         onUpdateDish({ ...dish, photoUrl: result.photoUrl })
-        alert('🎉 Immagine generata con successo!')
+        
+        // Alert dopo un piccolo delay per permettere alla UI di stabilizzarsi
+        setTimeout(() => {
+          alert('🎉 Immagine generata con successo!')
+        }, 200)
       } else {
-        alert('⚠️ Immagine generata ma URL non disponibile')
+        setTimeout(() => {
+          alert('⚠️ Immagine generata ma URL non disponibile')
+        }, 200)
       }
       
     } catch (error) {
       console.error('❌ Errore nel gestire completamento generazione immagine:', error)
-      setImageGenerationTaskId(null)
-      setIsGeneratingImage(false)
-      setShowImageGenerationDialog(false)
-      alert('⚠️ L\'immagine è stata generata ma c\'è stato un problema nell\'aggiornamento. Ricarica la pagina.')
+      
+      // Fallback reset con timeout
+      setTimeout(() => {
+        setImageGenerationTaskId(null)
+        setIsGeneratingImage(false)
+        setShowImageGenerationDialog(false)
+        setCustomPrompt('')
+        setUseAutoPrompt(true)
+      }, 100)
+      
+      setTimeout(() => {
+        alert('⚠️ L\'immagine è stata generata ma c\'è stato un problema nell\'aggiornamento. Ricarica la pagina.')
+      }, 200)
     }
   }
 
@@ -517,9 +536,19 @@ const DishAccordionItem = ({
       errorMessage = '❌ ' + error.message
     }
     
-    alert(errorMessage)
-    setImageGenerationTaskId(null)
-    setIsGeneratingImage(false)
+    // Reset stati con timeout per evitare problemi di timing
+    setTimeout(() => {
+      setImageGenerationTaskId(null)
+      setIsGeneratingImage(false)
+      setShowImageGenerationDialog(false)
+      setCustomPrompt('')
+      setUseAutoPrompt(true)
+    }, 100)
+    
+    // Mostra errore dopo un delay
+    setTimeout(() => {
+      alert(errorMessage)
+    }, 200)
   }
 
   return (
