@@ -1863,72 +1863,7 @@ export default function CreateCampaign() {
                     </DialogContent>
                   </Dialog>
 
-                  {/* Delete Confirmation Dialog */}
-                  <Dialog 
-                    open={showDeleteConfirmDialog} 
-                    onOpenChange={(open) => {
-                      console.log('🔴 Dialog onOpenChange chiamato con:', open)
-                      setShowDeleteConfirmDialog(open)
-                    }}
-                  >
-                    <DialogContent 
-                      className="sm:max-w-md rounded-xl"
-                      onOpenAutoFocus={() => console.log('🔴 Dialog ha ricevuto focus')}
-                    >
-                      <DialogHeader>
-                        <DialogTitle className="text-red-600">Conferma Cancellazione</DialogTitle>
-                        <DialogDescription>
-                          Sei sicuro di voler cancellare {selectedCount} contatto{selectedCount > 1 ? 'i' : ''}? 
-                          Questa azione non può essere annullata.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                              <X className="w-4 h-4 text-red-600" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-red-800">Attenzione!</p>
-                              <p className="text-xs text-red-600">
-                                I contatti selezionati verranno eliminati definitivamente dal database.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter className="flex gap-2">
-                        <CustomButton
-                          variant="outline"
-                          onClick={() => setShowDeleteConfirmDialog(false)}
-                          className="flex-1"
-                          disabled={isDeletingContacts}
-                        >
-                          Annulla
-                        </CustomButton>
-                        <CustomButton
-                          onClick={() => {
-                            console.log('🚨 PULSANTE CONFERMA ELIMINA CLICCATO!')
-                            handleDeleteSelectedContacts()
-                          }}
-                          className="flex-1 bg-red-600 hover:bg-red-700"
-                          disabled={isDeletingContacts}
-                        >
-                          {isDeletingContacts ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Cancellazione...
-                            </>
-                          ) : (
-                            <>
-                              <X className="w-4 h-4 mr-2" />
-                              Elimina {selectedCount} contatto{selectedCount > 1 ? 'i' : ''}
-                            </>
-                          )}
-                        </CustomButton>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+
 
                   {/* Call to action */}
                   <div className="space-y-2">
@@ -2376,6 +2311,73 @@ export default function CreateCampaign() {
             </CustomButton>
           </div>
         )}
+
+        {/* Global Delete Confirmation Dialog - Always rendered */}
+        <Dialog 
+          open={showDeleteConfirmDialog} 
+          onOpenChange={(open) => {
+            console.log('🔴 Dialog onOpenChange chiamato con:', open)
+            setShowDeleteConfirmDialog(open)
+          }}
+        >
+          <DialogContent 
+            className="sm:max-w-md rounded-xl"
+            onOpenAutoFocus={() => console.log('🔴 Dialog ha ricevuto focus')}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-red-600">Conferma Cancellazione</DialogTitle>
+              <DialogDescription>
+                Sei sicuro di voler cancellare {selectedCount} contatto{selectedCount > 1 ? 'i' : ''}? 
+                Questa azione non può essere annullata.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                    <X className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-red-800">Attenzione!</p>
+                    <p className="text-xs text-red-600">
+                      I contatti selezionati verranno eliminati definitivamente dal database.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="flex gap-2">
+              <CustomButton
+                variant="outline"
+                onClick={() => setShowDeleteConfirmDialog(false)}
+                className="flex-1"
+                disabled={isDeletingContacts}
+              >
+                Annulla
+              </CustomButton>
+              <CustomButton
+                onClick={() => {
+                  console.log('🚨 PULSANTE CONFERMA ELIMINA CLICCATO!')
+                  handleDeleteSelectedContacts()
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={isDeletingContacts}
+              >
+                {isDeletingContacts ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cancellazione...
+                  </>
+                ) : (
+                  <>
+                    <X className="w-4 h-4 mr-2" />
+                    Elimina {selectedCount} contatto{selectedCount > 1 ? 'i' : ''}
+                  </>
+                )}
+              </CustomButton>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </main>
   )
