@@ -1,6 +1,12 @@
 "use client"
 
 import * as React from "react"
+
+// Custom CSS per animation delays
+const customStyles = `
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-600 { animation-delay: 600ms; }
+`
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import {
@@ -20,7 +26,27 @@ import {
   Check,
   Camera,
   X,
+  GripVertical,
 } from "lucide-react"
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { CustomButton } from "@/components/ui/custom-button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Switch } from "@/components/ui/switch"
@@ -68,8 +94,8 @@ type MenuData = {
   allItems: any[]
 }
 
-// --- DISH COMPONENT ---
-const DishAccordionItem = ({
+// --- SORTABLE DISH COMPONENT ---
+const SortableDish = ({
   dish,
   onUpdateDish,
   onDuplicateDish,
@@ -89,6 +115,69 @@ const DishAccordionItem = ({
   showBulkCheckbox?: boolean
   isSelectedForBulk?: boolean
   onBulkToggle?: (dishId: string) => void
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: dish.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? "z-50" : ""}>
+      <DishAccordionItem
+        dish={dish}
+        onUpdateDish={onUpdateDish}
+        onDuplicateDish={onDuplicateDish}
+        onDeleteDish={onDeleteDish}
+        availableTags={availableTags}
+        restaurantId={restaurantId}
+        showBulkCheckbox={showBulkCheckbox}
+        isSelectedForBulk={isSelectedForBulk}
+        onBulkToggle={onBulkToggle}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        isDragging={isDragging}
+      />
+    </div>
+  )
+}
+
+// --- DISH COMPONENT ---
+const DishAccordionItem = ({
+  dish,
+  onUpdateDish,
+  onDuplicateDish,
+  onDeleteDish,
+  availableTags,
+  restaurantId,
+  showBulkCheckbox = false,
+  isSelectedForBulk = false,
+  onBulkToggle,
+  dragAttributes,
+  dragListeners,
+  isDragging = false,
+}: {
+  dish: Dish
+  onUpdateDish: (updatedDish: Dish) => void
+  onDuplicateDish: () => void
+  onDeleteDish: () => void
+  availableTags: Tag[]
+  restaurantId: string
+  showBulkCheckbox?: boolean
+  isSelectedForBulk?: boolean
+  onBulkToggle?: (dishId: string) => void
+  dragAttributes?: any
+  dragListeners?: any
+  isDragging?: boolean
 }) => {
   const [name, setName] = React.useState(dish.name)
   const [price, setPrice] = React.useState(dish.price.toFixed(2))
@@ -401,6 +490,16 @@ const DishAccordionItem = ({
                   onCheckedChange={handleAvailabilityChange}
                 />
                 <div className="flex items-center gap-1">
+                  {dragListeners && (
+                    <button
+                      className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150 cursor-grab active:cursor-grabbing"
+                      title="Trascina per riordinare"
+                      {...dragAttributes}
+                      {...dragListeners}
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
                     className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-150"
                     onClick={onDuplicateDish}
@@ -588,6 +687,75 @@ const DishAccordionItem = ({
   )
 }
 
+// --- SORTABLE CATEGORY COMPONENT ---
+const SortableCategory = ({
+  category,
+  onUpdateCategory,
+  onDeleteCategory,
+  onAddDish,
+  availableTags,
+  restaurantId,
+  showBulkCheckbox = false,
+  selectedBulkItems = [],
+  onBulkToggle,
+  onDishUpdate,
+  onDishDuplicate,
+  onDishDelete,
+  onDishReorder,
+}: {
+  category: Category
+  onUpdateCategory: (updatedCategory: Category) => void
+  onDeleteCategory: () => void
+  onAddDish: (categoryId: string) => void
+  availableTags: Tag[]
+  restaurantId: string
+  showBulkCheckbox?: boolean
+  selectedBulkItems?: string[]
+  onBulkToggle?: (dishId: string) => void
+  onDishUpdate: (categoryId: string, updatedDish: Dish) => void
+  onDishDuplicate: (categoryId: string, dish: Dish) => void
+  onDishDelete: (categoryId: string, dishId: string) => void
+  onDishReorder: (categoryId: string, dishes: Dish[]) => void
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? "z-50" : ""}>
+      <CategoryAccordion
+        category={category}
+        onUpdateCategory={onUpdateCategory}
+        onDeleteCategory={onDeleteCategory}
+        onAddDish={onAddDish}
+        availableTags={availableTags}
+        restaurantId={restaurantId}
+        showBulkCheckbox={showBulkCheckbox}
+        selectedBulkItems={selectedBulkItems}
+        onBulkToggle={onBulkToggle}
+        onDishUpdate={onDishUpdate}
+        onDishDuplicate={onDishDuplicate}
+        onDishDelete={onDishDelete}
+        onDishReorder={onDishReorder}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+        isDragging={isDragging}
+      />
+    </div>
+  )
+}
+
 // --- CATEGORY COMPONENT ---
 const CategoryAccordion = ({
   category,
@@ -602,6 +770,10 @@ const CategoryAccordion = ({
   onDishUpdate,
   onDishDuplicate,
   onDishDelete,
+  onDishReorder,
+  dragAttributes,
+  dragListeners,
+  isDragging = false,
 }: {
   category: Category
   onUpdateCategory: (updatedCategory: Category) => void
@@ -615,6 +787,10 @@ const CategoryAccordion = ({
   onDishUpdate: (categoryId: string, updatedDish: Dish) => void
   onDishDuplicate: (categoryId: string, dish: Dish) => void
   onDishDelete: (categoryId: string, dishId: string) => void
+  onDishReorder?: (categoryId: string, dishes: Dish[]) => void
+  dragAttributes?: any
+  dragListeners?: any
+  isDragging?: boolean
 }) => {
   const [name, setName] = React.useState(category.name)
   const [icon, setIcon] = React.useState(category.icon)
@@ -693,35 +869,69 @@ const CategoryAccordion = ({
                 className="text-lg font-bold text-gray-700 p-0 h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
                 onClick={(e) => e.stopPropagation()}
               />
-              <button
-                className="h-8 w-8 shrink-0 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150 ml-2"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDeleteCategory()
-                }}
-                title="Elimina categoria"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1 ml-2">
+                {dragListeners && (
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150 cursor-grab active:cursor-grabbing"
+                    title="Trascina per riordinare categoria"
+                    {...dragAttributes}
+                    {...dragListeners}
+                  >
+                    <GripVertical className="h-5 w-5" />
+                  </button>
+                )}
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteCategory()
+                  }}
+                  title="Elimina categoria"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </AccordionTrigger>
           <AccordionContent className="p-4 pt-6">
-            <div className="space-y-3">
-              {category.dishes.map((dish) => (
-                <DishAccordionItem
-                  key={dish.id}
-                  dish={dish}
-                  onUpdateDish={(updatedDish) => onDishUpdate(category.id, updatedDish)}
-                  onDuplicateDish={() => onDishDuplicate(category.id, dish)}
-                  onDeleteDish={() => onDishDelete(category.id, dish.id)}
-                  availableTags={availableTags}
-                  restaurantId={restaurantId}
-                  showBulkCheckbox={showBulkCheckbox}
-                  isSelectedForBulk={selectedBulkItems.includes(dish.id)}
-                  onBulkToggle={onBulkToggle}
-                />
-              ))}
-            </div>
+            <DndContext
+              sensors={useSensors(
+                useSensor(PointerSensor),
+                useSensor(TouchSensor)
+              )}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => {
+                const { active, over } = event
+                if (active.id !== over?.id) {
+                  const oldIndex = category.dishes.findIndex((dish) => dish.id === active.id)
+                  const newIndex = category.dishes.findIndex((dish) => dish.id === over?.id)
+                  const newDishes = arrayMove(category.dishes, oldIndex, newIndex)
+                  onDishReorder?.(category.id, newDishes)
+                }
+              }}
+            >
+              <SortableContext
+                items={category.dishes.map(dish => dish.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3">
+                  {category.dishes.map((dish) => (
+                    <SortableDish
+                      key={dish.id}
+                      dish={dish}
+                      onUpdateDish={(updatedDish) => onDishUpdate(category.id, updatedDish)}
+                      onDuplicateDish={() => onDishDuplicate(category.id, dish)}
+                      onDeleteDish={() => onDishDelete(category.id, dish.id)}
+                      availableTags={availableTags}
+                      restaurantId={restaurantId}
+                      showBulkCheckbox={showBulkCheckbox}
+                      isSelectedForBulk={selectedBulkItems.includes(dish.id)}
+                      onBulkToggle={onBulkToggle}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
             <button
               className="relative w-full mt-4 rounded-2xl border-b-4 border-gray-900/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
               onClick={() => onAddDish(category.id)}
@@ -807,6 +1017,12 @@ export default function MenuAdminPage() {
 
   const hasChanges = JSON.stringify(categories) !== JSON.stringify(originalCategories)
   const restaurantId = session?.user?.restaurantId
+
+  // Sensori per drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor)
+  )
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -1271,6 +1487,66 @@ export default function MenuAdminPage() {
     }
   }
 
+  // Gestori per drag and drop
+  const handleCategoryReorder = async (newCategories: Category[]) => {
+    setCategories(newCategories)
+    
+    try {
+      const categoryOrders = newCategories.map((cat, index) => ({
+        categoryId: cat.id,
+        sortOrder: index
+      }))
+      
+      await fetch('/api/menu/categories/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantId,
+          categoryOrders
+        })
+      })
+    } catch (err) {
+      console.error('Error reordering categories:', err)
+    }
+  }
+
+  const handleDishReorder = async (categoryId: string, newDishes: Dish[]) => {
+    // Aggiorna lo stato locale
+    setCategories(categories.map(cat => 
+      cat.id === categoryId 
+        ? { ...cat, dishes: newDishes }
+        : cat
+    ))
+    
+    try {
+      const dishOrders = newDishes.map((dish, index) => ({
+        dishId: dish.id,
+        sortOrder: index
+      }))
+      
+      await fetch('/api/menu/dishes/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId,
+          dishOrders
+        })
+      })
+    } catch (err) {
+      console.error('Error reordering dishes:', err)
+    }
+  }
+
+  const handleCategoryDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (active.id !== over?.id) {
+      const oldIndex = categories.findIndex((cat) => cat.id === active.id)
+      const newIndex = categories.findIndex((cat) => cat.id === over?.id)
+      const newCategories = arrayMove(categories, oldIndex, newIndex)
+      handleCategoryReorder(newCategories)
+    }
+  }
+
   if (status === "loading" || isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
@@ -1299,7 +1575,9 @@ export default function MenuAdminPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
+      <div className="bg-gray-50 min-h-screen font-sans">
       <header className="fixed top-4 right-4 z-10">
         <button className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 w-12 shadow-lg font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0">
           <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
@@ -1358,43 +1636,55 @@ export default function MenuAdminPage() {
           </div>
         )}
 
-        <Accordion type="multiple" className="w-full space-y-4" defaultValue={categories.map(cat => cat.id)}>
-          {categories.map((category) => (
-            <CategoryAccordion
-              key={category.id}
-              category={category}
-              onUpdateCategory={(updatedCategory: Category) => {
-                setCategories(categories.map((cat: Category) => cat.id === updatedCategory.id ? updatedCategory : cat))
-              }}
-              onDeleteCategory={async () => {
-                if (confirm(`Sei sicuro di voler eliminare la categoria "${category.name}" e tutti i suoi piatti?`)) {
-                  try {
-                    const response = await fetch(`/api/menu/category/${category.id}`, {
-                      method: 'DELETE'
-                    })
-                    if (response.ok) {
-                      setCategories(categories.filter((cat: Category) => cat.id !== category.id))
-                    } else {
-                      alert('Errore nell\'eliminazione della categoria')
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleCategoryDragEnd}
+        >
+          <SortableContext
+            items={categories.map(cat => cat.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Accordion type="multiple" className="w-full space-y-4" defaultValue={categories.map(cat => cat.id)}>
+              {categories.map((category) => (
+                <SortableCategory
+                  key={category.id}
+                  category={category}
+                  onUpdateCategory={(updatedCategory: Category) => {
+                    setCategories(categories.map((cat: Category) => cat.id === updatedCategory.id ? updatedCategory : cat))
+                  }}
+                  onDeleteCategory={async () => {
+                    if (confirm(`Sei sicuro di voler eliminare la categoria "${category.name}" e tutti i suoi piatti?`)) {
+                      try {
+                        const response = await fetch(`/api/menu/category/${category.id}`, {
+                          method: 'DELETE'
+                        })
+                        if (response.ok) {
+                          setCategories(categories.filter((cat: Category) => cat.id !== category.id))
+                        } else {
+                          alert('Errore nell\'eliminazione della categoria')
+                        }
+                      } catch (err) {
+                        console.error('Error deleting category:', err)
+                        alert('Errore nell\'eliminazione della categoria')
+                      }
                     }
-                  } catch (err) {
-                    console.error('Error deleting category:', err)
-                    alert('Errore nell\'eliminazione della categoria')
-                  }
-                }
-              }}
-              onAddDish={handleAddDish}
-              availableTags={availableTags}
-              restaurantId={restaurantId!}
-              showBulkCheckbox={bulkMode}
-              selectedBulkItems={selectedBulkItems}
-              onBulkToggle={handleBulkItemToggle}
-              onDishUpdate={handleDishUpdate}
-              onDishDuplicate={handleDishDuplicate}
-              onDishDelete={handleDishDelete}
-            />
-          ))}
-        </Accordion>
+                  }}
+                  onAddDish={handleAddDish}
+                  availableTags={availableTags}
+                  restaurantId={restaurantId!}
+                  showBulkCheckbox={bulkMode}
+                  selectedBulkItems={selectedBulkItems}
+                  onBulkToggle={handleBulkItemToggle}
+                  onDishUpdate={handleDishUpdate}
+                  onDishDuplicate={handleDishDuplicate}
+                  onDishDelete={handleDishDelete}
+                  onDishReorder={handleDishReorder}
+                />
+              ))}
+            </Accordion>
+          </SortableContext>
+        </DndContext>
 
         {/* Add Category Button */}
         <div className="mt-6 space-y-4">
@@ -1576,87 +1866,146 @@ export default function MenuAdminPage() {
 
         {/* Menu Import Dialog */}
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Importa Menu da Immagini</DialogTitle>
-              <DialogDescription>
-                Carica una o più immagini del tuo menu (fino a 5) e useremo l'AI per estrarre automaticamente categorie e piatti da tutte le immagini insieme.
+          <DialogContent className="w-full max-w-md mx-auto h-[90vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800">📸 Importa Menu</DialogTitle>
+              <DialogDescription className="text-gray-600">
+                Analizza le immagini del menu con l'intelligenza artificiale
               </DialogDescription>
             </DialogHeader>
             
-            {!analysisTaskId && !showAnalysisPreview && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">💡 Suggerimenti per risultati migliori:</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Usa immagini ad alta risoluzione e ben illuminate</li>
-                  <li>• Assicurati che tutto il testo sia leggibile</li>
-                  <li>• Evita riflessi, ombre o angolazioni eccessive</li>
-                  <li>• Se il menu è su più pagine, carica tutte le sezioni</li>
-                  <li>• Per menu molto grandi, dividi per sezioni (primi, secondi, etc.)</li>
-                </ul>
-              </div>
-            )}
-            
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
               {!showAnalysisPreview && (
                 <>
                   {analysisTaskId ? (
-                    // Mostra progresso analisi asincrona
-                    <AsyncTaskProgress
-                      taskId={analysisTaskId}
-                      title="Analisi Menu con AI"
-                      description={`Stiamo analizzando ${importedFiles.length} immagini del tuo menu per estrarre categorie e piatti...`}
-                      onComplete={handleAnalysisComplete}
-                      onError={handleAnalysisError}
-                      onCancel={() => {
-                        setAnalysisTaskId(null)
-                        setImportedFiles([])
-                      }}
-                      pollingInterval={2000}
-                      className="my-6"
-                    />
+                    // Mostra animazione di caricamento pulita
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm text-center">
+                      <div className="mb-6">
+                        <div className="w-16 h-16 mx-auto mb-4 relative">
+                          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">🤖 Analisi in Corso</h3>
+                        <p className="text-sm text-gray-600 mb-2">
+                          L'AI sta analizzando {importedFiles.length} immagini del tuo menu...
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          ⏱️ Il processo può richiedere alcuni minuti
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-gray-600">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span>Identificazione testo e layout</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse animation-delay-300"></div>
+                          <span>Estrazione categorie e piatti</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse animation-delay-600"></div>
+                          <span>Riconoscimento prezzi e ingredienti</span>
+                        </div>
+                      </div>
+                      
+                      <CustomButton
+                        variant="outline"
+                        className="mt-6"
+                        onClick={() => {
+                          setAnalysisTaskId(null)
+                          setImportedFiles([])
+                        }}
+                      >
+                        ❌ Annulla
+                      </CustomButton>
+                    </div>
                   ) : (
                     // Mostra interfaccia normale di upload
                     <>
-                      <MultipleMediaUpload
-                        onFilesSelect={handleFilesImport}
-                        selectedFiles={importedFiles}
-                        mediaType="image"
-                        maxFiles={5}
-                        label="Carica Immagini del Menu (max 5)"
-                        className="w-full"
-                      />
+                      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                          📸 Carica Immagini
+                        </h3>
+                        
+                        <MultipleMediaUpload
+                          onFilesSelect={handleFilesImport}
+                          selectedFiles={importedFiles}
+                          mediaType="image"
+                          maxFiles={5}
+                          label="Seleziona fino a 5 immagini"
+                          className="w-full"
+                        />
+                      </div>
                       
                       {importedFiles.length > 0 && (
-                        <div className="flex justify-end gap-2">
-                          <CustomButton 
-                            variant="outline" 
-                            onClick={() => setImportedFiles([])}
-                          >
-                            Rimuovi Tutti
-                          </CustomButton>
-                          <CustomButton 
-                            onClick={handleAnalyzeMenu}
-                            disabled={isAnalyzing || importedFiles.length === 0}
-                          >
-                            {isAnalyzing ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Creazione task...
-                              </>
-                            ) : (
-                              <>
-                                <Zap className="mr-2 h-4 w-4" />
-                                Analizza {importedFiles.length} immagini con AI
-                              </>
-                            )}
-                          </CustomButton>
+                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                          <h4 className="font-medium text-blue-900 mb-3">💡 Come funziona:</h4>
+                          <ul className="text-sm text-blue-800 space-y-2">
+                            <li>• L'AI riconosce automaticamente la lingua del menu</li>
+                            <li>• Estrae categorie, piatti, prezzi e ingredienti</li>
+                            <li>• Organizza tutto in un menu digitale navigabile</li>
+                            <li>• 🕒 Il processo richiede 2-3 minuti per risultati accurati</li>
+                          </ul>
+                          
+                          <div className="flex gap-2 mt-6">
+                            <CustomButton 
+                              variant="outline" 
+                              onClick={() => setImportedFiles([])}
+                              className="flex-1"
+                            >
+                              🗑️ Rimuovi
+                            </CustomButton>
+                            <CustomButton 
+                              onClick={handleAnalyzeMenu}
+                              disabled={isAnalyzing || importedFiles.length === 0}
+                              className="flex-1"
+                            >
+                              {isAnalyzing ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Avvio...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="mr-2 h-4 w-4" />
+                                  Analizza con AI
+                                </>
+                              )}
+                            </CustomButton>
+                          </div>
                         </div>
                       )}
                     </>
                   )}
                 </>
               )}
+            </div>
+            
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">
+              <CustomButton 
+                className="w-full h-14 text-base font-semibold"
+                onClick={() => {
+                  if (analysisTaskId) {
+                    // Se c'è un'analisi in corso, chiedi conferma
+                    if (confirm('🚧 C\'è un\'analisi in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.')) {
+                      setShowImportDialog(false)
+                    }
+                  } else {
+                    setShowImportDialog(false)
+                  }
+                }}
+              >
+                {analysisTaskId ? (
+                  <>
+                    <span className="mr-2">🚧</span>
+                    Chiudi (Analisi in corso)
+                  </>
+                ) : (
+                  <>
+                    ✅ Fatto
+                  </>
+                )}
+              </CustomButton>
             </div>
           </DialogContent>
         </Dialog>
@@ -2222,5 +2571,6 @@ export default function MenuAdminPage() {
         </div>
       </main>
     </div>
+    </>
   )
 } 
