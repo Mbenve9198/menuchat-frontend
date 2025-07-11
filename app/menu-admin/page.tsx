@@ -1420,6 +1420,7 @@ export default function MenuAdminPage() {
         setShowAnalysisPreview(false)
         setImportedFiles([])
         setAnalyzedData(null)
+        setAnalysisTaskId(null) // Reset del task ID per fermare il polling
         loadMenuData() // Reload to show imported data
         alert('Menu importato con successo!')
       } else {
@@ -2012,6 +2013,7 @@ export default function MenuAdminPage() {
                         onClick={() => {
                           setShowAnalysisPreview(false)
                           setAnalyzedData(null)
+                          setAnalysisTaskId(null) // Reset del task ID per fermare il polling
                           // Permette di ri-analizzare con lo stesso file
                         }}
                       >
