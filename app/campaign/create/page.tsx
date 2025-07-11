@@ -291,7 +291,20 @@ export default function CreateCampaign() {
   }
 
   const toggleContactSelection = (id: string | number) => {
-    setContacts(contacts.map((contact) => (contact.id === id ? { ...contact, selected: !contact.selected } : contact)))
+    console.log('🔄 toggleContactSelection chiamata per ID:', id)
+    const updatedContacts = contacts.map((contact) => {
+      if (contact.id === id) {
+        const updatedContact = { ...contact, selected: !contact.selected }
+        console.log('🔄 Contatto aggiornato:', updatedContact.name, 'selected:', updatedContact.selected)
+        return updatedContact
+      }
+      return contact
+    })
+    setContacts(updatedContacts)
+    
+    // Log del nuovo selectedCount
+    const newSelectedCount = updatedContacts.filter(c => c.selected).length
+    console.log('🔄 Nuovo selectedCount:', newSelectedCount)
   }
 
   const filterByCountry = (code: string) => {
@@ -1317,7 +1330,12 @@ export default function CreateCampaign() {
                         <CustomButton
                           variant="outline"
                           size="sm"
-                          onClick={() => setShowDeleteConfirmDialog(true)}
+                          onClick={() => {
+                            console.log('🚨 PULSANTE ELIMINA CLICCATO! selectedCount:', selectedCount)
+                            console.log('🚨 isDeletingContacts:', isDeletingContacts)
+                            console.log('🚨 Aprendo dialog di conferma...')
+                            setShowDeleteConfirmDialog(true)
+                          }}
                           className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 text-xs py-1 px-2"
                           disabled={isDeletingContacts}
                         >
@@ -1333,6 +1351,13 @@ export default function CreateCampaign() {
                             </>
                           )}
                         </CustomButton>
+                      )}
+                      
+                      {/* Debug info - solo in sviluppo */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          Debug: selectedCount={selectedCount}, showButton={selectedCount > 0 ? 'YES' : 'NO'}
+                        </div>
                       )}
                     </div>
 
@@ -1844,7 +1869,10 @@ export default function CreateCampaign() {
                           Annulla
                         </CustomButton>
                         <CustomButton
-                          onClick={handleDeleteSelectedContacts}
+                          onClick={() => {
+                            console.log('🚨 PULSANTE CONFERMA ELIMINA CLICCATO!')
+                            handleDeleteSelectedContacts()
+                          }}
                           className="flex-1 bg-red-600 hover:bg-red-700"
                           disabled={isDeletingContacts}
                         >
