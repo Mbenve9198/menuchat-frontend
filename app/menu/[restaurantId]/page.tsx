@@ -41,6 +41,7 @@ interface Tag {
   id: string
   text: string
   color: string
+  emoji?: string
 }
 
 interface Dish {
@@ -419,7 +420,13 @@ export default function PublicMenuPage() {
   }
 
   // Funzione per ottenere emoji appropriate per i tag
-  const getTagEmoji = (tagText: string) => {
+  const getTagEmoji = (tagText: string, tagObject?: Tag) => {
+    // Se il tag ha un'emoji dal database, usala
+    if (tagObject?.emoji) {
+      return tagObject.emoji
+    }
+    
+    // Altrimenti usa la logica di fallback
     const text = tagText.toLowerCase()
     if (text.includes('vegano') || text.includes('vegan')) return '🌱'
     if (text.includes('vegetariano') || text.includes('vegetarian')) return '🥬'
@@ -427,7 +434,7 @@ export default function PublicMenuPage() {
     if (text.includes('piccante') || text.includes('spicy')) return '🌶️'
     if (text.includes('bio') || text.includes('organic')) return '🌿'
     if (text.includes('senza lattosio') || text.includes('lactose')) return '🥛'
-    if (text.includes('proteico') || text.includes('protein')) return '💪'
+    if (text.includes('proteico') || text.includes('protein')) return '🥩'
     if (text.includes('dolce') || text.includes('sweet')) return '🍯'
     if (text.includes('fresco') || text.includes('fresh')) return '❄️'
     if (text.includes('caldo') || text.includes('hot')) return '🔥'
@@ -435,6 +442,8 @@ export default function PublicMenuPage() {
     if (text.includes('locale') || text.includes('local')) return '🏘️'
     if (text.includes('mare') || text.includes('sea') || text.includes('pesce')) return '🐟'
     if (text.includes('carne') || text.includes('meat')) return '🥩'
+    if (text.includes('healthy') || text.includes('salutare')) return '💚'
+    if (text.includes('formaggio') || text.includes('cheese')) return '🧀'
     return '🏷️'
   }
 
@@ -666,7 +675,7 @@ export default function PublicMenuPage() {
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                         }`}
                       >
-                        <span className="text-base">{getTagEmoji(tag.text)}</span>
+                        <span className="text-base">{getTagEmoji(tag.text, tag)}</span>
                         {tag.text}
                       </motion.button>
                     ))}
@@ -730,17 +739,7 @@ export default function PublicMenuPage() {
               {/* Indicatore gradiente destra */}
               <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/95 to-transparent z-10 pointer-events-none" />
               
-              {/* Indicatore visivo "scorri per vedere altri" */}
-              {filteredCategories.length > 3 && (
-                <div className="absolute -bottom-2 right-4 flex items-center gap-1 text-xs text-gray-400">
-                  <span>Scorri</span>
-                  <div className="flex gap-0.5">
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
         </motion.div>
@@ -880,7 +879,7 @@ export default function PublicMenuPage() {
                                   key={tag.id}
                                   className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${tag.color}`}
                                 >
-                                  <span>{getTagEmoji(tag.text)}</span>
+                                  <span>{getTagEmoji(tag.text, tag)}</span>
                                   {tag.text}
                                 </span>
                               ))}
@@ -1050,7 +1049,7 @@ export default function PublicMenuPage() {
                         transition={{ delay: 0.5 + index * 0.1 }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white shadow-lg ${tag.color}`}
                       >
-                        <span>{getTagEmoji(tag.text)}</span>
+                        <span>{getTagEmoji(tag.text, tag)}</span>
                         {tag.text}
                       </motion.span>
                     ))}
