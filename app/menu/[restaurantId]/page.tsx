@@ -251,6 +251,8 @@ export default function PublicMenuPage() {
     }
   }, [activeCategory])
 
+
+
   // Load menu data with language support
   const loadData = async (languageCode?: string) => {
     try {
@@ -488,6 +490,8 @@ export default function PublicMenuPage() {
     textColor: '#1F2937',
     showImages: true,
     showPrices: true,
+    hideDescription: false,
+    hideIngredients: false,
     coverImageUrl: '',
     logoUrl: ''
   }
