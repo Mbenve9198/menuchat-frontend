@@ -1563,7 +1563,8 @@ export default function MenuAdminPage() {
     coverImageUrl: '',
     logoUrl: '',
     hideDescription: false,
-    hideIngredients: false
+    hideIngredients: false,
+    tagDisplayMode: 'full'
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
 
@@ -1746,7 +1747,8 @@ export default function MenuAdminPage() {
           coverImageUrl: data.data.menu.designSettings.coverImageUrl || '',
           logoUrl: data.data.menu.designSettings.logoUrl || '',
           hideDescription: data.data.menu.designSettings.hideDescription || false,
-          hideIngredients: data.data.menu.designSettings.hideIngredients || false
+          hideIngredients: data.data.menu.designSettings.hideIngredients || false,
+          tagDisplayMode: data.data.menu.designSettings.tagDisplayMode || 'full'
         })
       }
       
@@ -2607,6 +2609,29 @@ export default function MenuAdminPage() {
       }
     } catch (err) {
       console.error('Error updating brand visibility:', err)
+    }
+  }
+
+  const handleBrandTagDisplayUpdate = async (tagDisplayMode: string) => {
+    try {
+      const updatedSettings = {
+        ...brandSettings,
+        tagDisplayMode
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+      }
+    } catch (err) {
+      console.error('Error updating tag display mode:', err)
     }
   }
 
@@ -3529,6 +3554,66 @@ export default function MenuAdminPage() {
                       onCheckedChange={(visible) => handleBrandVisibilityUpdate('ingredients', visible)}
                     />
                   </div>
+
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-lg">🏷️</span>
+                      <span className="font-medium text-gray-900">Modalità Etichette</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Scegli come mostrare le etichette dei piatti nella vista principale del menu
+                    </p>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          id="tags-full"
+                          name="tagDisplayMode"
+                          value="full"
+                          checked={brandSettings.tagDisplayMode === 'full'}
+                          onChange={(e) => handleBrandTagDisplayUpdate(e.target.value)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <label htmlFor="tags-full" className="flex items-center gap-2 text-sm">
+                          <span className="px-2 py-1 bg-emerald-300 text-gray-800 rounded-full text-xs font-medium">🌱 Vegano</span>
+                          <span className="text-gray-700">Etichette complete (emoji + testo)</span>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          id="tags-emoji"
+                          name="tagDisplayMode"
+                          value="emoji-only"
+                          checked={brandSettings.tagDisplayMode === 'emoji-only'}
+                          onChange={(e) => handleBrandTagDisplayUpdate(e.target.value)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <label htmlFor="tags-emoji" className="flex items-center gap-2 text-sm">
+                          <span className="text-lg">🌱</span>
+                          <span className="text-gray-700">Solo emoji (più minimalista)</span>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          id="tags-hidden"
+                          name="tagDisplayMode"
+                          value="hidden"
+                          checked={brandSettings.tagDisplayMode === 'hidden'}
+                          onChange={(e) => handleBrandTagDisplayUpdate(e.target.value)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <label htmlFor="tags-hidden" className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-400">🚫</span>
+                          <span className="text-gray-700">Nascoste (menu ultra pulito)</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
@@ -3536,8 +3621,8 @@ export default function MenuAdminPage() {
                   <ul className="text-sm text-blue-800 space-y-1">
                     <li>• Se disattivi, i contenuti saranno nascosti nella vista principale</li>
                     <li>• I clienti potranno sempre vedere i dettagli completi cliccando sul piatto</li>
+                    <li>• Le etichette nel dialog dettaglio sono sempre complete</li>
                     <li>• Utile per menu più puliti e minimalisti</li>
-                    <li>• Perfetto per ridurre il sovraccarico di informazioni</li>
                   </ul>
                 </div>
               </div>
