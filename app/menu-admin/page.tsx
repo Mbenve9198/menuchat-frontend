@@ -1424,6 +1424,11 @@ export default function MenuAdminPage() {
   // Stati per cancellazione traduzioni
   const [isDeletingTranslation, setIsDeletingTranslation] = React.useState(false)
   const [deletionTaskId, setDeletionTaskId] = React.useState<string | null>(null)
+  
+  // Stati per analisi AI piatti
+  const [isAnalyzingDishes, setIsAnalyzingDishes] = React.useState(false)
+  const [dishAnalysisTaskId, setDishAnalysisTaskId] = React.useState<string | null>(null)
+  const [replaceExistingTags, setReplaceExistingTags] = React.useState(true)
 
   // Stati per l'AI
   const [showAIDialog, setShowAIDialog] = React.useState(false)
@@ -1773,6 +1778,112 @@ export default function MenuAdminPage() {
     alert(errorMessage)
     setDeletionTaskId(null)
     setIsDeletingTranslation(false)
+  }
+
+  // Handler per avviare l'analisi AI dei piatti
+  const handleAnalyzeDishes = async () => {
+    if (!restaurantId) return
+
+    if (!confirm(`🤖 Vuoi che l'AI analizzi tutti i piatti del menu e assegni automaticamente le etichette più appropriate basate sui trend 2024?\n\n${replaceExistingTags ? '⚠️ ATTENZIONE: Questo rimuoverà tutte le etichette esistenti e le sostituirà con quelle generate dall\'AI.' : 'Le nuove etichette si aggiungeranno a quelle esistenti.'}\n\nL'operazione può richiedere alcuni minuti.`)) {
+      return
+    }
+
+    setIsAnalyzingDishes(true)
+    setDishAnalysisTaskId(null)
+    
+    try {
+      const response = await fetch('/api/menu/ai-analyze-dishes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantId,
+          replaceExistingTags
+        })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.success && result.taskId) {
+        setDishAnalysisTaskId(result.taskId)
+        console.log(`🤖 Task analisi AI piatti avviato: ${result.taskId}`)
+      } else {
+        alert(`❌ Errore nell'avvio dell'analisi AI: ${result.error}`)
+        setIsAnalyzingDishes(false)
+      }
+    } catch (err) {
+      console.error('Error starting AI dish analysis:', err)
+      alert('❌ Errore nell\'avvio dell\'analisi AI')
+      setIsAnalyzingDishes(false)
+    }
+  }
+
+  // Handler per quando l'analisi AI è completata
+  const handleDishAnalysisComplete = async (result: any) => {
+    try {
+      console.log('✅ Analisi AI piatti completata:', result)
+      
+      // Reset stati
+      setDishAnalysisTaskId(null)
+      setIsAnalyzingDishes(false)
+      
+      // Mostra messaggio di successo dettagliato
+      if (result.stats) {
+        const { totalDishes, tagsCreated, dishesUpdated, mainTrends, recommendations } = result.stats
+        let message = `🎉 Analisi AI completata con successo!\n\n`
+        message += `📊 Risultati:\n`
+        message += `• ${totalDishes} piatti analizzati\n`
+        message += `• ${tagsCreated} etichette create/utilizzate\n`
+        message += `• ${dishesUpdated} piatti aggiornati\n\n`
+        
+        if (mainTrends && mainTrends.length > 0) {
+          message += `🔥 Trend identificati: ${mainTrends.join(', ')}\n\n`
+        }
+        
+        if (recommendations) {
+          message += `💡 ${recommendations}`
+        }
+        
+        alert(message)
+      } else {
+        alert('✅ Analisi AI completata con successo!')
+      }
+      
+      // Ricarica i dati del menu per vedere i nuovi tag
+      console.log('🔄 Ricaricamento dati menu...')
+      await loadMenuData()
+      
+      console.log('✅ Reload completato')
+      
+    } catch (error) {
+      console.error('❌ Errore nel gestire completamento analisi AI:', error)
+      
+      // Fallback reset
+      setDishAnalysisTaskId(null)
+      setIsAnalyzingDishes(false)
+      
+      // Prova un reload semplificato
+      try {
+        console.log('🔄 Tentativo reload semplificato...')
+        await loadMenuData()
+      } catch (fallbackError) {
+        console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
+        alert('⚠️ L\'analisi è stata completata ma c\'è stato un problema nel ricaricamento della pagina. Aggiorna manualmente la pagina.')
+      }
+    }
+  }
+
+  // Handler per quando l'analisi AI fallisce
+  const handleDishAnalysisError = (error: any) => {
+    console.error('❌ Analisi AI piatti fallita:', error)
+    let errorMessage = '❌ Errore nell\'analisi AI dei piatti'
+    
+    if (error?.message) {
+      errorMessage = '❌ ' + error.message
+    }
+    
+    alert(errorMessage)
+    setDishAnalysisTaskId(null)
+    setIsAnalyzingDishes(false)
   }
 
   // Predefined languages available for translation
@@ -3456,6 +3567,84 @@ export default function MenuAdminPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Analisi AI Piatti */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      🧠 Analisi AI Piatti
+                    </h3>
+                    
+                    {dishAnalysisTaskId ? (
+                      // Mostra progresso analisi AI
+                      <AsyncTaskProgress
+                        taskId={dishAnalysisTaskId}
+                        title="Analisi AI Piatti in Corso"
+                        description="L'AI sta analizzando tutti i piatti e assegnando le etichette più appropriate..."
+                        onComplete={handleDishAnalysisComplete}
+                        onError={handleDishAnalysisError}
+                        onCancel={() => {
+                          setDishAnalysisTaskId(null)
+                          setIsAnalyzingDishes(false)
+                        }}
+                        pollingInterval={2000}
+                        className="my-4"
+                      />
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                          <h4 className="font-medium text-blue-900 mb-2">🤖 Cosa fa l'AI:</h4>
+                          <ul className="text-sm text-blue-800 space-y-1">
+                            <li>• Analizza nome, descrizione e ingredienti di ogni piatto</li>
+                            <li>• Identifica trend alimentari contemporanei (2024)</li>
+                            <li>• Assegna etichette moderne con emoji (Vegano 🌱, Healthy 💚, etc.)</li>
+                            <li>• Considera specialità, tradizione e presentazione</li>
+                            <li>• Ottimizza per social media e marketing</li>
+                          </ul>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="replace-existing-tags"
+                            checked={replaceExistingTags}
+                            onChange={(e) => setReplaceExistingTags(e.target.checked)}
+                            className="w-5 h-5 text-blue-600 border-2 border-gray-300 focus:ring-blue-500 rounded"
+                          />
+                          <label htmlFor="replace-existing-tags" className="text-sm text-gray-700 flex-1">
+                            <span className="font-medium">Sostituisci etichette esistenti</span>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Se disattivato, le nuove etichette si aggiungeranno a quelle esistenti
+                            </p>
+                          </label>
+                        </div>
+
+                        <CustomButton
+                          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                          onClick={handleAnalyzeDishes}
+                          disabled={isAnalyzingDishes}
+                        >
+                          {isAnalyzingDishes ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Avvio Analisi...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              🧠 Analizza e Assegna Etichette
+                            </>
+                          )}
+                        </CustomButton>
+
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                          <p className="text-sm text-yellow-800">
+                            <strong>⚡ Esempi di etichette AI:</strong> Vegano 🌱, Healthy 💚, Piccante 🌶️, Signature 🔥, 
+                            Instagrammable 🎨, Premium 💫, Tradizionale 🍕, Gourmet 🥂
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Statistiche */}
                   {aiConfig.enabled && aiConfig.stats && (

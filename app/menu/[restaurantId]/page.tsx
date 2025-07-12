@@ -326,9 +326,11 @@ export default function PublicMenuPage() {
     const allCategories = menuData.categories.map(category => ({
       ...category,
       dishes: category.dishes.filter(dish => {
-        // Tag filter
+        // Tag filter - controlla se il piatto ha almeno uno dei tag selezionati
         const matchesTags = selectedTags.length === 0 || 
-          selectedTags.some(tagId => dish.tags.some(tag => tag.id === tagId))
+          selectedTags.some(tagText => 
+            dish.tags.some(tag => tag.text === tagText)
+          )
 
         // Available filter
         const isAvailable = dish.available
@@ -362,11 +364,11 @@ export default function PublicMenuPage() {
     }
   }
 
-  const toggleTag = (tagId: string) => {
+  const toggleTag = (tagText: string) => {
     setSelectedTags(prev => 
-      prev.includes(tagId) 
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
+      prev.includes(tagText) 
+        ? prev.filter(text => text !== tagText)
+        : [...prev, tagText]
     )
   }
 
@@ -617,9 +619,9 @@ export default function PublicMenuPage() {
                     key={tag.id}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => toggleTag(tag.id)}
+                    onClick={() => toggleTag(tag.text)}
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-all ${
-                      selectedTags.includes(tag.id)
+                      selectedTags.includes(tag.text)
                         ? `${tag.color} text-white shadow-md`
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
