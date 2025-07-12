@@ -137,6 +137,41 @@ export default function PublicMenuPage() {
     loadData()
   }, [restaurantId])
 
+  // Polling automatico per aggiornamenti (ogni 30 secondi)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadData()
+        console.log('🔄 Menu ricaricato automaticamente (polling)')
+      }
+    }, 30000) // 30 secondi
+
+    return () => clearInterval(interval)
+  }, [restaurantId])
+
+  // Ricarica quando la pagina diventa visibile (utente torna dalla app WhatsApp)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData()
+        console.log('🔄 Menu ricaricato (pagina tornata visibile)')
+      }
+    }
+
+    const handleFocus = () => {
+      loadData()
+      console.log('🔄 Menu ricaricato (finestra in focus)')
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [restaurantId])
+
   // Gestione tasto ESC per chiudere il modal
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

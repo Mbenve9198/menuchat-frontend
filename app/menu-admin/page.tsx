@@ -1479,6 +1479,16 @@ export default function MenuAdminPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   
+  // Language states
+  const [currentLanguage, setCurrentLanguage] = React.useState('it')
+  const [supportedLanguages, setSupportedLanguages] = React.useState<Array<{
+    code: string
+    name: string
+    flag: string
+    isDefault: boolean
+  }>>([])
+  const [isLoadingLanguage, setIsLoadingLanguage] = React.useState(false)
+  
   // Bulk operations states
   const [showBulkPriceDialog, setShowBulkPriceDialog] = React.useState(false)
   const [bulkMode, setBulkMode] = React.useState(false)
@@ -1525,12 +1535,6 @@ export default function MenuAdminPage() {
 
   // Stati per le traduzioni
   const [showTranslationsDialog, setShowTranslationsDialog] = React.useState(false)
-  const [supportedLanguages, setSupportedLanguages] = React.useState<Array<{
-    code: string
-    name: string
-    flag: string
-    isDefault: boolean
-  }>>([])
   const [isGeneratingTranslation, setIsGeneratingTranslation] = React.useState(false)
   const [selectedLanguageForTranslation, setSelectedLanguageForTranslation] = React.useState('')
   const [translationTaskId, setTranslationTaskId] = React.useState<string | null>(null)
@@ -1592,6 +1596,13 @@ export default function MenuAdminPage() {
       loadMenuData()
     }
   }, [status, restaurantId])
+
+  // Reload menu when language changes
+  React.useEffect(() => {
+    if (status === "authenticated" && restaurantId && currentLanguage) {
+      loadMenuData(currentLanguage)
+    }
+  }, [currentLanguage])
 
   // Listen for tags updates
   React.useEffect(() => {
@@ -1662,12 +1673,13 @@ export default function MenuAdminPage() {
     setOpenCategories(categoriesToOpen)
   }, [searchQuery, categories])
 
-  const loadMenuData = async () => {
+  const loadMenuData = async (language?: string) => {
     try {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch(`/api/menu/${restaurantId}`)
+      const langParam = language || currentLanguage
+      const response = await fetch(`/api/menu/${restaurantId}?lang=${langParam}`)
       const data = await response.json()
       
       if (!data.success) {
@@ -1678,6 +1690,19 @@ export default function MenuAdminPage() {
       setCategories(data.data.categories)
       setOriginalCategories(JSON.parse(JSON.stringify(data.data.categories)))
       setAvailableTags(data.data.availableTags)
+      
+      // Aggiorna le lingue supportate e la lingua corrente
+      if (data.data.menu?.supportedLanguages) {
+        setSupportedLanguages(data.data.menu.supportedLanguages)
+        
+        // Trova la lingua di default se non è stata specificata una lingua
+        if (!language) {
+          const defaultLang = data.data.menu.supportedLanguages.find((lang: any) => lang.isDefault)
+          if (defaultLang) {
+            setCurrentLanguage(defaultLang.code)
+          }
+        }
+      }
       
       // Carica le impostazioni brand dal menu
       if (data.data.menu?.designSettings) {
@@ -1710,6 +1735,29 @@ export default function MenuAdminPage() {
       }
     } catch (err) {
       console.error('Error loading supported languages:', err)
+    }
+  }
+
+  // Handle language change
+  const handleLanguageChange = async (languageCode: string) => {
+    if (languageCode === currentLanguage) return
+    
+    try {
+      setIsLoadingLanguage(true)
+      setCurrentLanguage(languageCode)
+      await loadMenuData(languageCode)
+    } catch (err) {
+      console.error('Error changing language:', err)
+      // Revert language change on error
+      setCurrentLanguage(currentLanguage)
+      toast({
+        title: "Errore nel cambio lingua",
+        description: "Impossibile caricare il menu nella lingua selezionata",
+        variant: "destructive",
+        duration: 4000,
+      })
+    } finally {
+      setIsLoadingLanguage(false)
     }
   }
 
@@ -2069,7 +2117,14 @@ export default function MenuAdminPage() {
   // Get languages not yet translated
   const getUntranslatedLanguages = () => {
     const supportedCodes = supportedLanguages.map(lang => lang.code)
-    return availableLanguages.filter(lang => !supportedCodes.includes(lang.code))
+    
+    // Add all available languages including common ones
+    const allLanguages = [
+      { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+      ...availableLanguages
+    ]
+    
+    return allLanguages.filter(lang => !supportedCodes.includes(lang.code))
   }
 
   // Load AI configuration
@@ -2535,7 +2590,7 @@ export default function MenuAdminPage() {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <button 
-            onClick={loadMenuData}
+            onClick={() => loadMenuData()}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Riprova
@@ -2550,17 +2605,61 @@ export default function MenuAdminPage() {
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
       <div className="bg-gray-50 min-h-screen font-sans">
       <header className="fixed top-4 right-4 z-10">
-        <button className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 w-12 shadow-lg font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0">
-          <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
-          <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white/80 transition-transform duration-150">
-            <Eye className="h-6 w-6 text-gray-700" />
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Language Selector */}
+          {supportedLanguages.length > 1 && (
+            <div className="relative">
+              <select
+                value={currentLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                disabled={isLoadingLanguage}
+                className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 px-4 pr-8 shadow-lg font-bold text-sm transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {supportedLanguages.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200 -z-10"></div>
+              {isLoadingLanguage && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Eye Button */}
+          <button className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 w-12 shadow-lg font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0">
+            <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
+            <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white/80 transition-transform duration-150">
+              <Eye className="h-6 w-6 text-gray-700" />
+            </span>
+          </button>
+        </div>
       </header>
       
       <main className="pt-8 pb-32 container mx-auto px-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-extrabold text-gray-800">Il Tuo Menù Digitale</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-extrabold text-gray-800">Il Tuo Menù Digitale</h1>
+            {supportedLanguages.length > 1 && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
+                <span className="text-sm font-medium text-blue-800">
+                  {supportedLanguages.find(lang => lang.code === currentLanguage)?.flag || '🌍'}
+                </span>
+                <span className="text-sm font-medium text-blue-800">
+                  {supportedLanguages.find(lang => lang.code === currentLanguage)?.name || 'Lingua'}
+                </span>
+                {supportedLanguages.find(lang => lang.code === currentLanguage)?.isDefault && (
+                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    Default
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {bulkMode && (
