@@ -2004,6 +2004,43 @@ export default function MenuAdminPage() {
     setIsDeletingTranslation(false)
   }
 
+  // Handler per impostare una lingua come predefinita
+  const handleSetDefaultLanguage = async (languageCode: string, languageName: string) => {
+    if (!confirm(`🔄 Vuoi impostare ${languageName} come lingua predefinita del menu?\n\nQuesta operazione:\n• Cambierà la lingua principale del menu\n• Aggiornerà tutti i contenuti di base\n• Non cancellerà le altre traduzioni\n\nContinuare?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/menu/${restaurantId}/languages/default`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newDefaultLanguage: languageCode })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        toast({
+          title: "✅ Lingua predefinita aggiornata!",
+          description: `${languageName} è ora la lingua predefinita del menu.`,
+          duration: 4000,
+        })
+        
+        // Ricarica i dati del menu e delle lingue supportate
+        await loadSupportedLanguages()
+        await loadMenuData()
+        
+        // Imposta la nuova lingua come corrente
+        setCurrentLanguage(languageCode)
+      } else {
+        alert(`❌ Errore nell'aggiornamento: ${result.error}`)
+      }
+    } catch (err) {
+      console.error('Error setting default language:', err)
+      alert('❌ Errore nell\'impostazione della lingua predefinita')
+    }
+  }
+
   // Handler per avviare l'analisi AI dei piatti
   const handleAnalyzeDishes = async () => {
     if (!restaurantId) return
@@ -3567,6 +3604,15 @@ export default function MenuAdminPage() {
                   ✅ Lingue Supportate
                 </h3>
                 
+                {supportedLanguages.length > 1 && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p className="text-sm text-blue-800">
+                      💡 <strong>Lingua predefinita:</strong> È la lingua base del menu. Puoi cambiare quale lingua è predefinita 
+                      cliccando il pulsante <Check className="inline h-3 w-3 mx-1" /> accanto alle altre lingue.
+                    </p>
+                  </div>
+                )}
+                
                 {supportedLanguages.length > 0 ? (
                   <div className="space-y-3">
                     {supportedLanguages.map((lang) => (
@@ -3588,11 +3634,14 @@ export default function MenuAdminPage() {
                           </span>
                           {!lang.isDefault && supportedLanguages.length > 1 && (
                             <button
-                              className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors duration-150"
+                              className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors duration-150 group relative"
                               onClick={() => handleSetDefaultLanguage(lang.code, lang.name)}
                               title={`Imposta ${lang.name} come lingua predefinita`}
                             >
                               <Check className="h-4 w-4" />
+                              <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                Imposta come default
+                              </span>
                             </button>
                           )}
                           {!lang.isDefault && (
