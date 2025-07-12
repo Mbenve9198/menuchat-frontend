@@ -51,6 +51,7 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const taskIdRef = useRef<string | null>(null);
   const completedTasksRef = useRef<Set<string>>(new Set()); // Traccia task già completati
+  const lastTaskIdRef = useRef<string | null>(null); // Traccia l'ultimo taskId per cui abbiamo fatto polling
 
   // Funzione per recuperare lo stato del task
   const fetchTaskStatus = useCallback(async (taskId: string) => {
@@ -75,22 +76,24 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
 
         // Gestione completamento/errore
         if (newTask.status === 'completed') {
+          // Ferma IMMEDIATAMENTE il polling PRIMA di chiamare onComplete
+          if (autoStop) {
+            stopPolling();
+          }
           // Chiamiamo onComplete solo se il task non è già stato completato prima
           if (onComplete && !completedTasksRef.current.has(newTask.taskId)) {
             completedTasksRef.current.add(newTask.taskId);
             onComplete(newTask.result);
           }
+        } else if (newTask.status === 'failed') {
+          // Ferma IMMEDIATAMENTE il polling PRIMA di chiamare onError
           if (autoStop) {
             stopPolling();
           }
-        } else if (newTask.status === 'failed') {
           // Chiamiamo onError solo se il task non è già stato processato prima
           if (onError && !completedTasksRef.current.has(newTask.taskId)) {
             completedTasksRef.current.add(newTask.taskId);
             onError(newTask.error);
-          }
-          if (autoStop) {
-            stopPolling();
           }
         }
 
@@ -110,11 +113,20 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
   const startPolling = useCallback((taskId: string) => {
     console.log(`🔄 Avvio polling per task ${taskId}`);
     
+    // Non avviare polling se il task è già completato
+    if (completedTasksRef.current.has(taskId)) {
+      console.log(`⚠️ Task ${taskId} già completato, non avvio polling`);
+      return;
+    }
+    
     // Ferma qualsiasi polling precedente
     stopPolling();
     
-    // Pulisci la lista dei task completati quando si avvia un nuovo polling
-    completedTasksRef.current.clear();
+    // Pulisci la lista dei task completati SOLO se è un task diverso
+    if (lastTaskIdRef.current !== taskId) {
+      completedTasksRef.current.clear();
+      lastTaskIdRef.current = taskId;
+    }
     
     taskIdRef.current = taskId;
     setIsPolling(true);
@@ -151,6 +163,7 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
+      console.log('⏹️ Polling fermato - interval cleared');
     }
     setIsPolling(false);
     taskIdRef.current = null;
