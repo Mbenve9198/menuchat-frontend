@@ -138,40 +138,11 @@ export default function PublicMenuPage() {
     loadData()
   }, [restaurantId])
 
-  // Polling automatico per aggiornamenti (ogni 30 secondi)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadData()
-        console.log('🔄 Menu ricaricato automaticamente (polling)')
-      }
-    }, 30000) // 30 secondi
+  // Polling automatico RIMOSSO per migliorare UX
+  // (Era fastidioso per i clienti che stavano navigando il menu)
 
-    return () => clearInterval(interval)
-  }, [restaurantId])
-
-  // Ricarica quando la pagina diventa visibile (utente torna dalla app WhatsApp)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadData()
-        console.log('🔄 Menu ricaricato (pagina tornata visibile)')
-      }
-    }
-
-    const handleFocus = () => {
-      loadData()
-      console.log('🔄 Menu ricaricato (finestra in focus)')
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [restaurantId])
+  // Ricaricamento automatico RIMOSSO per migliorare UX
+  // (I clienti possono ricaricare manualmente se necessario)
 
   // Gestione tasto ESC per chiudere il modal
   useEffect(() => {
@@ -859,13 +830,9 @@ export default function PublicMenuPage() {
                 <p className="text-gray-600 mb-4">
                   Tutti i piatti sono attualmente non disponibili
                 </p>
-                <button 
-                  onClick={() => loadData()}
-                  className="px-6 py-3 text-white rounded-xl shadow-lg font-semibold"
-                  style={{ backgroundColor: designSettings.primaryColor }}
-                >
-                  🔄 Aggiorna menu
-                </button>
+                <p className="text-gray-500 text-sm">
+                  💡 Puoi ricaricare la pagina se pensi sia un errore
+                </p>
               </div>
             )}
           </motion.div>
