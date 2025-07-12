@@ -50,6 +50,7 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const taskIdRef = useRef<string | null>(null);
+  const completedTasksRef = useRef<Set<string>>(new Set()); // Traccia task già completati
 
   // Funzione per recuperare lo stato del task
   const fetchTaskStatus = useCallback(async (taskId: string) => {
@@ -74,14 +75,18 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
 
         // Gestione completamento/errore
         if (newTask.status === 'completed') {
-          if (onComplete) {
+          // Chiamiamo onComplete solo se il task non è già stato completato prima
+          if (onComplete && !completedTasksRef.current.has(newTask.taskId)) {
+            completedTasksRef.current.add(newTask.taskId);
             onComplete(newTask.result);
           }
           if (autoStop) {
             stopPolling();
           }
         } else if (newTask.status === 'failed') {
-          if (onError) {
+          // Chiamiamo onError solo se il task non è già stato processato prima
+          if (onError && !completedTasksRef.current.has(newTask.taskId)) {
+            completedTasksRef.current.add(newTask.taskId);
             onError(newTask.error);
           }
           if (autoStop) {
@@ -107,6 +112,9 @@ export function useAsyncTask(options: UseAsyncTaskOptions = {}): UseAsyncTaskRet
     
     // Ferma qualsiasi polling precedente
     stopPolling();
+    
+    // Pulisci la lista dei task completati quando si avvia un nuovo polling
+    completedTasksRef.current.clear();
     
     taskIdRef.current = taskId;
     setIsPolling(true);

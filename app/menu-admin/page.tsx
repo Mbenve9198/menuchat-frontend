@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils"
 import { MultipleMediaUpload } from "@/components/ui/multiple-media-upload"
 import { MediaUpload } from "@/components/ui/media-upload"
 import { AsyncTaskProgress } from "@/components/ui/async-task-progress"
+import { useToast } from "@/hooks/use-toast"
 
 // --- TYPES ---
 type Tag = { 
@@ -182,6 +183,7 @@ const DishAccordionItem = ({
   dragListeners?: any
   isDragging?: boolean
 }) => {
+  const { toast } = useToast()
   const [name, setName] = React.useState(dish.name)
   const [price, setPrice] = React.useState(dish.price.toFixed(2))
   const [description, setDescription] = React.useState(dish.description || "")
@@ -472,7 +474,12 @@ const DishAccordionItem = ({
       }
     } catch (err) {
       console.error('❌ Errore di rete:', err)
-      alert('❌ Errore di connessione nella generazione dell\'immagine')
+      toast({
+        title: "❌ Errore di connessione",
+        description: "Impossibile generare l'immagine. Verifica la connessione internet.",
+        variant: "destructive",
+        duration: 4000,
+      })
       setIsGeneratingImage(false)
     }
   }
@@ -495,14 +502,19 @@ const DishAccordionItem = ({
         console.log('🖼️ Aggiornamento piatto con nuova immagine:', result.photoUrl)
         onUpdateDish({ ...dish, photoUrl: result.photoUrl })
         
-        // Alert dopo un piccolo delay per permettere alla UI di stabilizzarsi
-        setTimeout(() => {
-          alert('🎉 Immagine generata con successo!')
-        }, 200)
+        // Toast di successo
+        toast({
+          title: "🎉 Immagine generata con successo!",
+          description: "L'immagine è stata creata e associata al piatto.",
+          duration: 4000,
+        })
       } else {
-        setTimeout(() => {
-          alert('⚠️ Immagine generata ma URL non disponibile')
-        }, 200)
+        toast({
+          title: "⚠️ Immagine generata ma URL non disponibile",
+          description: "L'immagine è stata generata ma non è possibile mostrarla.",
+          variant: "destructive",
+          duration: 4000,
+        })
       }
       
     } catch (error) {
@@ -517,9 +529,12 @@ const DishAccordionItem = ({
         setUseAutoPrompt(true)
       }, 100)
       
-      setTimeout(() => {
-        alert('⚠️ L\'immagine è stata generata ma c\'è stato un problema nell\'aggiornamento. Ricarica la pagina.')
-      }, 200)
+      toast({
+        title: "⚠️ Problema durante l'aggiornamento",
+        description: "L'immagine è stata generata ma c'è stato un problema. Ricarica la pagina.",
+        variant: "destructive",
+        duration: 6000,
+      })
     }
   }
 
@@ -545,10 +560,13 @@ const DishAccordionItem = ({
       setUseAutoPrompt(true)
     }, 100)
     
-    // Mostra errore dopo un delay
-    setTimeout(() => {
-      alert(errorMessage)
-    }, 200)
+    // Mostra errore con toast
+    toast({
+      title: "Errore nella generazione dell'immagine",
+      description: errorMessage.replace(/^[❌⚠️🔒]\s?/, ""),
+      variant: "destructive",
+      duration: 6000,
+    })
   }
 
   return (
@@ -1358,6 +1376,7 @@ const CategoryAccordion = ({
 export default function MenuAdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { toast } = useToast()
   
   // States
   const [menuData, setMenuData] = React.useState<MenuData | null>(null)
@@ -1644,9 +1663,17 @@ export default function MenuAdminPage() {
       
       // Mostra messaggio di successo
       if (result.stats) {
-        alert(`✅ ${result.message || 'Traduzioni completate'}!\n\n${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`)
+        toast({
+          title: `✅ ${result.message || 'Traduzioni completate'}!`,
+          description: `${result.stats.categoriesTranslated} categorie e ${result.stats.dishesTranslated} piatti tradotti.`,
+          duration: 6000,
+        })
       } else {
-        alert('✅ Traduzioni completate con successo!')
+        toast({
+          title: "✅ Traduzioni completate con successo!",
+          description: "Il menu è stato tradotto nella lingua selezionata.",
+          duration: 4000,
+        })
       }
       
       // Ricarica i dati in sequenza con un piccolo delay
@@ -1676,7 +1703,12 @@ export default function MenuAdminPage() {
         await loadMenuData()
       } catch (fallbackError) {
         console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
-        alert('⚠️ Le traduzioni sono state completate ma c\'è stato un problema nel ricaricamento della pagina. Aggiorna manualmente la pagina.')
+        toast({
+          title: "⚠️ Problema di ricaricamento",
+          description: "Le traduzioni sono state completate ma c'è stato un problema nel ricaricamento. Aggiorna manualmente la pagina.",
+          variant: "destructive",
+          duration: 8000,
+        })
       }
     }
   }
@@ -1732,9 +1764,17 @@ export default function MenuAdminPage() {
       
       // Mostra messaggio di successo
       if (result.stats) {
-        alert(`✅ ${result.message || 'Traduzione cancellata'}!\n\n${result.stats.categoriesUpdated} categorie e ${result.stats.itemsUpdated} piatti aggiornati.`)
+        toast({
+          title: `✅ ${result.message || 'Traduzione cancellata'}!`,
+          description: `${result.stats.categoriesUpdated} categorie e ${result.stats.itemsUpdated} piatti aggiornati.`,
+          duration: 6000,
+        })
       } else {
-        alert('✅ Traduzione cancellata con successo!')
+        toast({
+          title: "✅ Traduzione cancellata con successo!",
+          description: "La traduzione è stata rimossa dal menu.",
+          duration: 4000,
+        })
       }
       
       // Ricarica i dati
@@ -1761,7 +1801,12 @@ export default function MenuAdminPage() {
         await loadMenuData()
       } catch (fallbackError) {
         console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
-        alert('⚠️ La traduzione è stata cancellata ma c\'è stato un problema nel ricaricamento della pagina. Aggiorna manualmente la pagina.')
+        toast({
+          title: "⚠️ Problema di ricaricamento",
+          description: "La traduzione è stata cancellata ma c'è stato un problema nel ricaricamento. Aggiorna manualmente la pagina.",
+          variant: "destructive",
+          duration: 8000,
+        })
       }
     }
   }
@@ -1829,23 +1874,27 @@ export default function MenuAdminPage() {
       // Mostra messaggio di successo dettagliato
       if (result.stats) {
         const { totalDishes, tagsCreated, dishesUpdated, mainTrends, recommendations } = result.stats
-        let message = `🎉 Analisi AI completata con successo!\n\n`
-        message += `📊 Risultati:\n`
-        message += `• ${totalDishes} piatti analizzati\n`
-        message += `• ${tagsCreated} etichette create/utilizzate\n`
-        message += `• ${dishesUpdated} piatti aggiornati\n\n`
+        let description = `📊 Risultati: ${totalDishes} piatti analizzati, ${tagsCreated} etichette create/utilizzate, ${dishesUpdated} piatti aggiornati.`
         
         if (mainTrends && mainTrends.length > 0) {
-          message += `🔥 Trend identificati: ${mainTrends.join(', ')}\n\n`
+          description += ` 🔥 Trend identificati: ${mainTrends.join(', ')}.`
         }
         
         if (recommendations) {
-          message += `💡 ${recommendations}`
+          description += ` 💡 ${recommendations}`
         }
         
-        alert(message)
+        toast({
+          title: "🎉 Analisi AI completata con successo!",
+          description,
+          duration: 8000,
+        })
       } else {
-        alert('✅ Analisi AI completata con successo!')
+        toast({
+          title: "✅ Analisi AI completata con successo!",
+          description: "I piatti sono stati analizzati e le etichette sono state aggiornate.",
+          duration: 4000,
+        })
       }
       
       // Ricarica i dati del menu per vedere i nuovi tag
@@ -1867,7 +1916,12 @@ export default function MenuAdminPage() {
         await loadMenuData()
       } catch (fallbackError) {
         console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
-        alert('⚠️ L\'analisi è stata completata ma c\'è stato un problema nel ricaricamento della pagina. Aggiorna manualmente la pagina.')
+        toast({
+          title: "⚠️ Problema di ricaricamento",
+          description: "L'analisi è stata completata ma c'è stato un problema nel ricaricamento. Aggiorna manualmente la pagina.",
+          variant: "destructive",
+          duration: 8000,
+        })
       }
     }
   }
