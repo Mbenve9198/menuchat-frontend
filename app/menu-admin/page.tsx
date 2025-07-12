@@ -513,6 +513,13 @@ const DishAccordionItem = ({
   const handleImageGenerationComplete = (result: any) => {
     try {
       console.log('✅ Generazione immagine completata:', result)
+      console.log('📊 Dettagli result ricevuto:', {
+        photoUrl: result.photoUrl,
+        dishId: result.dishId,
+        dishName: result.dishName,
+        updatedAt: result.updatedAt,
+        hasAllData: !!(result.photoUrl && result.dishId)
+      })
       
       // Reset stati in modo più robusto con timeout per evitare re-render issues
       setTimeout(() => {
@@ -526,20 +533,47 @@ const DishAccordionItem = ({
       
       if (result.photoUrl) {
         console.log('🖼️ Aggiornamento piatto con nuova immagine:', result.photoUrl)
-        onUpdateDish({ ...dish, photoUrl: result.photoUrl })
+        console.log('📝 Piatto prima dell\'aggiornamento:', { id: dish.id, name: dish.name, photoUrl: dish.photoUrl })
+        
+        // Verifica che stiamo aggiornando il piatto corretto
+        if (result.dishId && result.dishId !== dish.id) {
+          console.warn('⚠️ Warning: dishId del risultato non corrisponde al piatto corrente')
+          console.warn(`   - Piatto corrente: ${dish.id}`)
+          console.warn(`   - Piatto del risultato: ${result.dishId}`)
+        }
+        
+        const updatedDish = { ...dish, photoUrl: result.photoUrl }
+        console.log('📝 Piatto dopo l\'aggiornamento:', { id: updatedDish.id, name: updatedDish.name, photoUrl: updatedDish.photoUrl })
+        
+        onUpdateDish(updatedDish)
         
         // Toast di successo
         toast({
           title: "🎉 Immagine generata con successo!",
-          description: "L'immagine è stata creata e associata al piatto.",
+          description: `L'immagine è stata creata e associata a "${result.dishName || dish.name}".`,
           duration: 4000,
         })
+        
+        // Forza un piccolo re-render per assicurarsi che l'immagine sia visibile
+        setTimeout(() => {
+          console.log('🔄 Verifica stato piatto dopo timeout:', { id: dish.id, photoUrl: dish.photoUrl })
+          
+                     // Se dopo 3 secondi l'immagine non è ancora visibile, ricarica tutto il menu
+           setTimeout(() => {
+             if (!dish.photoUrl || dish.photoUrl !== result.photoUrl) {
+               console.log('🔄 Immagine non visibile dopo 3 secondi, ricarico menu...')
+               window.location.reload() // Forza ricaricamento completo della pagina
+             }
+           }, 3000)
+        }, 500)
+        
       } else {
+        console.error('❌ Result non contiene photoUrl:', result)
         toast({
           title: "⚠️ Immagine generata ma URL non disponibile",
-          description: "L'immagine è stata generata ma non è possibile mostrarla.",
+          description: "L'immagine è stata generata ma non è possibile mostrarla. Prova a ricaricare la pagina.",
           variant: "destructive",
-          duration: 4000,
+          duration: 6000,
         })
       }
       
@@ -557,9 +591,9 @@ const DishAccordionItem = ({
       
       toast({
         title: "⚠️ Problema durante l'aggiornamento",
-        description: "L'immagine è stata generata ma c'è stato un problema. Ricarica la pagina.",
+        description: "L'immagine è stata generata ma c'è stato un problema. Ricarica la pagina per vedere l'immagine.",
         variant: "destructive",
-        duration: 6000,
+        duration: 8000,
       })
     }
   }
