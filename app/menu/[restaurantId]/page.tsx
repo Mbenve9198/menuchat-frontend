@@ -319,6 +319,38 @@ export default function PublicMenuPage() {
     setIsLoadingLanguage(false)
   }
 
+  // Get only tags that are actually used by available dishes, sorted by popularity
+  const getUsedTags = () => {
+    if (!menuData) return []
+
+    const tagUsageMap = new Map() // text -> { tag, count }
+    
+    menuData.categories.forEach(category => {
+      category.dishes.forEach(dish => {
+        if (dish.available) {
+          dish.tags.forEach(tag => {
+            const existing = tagUsageMap.get(tag.text)
+            if (existing) {
+              existing.count++
+            } else {
+              tagUsageMap.set(tag.text, { tag, count: 1 })
+            }
+          })
+        }
+      })
+    })
+
+    // Ordinamento per popolarità (count) e poi alfabeticamente
+    return Array.from(tagUsageMap.values())
+      .sort((a, b) => {
+        if (b.count !== a.count) {
+          return b.count - a.count // Più usati per primi
+        }
+        return a.tag.text.localeCompare(b.tag.text) // Alfabeticamente se stesso count
+      })
+      .map(item => item.tag)
+  }
+
   // Filter dishes based on search and tags
   const getFilteredCategories = () => {
     if (!menuData) return []
@@ -457,8 +489,10 @@ export default function PublicMenuPage() {
   console.log('🎨 Design settings utilizzate:', designSettings)
   
   const filteredCategories = getFilteredCategories()
+  const usedTags = getUsedTags()
   
   console.log('📋 Categorie filtrate:', filteredCategories.length, filteredCategories)
+  console.log('🏷️ Tag utilizzati:', usedTags.length, usedTags)
 
   return (
     <div 
@@ -611,25 +645,36 @@ export default function PublicMenuPage() {
           className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg"
         >
           <div className="max-w-4xl mx-auto p-3">
-            {/* Filter Tags - più compatti */}
-            {menuData.availableTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {menuData.availableTags.map((tag) => (
-                  <motion.button
-                    key={tag.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => toggleTag(tag.text)}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-all ${
-                      selectedTags.includes(tag.text)
-                        ? `${tag.color} text-white shadow-md`
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    <span className="text-sm">{getTagEmoji(tag.text)}</span>
-                    {tag.text}
-                  </motion.button>
-                ))}
+            {/* Filter Tags - solo quelli utilizzati con scorrimento orizzontale */}
+            {usedTags.length > 0 && (
+              <div className="mb-3">
+                <div className="relative">
+                  {/* Indicatore gradiente sinistra */}
+                  <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white/95 to-transparent z-10 pointer-events-none" />
+                  
+                  {/* Container scorrevole */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {usedTags.map((tag) => (
+                      <motion.button
+                        key={tag.id}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => toggleTag(tag.text)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                          selectedTags.includes(tag.text)
+                            ? `${tag.color} text-white shadow-lg`
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                        }`}
+                      >
+                        <span className="text-base">{getTagEmoji(tag.text)}</span>
+                        {tag.text}
+                      </motion.button>
+                    ))}
+                  </div>
+                  
+                  {/* Indicatore gradiente destra */}
+                  <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white/95 to-transparent z-10 pointer-events-none" />
+                </div>
               </div>
             )}
 
@@ -646,33 +691,56 @@ export default function PublicMenuPage() {
               </motion.button>
             )}
 
-            {/* Category Navigation - più compatta */}
-            <div 
-              ref={navigationRef}
-              className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {filteredCategories.map((category) => (
-                <motion.button
-                  key={category.id}
-                  data-category-id={category.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => scrollToCategory(category.id)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg whitespace-nowrap transition-all text-sm font-medium ${
-                    activeCategory === category.id
-                      ? "text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  style={{
-                    backgroundColor: activeCategory === category.id ? designSettings.primaryColor : undefined
-                  }}
-                >
-                  <span className="text-base">{category.icon}</span>
-                  <span>{category.name}</span>
-                  <span className="text-xs opacity-75">({category.dishes.length})</span>
-                </motion.button>
-              ))}
+            {/* Category Navigation - mobile-friendly con indicatori scorrimento */}
+            <div className="relative">
+              {/* Indicatore gradiente sinistra */}
+              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white/95 to-transparent z-10 pointer-events-none" />
+              
+              {/* Container scorrevole */}
+              <div 
+                ref={navigationRef}
+                className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide px-2"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {filteredCategories.map((category) => (
+                  <motion.button
+                    key={category.id}
+                    data-category-id={category.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => scrollToCategory(category.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl whitespace-nowrap transition-all text-sm font-medium shadow-sm ${
+                      activeCategory === category.id
+                        ? "text-white shadow-lg"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                    }`}
+                    style={{
+                      backgroundColor: activeCategory === category.id ? designSettings.primaryColor : undefined
+                    }}
+                  >
+                    <span className="text-lg">{category.icon}</span>
+                    <span className="font-semibold">{category.name}</span>
+                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+                      {category.dishes.length}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
+              
+              {/* Indicatore gradiente destra */}
+              <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/95 to-transparent z-10 pointer-events-none" />
+              
+              {/* Indicatore visivo "scorri per vedere altri" */}
+              {filteredCategories.length > 3 && (
+                <div className="absolute -bottom-2 right-4 flex items-center gap-1 text-xs text-gray-400">
+                  <span>Scorri</span>
+                  <div className="flex gap-0.5">
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -684,22 +752,46 @@ export default function PublicMenuPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12"
+            className="text-center py-16"
           >
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Nessun piatto trovato</h3>
-            <p className="text-gray-600 mb-4">
-              Prova a modificare i filtri
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={clearFilters}
-              className="px-4 py-2 text-white rounded-lg shadow-md"
-              style={{ backgroundColor: designSettings.primaryColor }}
-            >
-              Cancella filtri
-            </motion.button>
+            <div className="text-8xl mb-6">🔍</div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Nessun piatto trovato</h3>
+            {selectedTags.length > 0 ? (
+              <div className="max-w-md mx-auto">
+                <p className="text-gray-600 mb-4">
+                  Non ci sono piatti che corrispondono ai filtri selezionati:
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 mb-6">
+                  {selectedTags.map((tagText, index) => (
+                    <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                      {getTagEmoji(tagText)} {tagText}
+                    </span>
+                  ))}
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={clearFilters}
+                  className="px-6 py-3 text-white rounded-xl shadow-lg font-semibold"
+                  style={{ backgroundColor: designSettings.primaryColor }}
+                >
+                  ✨ Mostra tutti i piatti
+                </motion.button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-gray-600 mb-4">
+                  Tutti i piatti sono attualmente non disponibili
+                </p>
+                <button 
+                  onClick={() => loadData()}
+                  className="px-6 py-3 text-white rounded-xl shadow-lg font-semibold"
+                  style={{ backgroundColor: designSettings.primaryColor }}
+                >
+                  🔄 Aggiorna menu
+                </button>
+              </div>
+            )}
           </motion.div>
         ) : (
           <div className="space-y-6">
