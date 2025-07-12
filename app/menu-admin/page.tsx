@@ -1424,7 +1424,9 @@ export default function MenuAdminPage() {
     primaryColor: '#3B82F6',
     secondaryColor: '#64748B',
     coverImageUrl: '',
-    logoUrl: ''
+    logoUrl: '',
+    hideDescription: false,
+    hideIngredients: false
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
 
@@ -1590,7 +1592,9 @@ export default function MenuAdminPage() {
           primaryColor: data.data.menu.designSettings.primaryColor || '#3B82F6',
           secondaryColor: data.data.menu.designSettings.secondaryColor || '#64748B',
           coverImageUrl: data.data.menu.designSettings.coverImageUrl || '',
-          logoUrl: data.data.menu.designSettings.logoUrl || ''
+          logoUrl: data.data.menu.designSettings.logoUrl || '',
+          hideDescription: data.data.menu.designSettings.hideDescription || false,
+          hideIngredients: data.data.menu.designSettings.hideIngredients || false
         })
       }
       
@@ -2335,6 +2339,29 @@ export default function MenuAdminPage() {
       }
     } catch (err) {
       console.error('Error updating brand color:', err)
+    }
+  }
+
+  const handleBrandVisibilityUpdate = async (visibilityType: 'description' | 'ingredients', visible: boolean) => {
+    try {
+      const updatedSettings = {
+        ...brandSettings,
+        [visibilityType === 'description' ? 'hideDescription' : 'hideIngredients']: !visible
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+      }
+    } catch (err) {
+      console.error('Error updating brand visibility:', err)
     }
   }
 
@@ -3173,6 +3200,57 @@ export default function MenuAdminPage() {
                 <p className="text-xs text-gray-500 mt-3 bg-gray-50 p-3 rounded-lg">
                   💡 Logo mostrato nell'header. Consigliato: formato quadrato, sfondo trasparente
                 </p>
+              </div>
+
+              {/* Sezione Visibilità Contenuti */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  👁️ Visibilità Contenuti
+                </h3>
+                
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">📝</span>
+                        <span className="font-medium text-gray-900">Descrizioni Piatti</span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Mostra le descrizioni dei piatti nella vista principale del menu
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!brandSettings.hideDescription}
+                      onCheckedChange={(visible) => handleBrandVisibilityUpdate('description', visible)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">🥗</span>
+                        <span className="font-medium text-gray-900">Ingredienti Piatti</span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Mostra gli ingredienti dei piatti nella vista principale del menu
+                      </p>
+                    </div>
+                    <Switch
+                      checked={!brandSettings.hideIngredients}
+                      onCheckedChange={(visible) => handleBrandVisibilityUpdate('ingredients', visible)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Se disattivi, i contenuti saranno nascosti nella vista principale</li>
+                    <li>• I clienti potranno sempre vedere i dettagli completi cliccando sul piatto</li>
+                    <li>• Utile per menu più puliti e minimalisti</li>
+                    <li>• Perfetto per ridurre il sovraccarico di informazioni</li>
+                  </ul>
+                </div>
               </div>
 
               {/* Anteprima URL Menu Pubblico */}

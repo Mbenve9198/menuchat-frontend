@@ -35,6 +35,8 @@ interface DesignSettings {
   logoUrl?: string
   showImages: boolean
   showPrices: boolean
+  hideDescription?: boolean
+  hideIngredients?: boolean
 }
 
 interface Tag {
@@ -859,13 +861,13 @@ export default function PublicMenuPage() {
                             )}
                           </div>
 
-                          {dish.description && (
+                          {dish.description && !designSettings.hideDescription && (
                             <p className="text-gray-600 text-base mt-2 leading-relaxed">
                               {dish.description}
                             </p>
                           )}
 
-                          {dish.ingredients && dish.ingredients.length > 0 && (
+                          {dish.ingredients && dish.ingredients.length > 0 && !designSettings.hideIngredients && (
                             <div className="mt-3">
                               <span className="text-gray-700 font-medium text-sm">Ingredienti: </span>
                               <span className="text-gray-500 text-sm">{dish.ingredients.join(', ')}</span>
