@@ -305,7 +305,7 @@ const DishAccordionItem = ({
           body: JSON.stringify({
             restaurantId,
             text: newTagText.trim(),
-            color: 'bg-blue-500'
+            color: 'bg-blue-200'
           })
         })
         
@@ -798,10 +798,10 @@ const DishAccordionItem = ({
                           onClick={() => !isDisabled && toggleTag(tag)}
                           className={cn(
                             isSelected
-                              ? `${tag.color} text-white cursor-pointer`
+                              ? `${getValidTagColor(tag.color)} ${getTextColorForBackground(tag.color)} cursor-pointer border-2 border-blue-300`
                               : isDisabled
                               ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
-                              : "bg-gray-200 text-gray-700 cursor-pointer hover:bg-gray-300"
+                              : "bg-gray-100 text-gray-600 cursor-pointer hover:bg-gray-200 border border-gray-200"
                           )}
                           title={isDisabled ? "Limite 2 etichette per piatto raggiunto" : ""}
                         >
@@ -1465,6 +1465,40 @@ const CategoryAccordion = ({
   )
 }
 
+// --- UTILITY FUNCTIONS ---
+const getValidTagColor = (color: string | undefined): string => {
+  if (!color) return 'bg-blue-200'
+  
+  // Blocca esplicitamente bg-white e sostituisce con un colore visibile
+  if (color === 'bg-white') return 'bg-gray-200'
+  
+  // Converte colori -500 in -200 per essere più tenui
+  if (color.includes('-500')) return color.replace('-500', '-200')
+  
+  // Assicurati che i colori abbiano la forma corretta
+  if (color.startsWith('bg-') && !color.includes('-200')) {
+    const baseColor = color.replace('bg-', '').replace(/(-\d+)?$/, '')
+    return `bg-${baseColor}-200`
+  }
+  
+  return color
+}
+
+const getTextColorForBackground = (color: string | undefined): string => {
+  if (!color) return 'text-gray-800'
+  
+  // Lista di colori che richiedono testo scuro
+  const lightColors = ['bg-white', 'bg-gray-100', 'bg-gray-50', 'bg-yellow-200', 'bg-yellow-100', 'bg-orange-100']
+  
+  // Per colori chiari, usa testo molto scuro
+  if (lightColors.some(lightColor => color.includes(lightColor))) {
+    return 'text-gray-900'
+  }
+  
+  // Per tutti gli altri colori tenui -200, usa testo grigio scuro
+  return 'text-gray-800'
+}
+
 // --- MAIN COMPONENT ---
 export default function MenuAdminPage() {
   const { data: session, status } = useSession()
@@ -2043,8 +2077,27 @@ export default function MenuAdminPage() {
       }
       
       // Ricarica i dati del menu per vedere i nuovi tag
-      console.log('🔄 Ricaricamento dati menu...')
+      console.log('🔄 Ricaricamento dati menu completo...')
       await loadMenuData()
+      
+      // Ricarica esplicitamente le etichette disponibili per essere sicuri
+      console.log('🏷️ Ricaricamento esplicito etichette disponibili...')
+      try {
+        const tagsResponse = await fetch(`/api/menu/tags/${restaurantId}`)
+        const tagsData = await tagsResponse.json()
+        
+        if (tagsData.success) {
+          console.log(`✅ Ricaricate ${tagsData.tags.length} etichette disponibili`)
+          setAvailableTags(tagsData.tags)
+          
+          // Forza un aggiornamento dell'evento per notificare eventuali componenti
+          window.dispatchEvent(new CustomEvent('tagsUpdated', { detail: tagsData.tags }))
+        } else {
+          console.warn('⚠️ Errore nel ricaricamento etichette:', tagsData.error)
+        }
+      } catch (tagsError) {
+        console.error('❌ Errore nel ricaricamento etichette:', tagsError)
+      }
       
       console.log('✅ Reload completato')
       
@@ -2059,6 +2112,13 @@ export default function MenuAdminPage() {
       try {
         console.log('🔄 Tentativo reload semplificato...')
         await loadMenuData()
+        
+        // Prova comunque a ricaricare le etichette
+        const tagsResponse = await fetch(`/api/menu/tags/${restaurantId}`)
+        const tagsData = await tagsResponse.json()
+        if (tagsData.success) {
+          setAvailableTags(tagsData.tags)
+        }
       } catch (fallbackError) {
         console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
         toast({
@@ -3526,6 +3586,15 @@ export default function MenuAdminPage() {
                           <span className="text-xs text-gray-500 uppercase font-medium">
                             {lang.code}
                           </span>
+                          {!lang.isDefault && supportedLanguages.length > 1 && (
+                            <button
+                              className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors duration-150"
+                              onClick={() => handleSetDefaultLanguage(lang.code, lang.name)}
+                              title={`Imposta ${lang.name} come lingua predefinita`}
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                          )}
                           {!lang.isDefault && (
                             <button
                               className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
