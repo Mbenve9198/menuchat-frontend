@@ -37,6 +37,7 @@ interface DesignSettings {
   showPrices: boolean
   hideDescription?: boolean
   hideIngredients?: boolean
+  tagDisplayMode?: string
 }
 
 interface Tag {
@@ -486,6 +487,41 @@ export default function PublicMenuPage() {
     return '🏷️'
   }
 
+  // Funzione per renderizzare le etichette basata su tagDisplayMode
+  const renderTag = (tag: Tag, isFilter: boolean = false) => {
+    const tagDisplayMode = designSettings.tagDisplayMode || 'full'
+    
+    // Per i filtri, usiamo sempre il formato completo per chiarezza
+    if (isFilter) {
+      return (
+        <>
+          <span className="text-base">{getTagEmoji(tag.text, tag)}</span>
+          {tag.text}
+        </>
+      )
+    }
+    
+    // Per le etichette sui piatti, rispettiamo tagDisplayMode
+    switch (tagDisplayMode) {
+      case 'emoji-only':
+        return (
+          <span className="text-base" title={tag.text}>
+            {getTagEmoji(tag.text, tag)}
+          </span>
+        )
+      case 'hidden':
+        return null
+      case 'full':
+      default:
+        return (
+          <>
+            <span>{getTagEmoji(tag.text, tag)}</span>
+            {tag.text}
+          </>
+        )
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -528,7 +564,8 @@ export default function PublicMenuPage() {
     hideDescription: false,
     hideIngredients: false,
     coverImageUrl: '',
-    logoUrl: ''
+    logoUrl: '',
+    tagDisplayMode: 'full'
   }
   
   const designSettings = {
@@ -716,8 +753,7 @@ export default function PublicMenuPage() {
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
                         }`}
                       >
-                        <span className="text-base">{getTagEmoji(tag.text, tag)}</span>
-                        {tag.text}
+                        {renderTag(tag, true)}
                       </motion.button>
                     ))}
                   </div>
@@ -913,17 +949,21 @@ export default function PublicMenuPage() {
                             </div>
                           )}
 
-                          {dish.tags.length > 0 && (
+                          {dish.tags.length > 0 && designSettings.tagDisplayMode !== 'hidden' && (
                             <div className="flex flex-wrap gap-2 mt-3">
-                              {dish.tags.map((tag) => (
-                                <span
-                                  key={tag.id}
-                                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${tag.color}`}
-                                >
-                                  <span>{getTagEmoji(tag.text, tag)}</span>
-                                  {tag.text}
-                                </span>
-                              ))}
+                              {dish.tags.map((tag) => {
+                                const tagContent = renderTag(tag, false)
+                                if (!tagContent) return null
+                                
+                                return (
+                                  <span
+                                    key={tag.id}
+                                    className={`flex items-center ${designSettings.tagDisplayMode === 'emoji-only' ? 'gap-0 text-lg' : 'gap-1'} px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${tag.color}`}
+                                  >
+                                    {tagContent}
+                                  </span>
+                                )
+                              })}
                             </div>
                           )}
                         </div>
