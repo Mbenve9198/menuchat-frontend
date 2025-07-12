@@ -1467,18 +1467,69 @@ const CategoryAccordion = ({
 
 // --- UTILITY FUNCTIONS ---
 const getValidTagColor = (color: string | undefined): string => {
-  if (!color) return 'bg-blue-200'
+  if (!color) return 'bg-blue-300'
   
-  // Blocca esplicitamente bg-white e sostituisce con un colore visibile
-  if (color === 'bg-white') return 'bg-gray-200'
+  // Lista di colori problematici da sostituire
+  const problematicColors = [
+    'bg-white', 'bg-gray-50', 'bg-gray-100', 'bg-yellow-50', 'bg-orange-50', 
+    'bg-red-50', 'bg-pink-50', 'bg-purple-50', 'bg-indigo-50', 'bg-blue-50',
+    'bg-green-50', 'bg-teal-50', 'bg-cyan-50', 'bg-lime-50', 'bg-amber-50',
+    'bg-emerald-50', 'bg-violet-50', 'bg-fuchsia-50', 'bg-rose-50', 'bg-sky-50',
+    'bg-slate-50', 'bg-zinc-50', 'bg-neutral-50', 'bg-stone-50'
+  ]
   
-  // Converte colori -500 in -200 per essere più tenui
-  if (color.includes('-500')) return color.replace('-500', '-200')
+  // Mappatura specifica per colori problematici
+  const colorMapping: { [key: string]: string } = {
+    'bg-white': 'bg-slate-300',
+    'bg-gray-50': 'bg-slate-300',
+    'bg-gray-100': 'bg-slate-300',
+    'bg-yellow-50': 'bg-amber-300',
+    'bg-orange-50': 'bg-orange-300',
+    'bg-red-50': 'bg-red-300',
+    'bg-pink-50': 'bg-pink-300',
+    'bg-purple-50': 'bg-purple-300',
+    'bg-indigo-50': 'bg-indigo-300',
+    'bg-blue-50': 'bg-blue-300',
+    'bg-green-50': 'bg-emerald-300',
+    'bg-teal-50': 'bg-teal-300',
+    'bg-cyan-50': 'bg-cyan-300',
+    'bg-lime-50': 'bg-lime-300',
+    'bg-amber-50': 'bg-amber-300',
+    'bg-emerald-50': 'bg-emerald-300',
+    'bg-violet-50': 'bg-violet-300',
+    'bg-fuchsia-50': 'bg-fuchsia-300',
+    'bg-rose-50': 'bg-rose-300',
+    'bg-sky-50': 'bg-sky-300',
+    'bg-slate-50': 'bg-slate-300',
+    'bg-zinc-50': 'bg-zinc-300',
+    'bg-neutral-50': 'bg-neutral-300',
+    'bg-stone-50': 'bg-stone-300'
+  }
   
-  // Assicurati che i colori abbiano la forma corretta
-  if (color.startsWith('bg-') && !color.includes('-200')) {
-    const baseColor = color.replace('bg-', '').replace(/(-\d+)?$/, '')
-    return `bg-${baseColor}-200`
+  // Se è un colore problematico, usa la mappatura
+  if (problematicColors.includes(color)) {
+    return colorMapping[color] || 'bg-slate-300'
+  }
+  
+  // Converte colori scuri (-500/-600/-700) in -300
+  if (color.includes('-500') || color.includes('-600') || color.includes('-700')) {
+    return color.replace(/-[567]00/, '-300')
+  }
+  
+  // Converte colori chiari (-50/-100/-200) in -300
+  if (color.includes('-50') || color.includes('-100') || color.includes('-200')) {
+    return color.replace(/-[012]00/, '-300')
+  }
+  
+  // Se ha già -300, mantienilo
+  if (color.includes('-300')) {
+    return color
+  }
+  
+  // Se è un colore Tailwind senza intensità, aggiungi -300
+  if (color.startsWith('bg-') && !color.match(/-\d+$/)) {
+    const baseColor = color.replace('bg-', '')
+    return `bg-${baseColor}-300`
   }
   
   return color
