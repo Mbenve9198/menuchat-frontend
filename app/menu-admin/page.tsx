@@ -1420,6 +1420,10 @@ export default function MenuAdminPage() {
   const [isGeneratingTranslation, setIsGeneratingTranslation] = React.useState(false)
   const [selectedLanguageForTranslation, setSelectedLanguageForTranslation] = React.useState('')
   const [translationTaskId, setTranslationTaskId] = React.useState<string | null>(null)
+  
+  // Stati per cancellazione traduzioni
+  const [isDeletingTranslation, setIsDeletingTranslation] = React.useState(false)
+  const [deletionTaskId, setDeletionTaskId] = React.useState<string | null>(null)
 
   // Stati per l'AI
   const [showAIDialog, setShowAIDialog] = React.useState(false)
@@ -1679,6 +1683,96 @@ export default function MenuAdminPage() {
     setTranslationTaskId(null)
     setIsGeneratingTranslation(false)
     setShowTranslationsDialog(false) // Chiude il dialog in caso di errore
+  }
+
+  // Handler per cancellare una traduzione
+  const handleDeleteTranslation = async (languageCode: string, languageName: string) => {
+    if (!confirm(`🗑️ Sei sicuro di voler eliminare tutte le traduzioni in ${languageName}?\n\nQuesta operazione cancellerà:\n• Traduzioni di tutte le categorie\n• Traduzioni di tutti i piatti\n• Descrizioni e ingredienti tradotti\n\nL'operazione è irreversibile.`)) {
+      return
+    }
+
+    setIsDeletingTranslation(true)
+    setDeletionTaskId(null)
+    
+    try {
+      const response = await fetch(`/api/menu/translations/${restaurantId}/${languageCode}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.success && result.taskId) {
+        setDeletionTaskId(result.taskId)
+        console.log(`🗑️ Task cancellazione traduzione avviato: ${result.taskId} per ${languageName}`)
+      } else {
+        alert(`❌ Errore nell'avvio della cancellazione: ${result.error}`)
+        setIsDeletingTranslation(false)
+      }
+    } catch (err) {
+      console.error('Error starting deletion task:', err)
+      alert('❌ Errore nell\'avvio della cancellazione')
+      setIsDeletingTranslation(false)
+    }
+  }
+
+  // Handler per quando la cancellazione è completata
+  const handleDeletionComplete = async (result: any) => {
+    try {
+      console.log('✅ Cancellazione traduzione completata:', result)
+      
+      // Reset stati
+      setDeletionTaskId(null)
+      setIsDeletingTranslation(false)
+      
+      // Mostra messaggio di successo
+      if (result.stats) {
+        alert(`✅ ${result.message || 'Traduzione cancellata'}!\n\n${result.stats.categoriesUpdated} categorie e ${result.stats.itemsUpdated} piatti aggiornati.`)
+      } else {
+        alert('✅ Traduzione cancellata con successo!')
+      }
+      
+      // Ricarica i dati
+      console.log('🔄 Ricaricamento lingue supportate...')
+      await loadSupportedLanguages()
+      
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      console.log('🔄 Ricaricamento dati menu...')
+      await loadMenuData()
+      
+      console.log('✅ Reload completato')
+      
+    } catch (error) {
+      console.error('❌ Errore nel gestire completamento cancellazione:', error)
+      
+      // Fallback reset
+      setDeletionTaskId(null)
+      setIsDeletingTranslation(false)
+      
+      // Prova un reload semplificato
+      try {
+        console.log('🔄 Tentativo reload semplificato...')
+        await loadMenuData()
+      } catch (fallbackError) {
+        console.error('❌ Anche il reload semplificato è fallito:', fallbackError)
+        alert('⚠️ La traduzione è stata cancellata ma c\'è stato un problema nel ricaricamento della pagina. Aggiorna manualmente la pagina.')
+      }
+    }
+  }
+
+  // Handler per quando la cancellazione fallisce
+  const handleDeletionError = (error: any) => {
+    console.error('❌ Cancellazione traduzione fallita:', error)
+    let errorMessage = '❌ Errore nella cancellazione della traduzione'
+    
+    if (error?.message) {
+      errorMessage = '❌ ' + error.message
+    }
+    
+    alert(errorMessage)
+    setDeletionTaskId(null)
+    setIsDeletingTranslation(false)
   }
 
   // Predefined languages available for translation
@@ -2955,6 +3049,23 @@ export default function MenuAdminPage() {
             </DialogHeader>
             
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+              {/* Mostra progresso cancellazione se attivo */}
+              {deletionTaskId && (
+                <AsyncTaskProgress
+                  taskId={deletionTaskId}
+                  title="Cancellazione Traduzione"
+                  description="Stiamo rimuovendo tutte le traduzioni dal database..."
+                  onComplete={handleDeletionComplete}
+                  onError={handleDeletionError}
+                  onCancel={() => {
+                    setDeletionTaskId(null)
+                    setIsDeletingTranslation(false)
+                  }}
+                  pollingInterval={2000}
+                  className="my-4"
+                />
+              )}
+
               {/* Lingue già supportate */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -2976,9 +3087,20 @@ export default function MenuAdminPage() {
                             )}
                           </div>
                         </div>
-                        <span className="text-xs text-gray-500 uppercase font-medium">
-                          {lang.code}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500 uppercase font-medium">
+                            {lang.code}
+                          </span>
+                          {!lang.isDefault && (
+                            <button
+                              className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
+                              onClick={() => handleDeleteTranslation(lang.code, lang.name)}
+                              title={`Elimina traduzione ${lang.name}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -3006,7 +3128,7 @@ export default function MenuAdminPage() {
                   ➕ Aggiungi Traduzione
                 </h3>
                 
-                {translationTaskId ? (
+                {translationTaskId || deletionTaskId ? (
                   // Mostra progresso traduzione asincrona
                   <AsyncTaskProgress
                     taskId={translationTaskId}
@@ -3033,7 +3155,7 @@ export default function MenuAdminPage() {
                         value={selectedLanguageForTranslation}
                         onChange={(e) => setSelectedLanguageForTranslation(e.target.value)}
                         className="w-full h-12 px-4 border border-gray-300 rounded-xl text-base bg-white"
-                        disabled={isGeneratingTranslation}
+                        disabled={isGeneratingTranslation || isDeletingTranslation}
                       >
                         <option value="">Scegli una lingua...</option>
                         {getUntranslatedLanguages().map((lang) => (
@@ -3066,7 +3188,7 @@ export default function MenuAdminPage() {
                           handleGenerateTranslation(code, name)
                         }
                       }}
-                      disabled={!selectedLanguageForTranslation || isGeneratingTranslation}
+                      disabled={!selectedLanguageForTranslation || isGeneratingTranslation || isDeletingTranslation}
                     >
                       {isGeneratingTranslation ? (
                         <>
@@ -3117,9 +3239,10 @@ export default function MenuAdminPage() {
               <CustomButton 
                 className="w-full h-14 text-base font-semibold"
                 onClick={() => {
-                  if (translationTaskId) {
+                  if (translationTaskId || deletionTaskId) {
                     // Se c'è un task in corso, chiedi conferma
-                    if (confirm('🚧 C\'è una traduzione in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.')) {
+                    const taskType = translationTaskId ? 'traduzione' : 'cancellazione'
+                    if (confirm(`🚧 C'è una ${taskType} in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.`)) {
                       setShowTranslationsDialog(false)
                     }
                   } else {
@@ -3132,6 +3255,11 @@ export default function MenuAdminPage() {
                   <>
                     <span className="mr-2">🚧</span>
                     Chiudi (Traduzione in corso)
+                  </>
+                ) : deletionTaskId ? (
+                  <>
+                    <span className="mr-2">🚧</span>
+                    Chiudi (Cancellazione in corso)
                   </>
                 ) : (
                   <>
