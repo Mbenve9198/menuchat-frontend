@@ -66,7 +66,8 @@ import { useToast } from "@/hooks/use-toast"
 type Tag = { 
   id: string
   text: string
-  color: string 
+  color: string
+  emoji?: string
 }
 
 type Dish = {
@@ -251,6 +252,18 @@ const DishAccordionItem = ({
 
   const toggleTag = async (tag: Tag) => {
     const hasTag = dish.tags.some((t) => t.id === tag.id)
+    
+    // Se sta aggiungendo un tag e già ne ha 2, blocca l'operazione
+    if (!hasTag && dish.tags.length >= 2) {
+      toast({
+        title: "🏷️ Limite etichette raggiunto",
+        description: "Puoi assegnare massimo 2 etichette per piatto. Rimuovi prima un'etichetta esistente.",
+        variant: "destructive",
+        duration: 4000,
+      })
+      return
+    }
+    
     const newTags = hasTag 
       ? dish.tags.filter((t) => t.id !== tag.id)
       : [...dish.tags, tag]
@@ -272,6 +285,19 @@ const DishAccordionItem = ({
 
   const createNewTag = async () => {
     if (newTagText.trim()) {
+      // Controlla se già ha 2 tag prima di aggiungere un nuovo tag
+      if (dish.tags.length >= 2) {
+        toast({
+          title: "🏷️ Limite etichette raggiunto",
+          description: "Puoi assegnare massimo 2 etichette per piatto. Rimuovi prima un'etichetta esistente.",
+          variant: "destructive",
+          duration: 4000,
+        })
+        setIsCreatingTag(false)
+        setNewTagText("")
+        return
+      }
+      
       try {
         const response = await fetch('/api/menu/tag', {
           method: 'POST',
@@ -712,22 +738,44 @@ const DishAccordionItem = ({
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-600">Etichette</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-gray-600">Etichette</label>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className={cn(
+                      "px-2 py-1 rounded-full text-xs font-medium",
+                      dish.tags.length >= 2 
+                        ? "bg-red-100 text-red-700" 
+                        : dish.tags.length === 1 
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-green-100 text-green-700"
+                    )}>
+                      {dish.tags.length}/2 assegnate
+                    </span>
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {availableTags.map((tag) => (
-                    <Badge
-                      key={tag.id}
-                      onClick={() => toggleTag(tag)}
-                      className={cn(
-                        "cursor-pointer",
-                        dish.tags.some((t) => t.id === tag.id)
-                          ? `${tag.color} text-white`
-                          : "bg-gray-200 text-gray-700",
-                      )}
-                    >
-                      {tag.text}
-                    </Badge>
-                  ))}
+                  {availableTags.map((tag) => {
+                    const isSelected = dish.tags.some((t) => t.id === tag.id)
+                    const isDisabled = !isSelected && dish.tags.length >= 2
+                    
+                    return (
+                                              <Badge
+                          key={tag.id}
+                          onClick={() => !isDisabled && toggleTag(tag)}
+                          className={cn(
+                            isSelected
+                              ? `${tag.color} text-white cursor-pointer`
+                              : isDisabled
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
+                              : "bg-gray-200 text-gray-700 cursor-pointer hover:bg-gray-300"
+                          )}
+                          title={isDisabled ? "Limite 2 etichette per piatto raggiunto" : ""}
+                        >
+                          {tag.emoji && <span className="mr-1">{tag.emoji}</span>}
+                          {tag.text}
+                        </Badge>
+                    )
+                  })}
                   {isCreatingTag ? (
                     <div className="flex items-center gap-1">
                       <Input
@@ -748,13 +796,24 @@ const DishAccordionItem = ({
                     </div>
                   ) : (
                     <Badge
-                      onClick={() => setIsCreatingTag(true)}
-                      className="cursor-pointer bg-gray-100 text-gray-500 border-2 border-dashed border-gray-300 hover:bg-gray-200"
+                      onClick={() => dish.tags.length < 2 && setIsCreatingTag(true)}
+                      className={cn(
+                        "border-2 border-dashed border-gray-300",
+                        dish.tags.length >= 2
+                          ? "bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+                          : "cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      )}
+                      title={dish.tags.length >= 2 ? "Limite 2 etichette per piatto raggiunto" : "Crea nuova etichetta"}
                     >
                       + Aggiungi
                     </Badge>
                   )}
                 </div>
+                {dish.tags.length >= 2 && (
+                  <p className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded-lg">
+                    ⚠️ Limite raggiunto: massimo 2 etichette per piatto. Rimuovi un'etichetta per aggiungerne una nuova.
+                  </p>
+                )}
               </div>
             </div>
           </AccordionContent>
