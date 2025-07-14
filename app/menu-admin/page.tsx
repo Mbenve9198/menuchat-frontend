@@ -2903,9 +2903,71 @@ export default function MenuAdminPage() {
 
   // Funzione per trasferire un piatto tra categorie
   const handleDishTransfer = async (dishId: string, targetCategoryId: string) => {
+    // Trova il piatto e le categorie coinvolte
+    const sourceDish = categories.flatMap(cat => cat.dishes).find(dish => dish.id === dishId)
+    const sourceCategory = findCategoryByDishId(dishId)
+    const targetCategory = categories.find(cat => cat.id === targetCategoryId)
+    
+    if (!sourceDish || !sourceCategory || !targetCategory) {
+      console.error('❌ Piatto o categorie non trovati per il trasferimento')
+      toast({
+        title: "❌ Errore nel trasferimento",
+        description: "Impossibile trovare il piatto o le categorie di origine/destinazione.",
+        variant: "destructive",
+        duration: 4000,
+      })
+      return
+    }
+    
+    console.log('🍽️ Trasferisco piatto:', { 
+      dishId, 
+      dishName: sourceDish.name,
+      sourceCategory: sourceCategory.name,
+      targetCategory: targetCategory.name,
+      targetCategoryId 
+    })
+    
+    // Salva una copia dello stato originale per il revert
+    const originalCategories = JSON.parse(JSON.stringify(categories))
+    
+    // AGGIORNAMENTO OTTIMISTICO: sposta il piatto immediatamente nell'interfaccia
+    const updatedCategories = categories.map(cat => {
+      if (cat.id === sourceCategory.id) {
+        // Rimuovi il piatto dalla categoria sorgente
+        return {
+          ...cat,
+          dishes: cat.dishes.filter(dish => dish.id !== dishId)
+        }
+      } else if (cat.id === targetCategoryId) {
+        // Aggiungi il piatto alla categoria destinazione
+        return {
+          ...cat,
+          dishes: [...cat.dishes, sourceDish]
+        }
+      }
+      return cat
+    })
+    
+    // Aggiorna immediatamente lo stato locale
+    console.log('⚡ Aggiornamento ottimistico stato locale:', {
+      originalCategoriesCount: originalCategories.length,
+      updatedCategoriesCount: updatedCategories.length,
+      sourceCategory: {
+        id: sourceCategory.id,
+        name: sourceCategory.name,
+        originalDishCount: originalCategories.find((c: Category) => c.id === sourceCategory.id)?.dishes.length,
+        newDishCount: updatedCategories.find((c: Category) => c.id === sourceCategory.id)?.dishes.length
+      },
+      targetCategory: {
+        id: targetCategory.id,
+        name: targetCategory.name,
+        originalDishCount: originalCategories.find((c: Category) => c.id === targetCategoryId)?.dishes.length,
+        newDishCount: updatedCategories.find((c: Category) => c.id === targetCategoryId)?.dishes.length
+      }
+    })
+    setCategories(updatedCategories)
+    
     try {
-      console.log('🍽️ Trasferisco piatto:', { dishId, targetCategoryId })
-      
       const response = await fetch(`/api/menu/item/${dishId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2913,18 +2975,19 @@ export default function MenuAdminPage() {
       })
       
       if (response.ok) {
-        console.log('✅ Piatto trasferito con successo')
-        // Ricarica i dati del menu per riflettere il cambiamento
-        await loadMenuData()
+        console.log('✅ Piatto trasferito con successo nel backend')
         
         toast({
           title: "✅ Piatto spostato!",
-          description: "Il piatto è stato trasferito nella nuova categoria.",
+          description: `"${sourceDish.name}" è stato trasferito in "${targetCategory.name}".`,
           duration: 3000,
         })
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
-        console.error('❌ Errore nel trasferimento:', errorData)
+        console.error('❌ Errore API nel trasferimento:', errorData)
+        
+        // REVERT: ripristina lo stato originale se l'API fallisce
+        setCategories(originalCategories)
         
         toast({
           title: "❌ Errore nel trasferimento",
@@ -2935,6 +2998,9 @@ export default function MenuAdminPage() {
       }
     } catch (err) {
       console.error('❌ Errore di rete nel trasferimento:', err)
+      
+      // REVERT: ripristina lo stato originale in caso di errore di rete
+      setCategories(originalCategories)
       
       toast({
         title: "❌ Errore di connessione",
