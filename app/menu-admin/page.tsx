@@ -1615,7 +1615,8 @@ export default function MenuAdminPage() {
     logoUrl: '',
     hideDescription: false,
     hideIngredients: false,
-    tagDisplayMode: 'full'
+    tagDisplayMode: 'full',
+    fontFamily: 'Inter'
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
 
@@ -1799,7 +1800,8 @@ export default function MenuAdminPage() {
           logoUrl: data.data.menu.designSettings.logoUrl || '',
           hideDescription: data.data.menu.designSettings.hideDescription || false,
           hideIngredients: data.data.menu.designSettings.hideIngredients || false,
-          tagDisplayMode: data.data.menu.designSettings.tagDisplayMode || 'full'
+          tagDisplayMode: data.data.menu.designSettings.tagDisplayMode || 'full',
+          fontFamily: data.data.menu.designSettings.fontFamily || 'Inter'
         })
       }
       
@@ -2686,6 +2688,29 @@ export default function MenuAdminPage() {
     }
   }
 
+  const handleBrandFontUpdate = async (fontFamily: string) => {
+    try {
+      const updatedSettings = {
+        ...brandSettings,
+        fontFamily
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+      }
+    } catch (err) {
+      console.error('Error updating font family:', err)
+    }
+  }
+
   // Gestori per drag and drop
   const handleCategoryReorder = async (newCategories: Category[]) => {
     setCategories(newCategories)
@@ -3412,6 +3437,61 @@ export default function MenuAdminPage() {
             </DialogHeader>
             
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
+              {/* Sezione Font */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  🔤 Font del Menu
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {[
+                    { name: 'Inter', description: 'Moderno e pulito', style: 'font-sans', sample: 'The quick brown fox jumps over the lazy dog' },
+                    { name: 'Cooper', description: 'Elegante e raffinato', style: 'font-cooper', sample: 'Benvenuti nel nostro ristorante' },
+                    { name: 'Roboto', description: 'Leggibile e amichevole', style: 'font-roboto', sample: 'Menù della tradizione italiana' },
+                    { name: 'Poppins', description: 'Contemporaneo e versatile', style: 'font-poppins', sample: 'Specialità dello chef' },
+                    { name: 'Playfair Display', description: 'Classico ed elegante', style: 'font-playfair', sample: 'Ristorante di Alta Cucina' },
+                    { name: 'Montserrat', description: 'Moderno e geometrico', style: 'font-montserrat', sample: 'Cucina Mediterranea' },
+                    { name: 'Merriweather', description: 'Tradizionale e accogliente', style: 'font-merriweather', sample: 'Osteria della Nonna' },
+                    { name: 'Oswald', description: 'Forte e deciso', style: 'font-oswald', sample: 'STEAKHOUSE & GRILL' },
+                    { name: 'Dancing Script', description: 'Artistico e creativo', style: 'font-dancing', sample: 'Caffè & Pasticceria' }
+                  ].map((font) => (
+                    <div
+                      key={font.name}
+                      className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        brandSettings.fontFamily === font.name
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => handleBrandFontUpdate(font.name)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900">{font.name}</span>
+                          {brandSettings.fontFamily === font.name && (
+                            <span className="text-blue-600">✓</span>
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-600">{font.description}</span>
+                      </div>
+                      <div className={`text-lg text-gray-800 ${font.style === 'font-cooper' ? 'font-cooper' : font.style}`}>
+                        {font.sample}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h4 className="font-medium text-blue-900 mb-2">💡 Suggerimenti per Font:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• <strong>Cooper:</strong> Perfetto per ristoranti eleganti e raffinati</li>
+                    <li>• <strong>Playfair Display:</strong> Ideale per cucina gourmet e fine dining</li>
+                    <li>• <strong>Oswald:</strong> Ottimo per steakhouse e pub</li>
+                    <li>• <strong>Dancing Script:</strong> Perfetto per caffè e pasticcerie</li>
+                    <li>• <strong>Merriweather:</strong> Ideale per osterie e trattorie tradizionali</li>
+                  </ul>
+                </div>
+              </div>
+
               {/* Sezione Colori */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">

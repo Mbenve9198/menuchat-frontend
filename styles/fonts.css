@@ -5,4 +5,37 @@
   font-weight: normal;
   font-style: normal;
   font-display: swap;
+}
+
+/* Font classes for menu styles */
+.font-cooper {
+  font-family: 'Cooper', serif;
+}
+
+.font-roboto {
+  font-family: var(--font-roboto), sans-serif;
+}
+
+.font-poppins {
+  font-family: var(--font-poppins), sans-serif;
+}
+
+.font-playfair {
+  font-family: var(--font-playfair), serif;
+}
+
+.font-montserrat {
+  font-family: var(--font-montserrat), sans-serif;
+}
+
+.font-merriweather {
+  font-family: var(--font-merriweather), serif;
+}
+
+.font-oswald {
+  font-family: var(--font-oswald), sans-serif;
+}
+
+.font-dancing {
+  font-family: var(--font-dancing), cursive;
 } 

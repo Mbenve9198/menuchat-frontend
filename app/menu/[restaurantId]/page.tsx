@@ -38,6 +38,7 @@ interface DesignSettings {
   hideDescription?: boolean
   hideIngredients?: boolean
   tagDisplayMode?: string
+  fontFamily?: string
 }
 
 interface Tag {
@@ -459,6 +460,23 @@ export default function PublicMenuPage() {
   }
 
   // Funzione per renderizzare le etichette basata su tagDisplayMode
+  // Funzione per ottenere la classe CSS del font
+  const getFontClass = (fontFamily: string) => {
+    const fontMap: { [key: string]: string } = {
+      'Inter': 'font-sans',
+      'Cooper': 'font-cooper',
+      'Roboto': 'font-roboto',
+      'Poppins': 'font-poppins',
+      'Playfair Display': 'font-playfair',
+      'Montserrat': 'font-montserrat',
+      'Merriweather': 'font-merriweather',
+      'Oswald': 'font-oswald',
+      'Dancing Script': 'font-dancing'
+    }
+    
+    return fontMap[fontFamily] || 'font-sans'
+  }
+
   const renderTag = (tag: Tag, isFilter: boolean = false) => {
     const tagDisplayMode = designSettings.tagDisplayMode || 'full'
     
@@ -536,7 +554,8 @@ export default function PublicMenuPage() {
     hideIngredients: false,
     coverImageUrl: '',
     logoUrl: '',
-    tagDisplayMode: 'full'
+    tagDisplayMode: 'full',
+    fontFamily: 'Inter'
   }
   
   const designSettings = {
@@ -554,7 +573,7 @@ export default function PublicMenuPage() {
 
   return (
     <div 
-      className="min-h-screen bg-gray-50"
+      className={`min-h-screen bg-gray-50 ${getFontClass(designSettings.fontFamily || 'Inter')}`}
       style={{ 
         backgroundColor: designSettings.backgroundColor,
         color: designSettings.textColor 
