@@ -6,6 +6,24 @@ import * as React from "react"
 const customStyles = `
   .animation-delay-300 { animation-delay: 300ms; }
   .animation-delay-600 { animation-delay: 600ms; }
+  
+  /* Stili per drag and drop */
+  .dish-dragging {
+    cursor: grabbing !important;
+    transform: rotate(2deg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+  }
+  
+  .category-drop-target {
+    transition: all 0.2s ease;
+  }
+  
+  .category-drop-target.is-over {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-color: #3b82f6;
+    transform: scale(1.02);
+  }
 `
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -42,6 +60,7 @@ import {
   closestCenter,
   useSensor,
   useSensors,
+  useDroppable,
 } from "@dnd-kit/core"
 import {
   SortableContext,
@@ -1309,8 +1328,14 @@ const CategoryAccordion = ({
   dragListeners?: any
   isDragging?: boolean
 }) => {
+  const { toast } = useToast()
   const [name, setName] = React.useState(category.name)
   const [icon, setIcon] = React.useState(category.icon)
+  
+  // Rende l'header della categoria droppable per i piatti
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: category.id,
+  })
 
   React.useEffect(() => {
     setName(category.name)
@@ -1318,46 +1343,164 @@ const CategoryAccordion = ({
   }, [category])
 
   const handleNameBlur = async () => {
-    if (name.trim() && name !== category.name) {
-      try {
-        const response = await fetch(`/api/menu/category/${category.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim() })
-        })
-        if (response.ok) {
-          onUpdateCategory({ ...category, name: name.trim() })
-        } else {
-          setName(category.name) // Revert on error
-        }
-      } catch (err) {
-        console.error('Error updating category name:', err)
-        setName(category.name) // Revert on error
-      }
-    } else {
+    const trimmedName = name.trim()
+    
+    // Debug logging
+    console.log('🏷️ handleNameBlur called:', {
+      currentName: name,
+      trimmedName,
+      categoryName: category.name,
+      categoryId: category.id,
+      hasChanged: trimmedName !== category.name,
+      isEmpty: !trimmedName
+    })
+    
+    // Se il nome è vuoto, ripristina quello originale
+    if (!trimmedName) {
+      console.log('📝 Nome vuoto, ripristino quello originale')
       setName(category.name)
+      return
+    }
+    
+    // Se il nome non è cambiato, non fare nulla
+    if (trimmedName === category.name) {
+      console.log('📝 Nome non cambiato, non faccio nulla')
+      return
+    }
+    
+    // Aggiornamento ottimistico: aggiorna subito lo stato locale
+    console.log('⚡ Aggiornamento ottimistico dello stato locale')
+    onUpdateCategory({ ...category, name: trimmedName })
+    
+    try {
+      console.log('🌐 Chiamata API per aggiornare categoria:', category.id)
+      const response = await fetch(`/api/menu/category/${category.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName })
+      })
+      
+      console.log('📡 Risposta API:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
+      
+      if (response.ok) {
+        console.log('✅ Categoria aggiornata con successo')
+        // Lo stato è già stato aggiornato ottimisticamente
+      } else {
+        // La chiamata API è fallita, fai il revert e mostra l'errore
+        const errorData = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
+        console.error('❌ Errore API:', errorData)
+        
+        // Revert allo stato originale
+        setName(category.name)
+        onUpdateCategory({ ...category, name: category.name })
+        
+        // Mostra toast di errore
+        toast({
+          title: "❌ Errore nel salvataggio",
+          description: `Impossibile aggiornare il nome della categoria: ${errorData.error || response.statusText}`,
+          variant: "destructive",
+          duration: 4000,
+        })
+      }
+    } catch (err) {
+      console.error('❌ Errore di rete:', err)
+      
+      // Revert allo stato originale
+      setName(category.name)
+      onUpdateCategory({ ...category, name: category.name })
+      
+      // Mostra toast di errore
+      toast({
+        title: "❌ Errore di connessione",
+        description: "Impossibile salvare le modifiche. Verifica la connessione internet.",
+        variant: "destructive",
+        duration: 4000,
+      })
     }
   }
 
   const handleIconBlur = async () => {
-    if (icon.trim() && icon !== category.icon) {
-      try {
-        const response = await fetch(`/api/menu/category/${category.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ icon: icon.trim() })
-        })
-        if (response.ok) {
-          onUpdateCategory({ ...category, icon: icon.trim() })
-        } else {
-          setIcon(category.icon) // Revert on error
-        }
-      } catch (err) {
-        console.error('Error updating category icon:', err)
-        setIcon(category.icon) // Revert on error
-      }
-    } else {
+    const trimmedIcon = icon.trim()
+    
+    // Debug logging
+    console.log('🎨 handleIconBlur called:', {
+      currentIcon: icon,
+      trimmedIcon,
+      categoryIcon: category.icon,
+      categoryId: category.id,
+      hasChanged: trimmedIcon !== category.icon,
+      isEmpty: !trimmedIcon
+    })
+    
+    // Se l'icona è vuota, ripristina quella originale
+    if (!trimmedIcon) {
+      console.log('📝 Icona vuota, ripristino quella originale')
       setIcon(category.icon)
+      return
+    }
+    
+    // Se l'icona non è cambiata, non fare nulla
+    if (trimmedIcon === category.icon) {
+      console.log('📝 Icona non cambiata, non faccio nulla')
+      return
+    }
+    
+    // Aggiornamento ottimistico: aggiorna subito lo stato locale
+    console.log('⚡ Aggiornamento ottimistico dello stato locale')
+    onUpdateCategory({ ...category, icon: trimmedIcon })
+    
+    try {
+      console.log('🌐 Chiamata API per aggiornare icona categoria:', category.id)
+      const response = await fetch(`/api/menu/category/${category.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ icon: trimmedIcon })
+      })
+      
+      console.log('📡 Risposta API:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
+      
+      if (response.ok) {
+        console.log('✅ Icona categoria aggiornata con successo')
+        // Lo stato è già stato aggiornato ottimisticamente
+      } else {
+        // La chiamata API è fallita, fai il revert e mostra l'errore
+        const errorData = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
+        console.error('❌ Errore API:', errorData)
+        
+        // Revert allo stato originale
+        setIcon(category.icon)
+        onUpdateCategory({ ...category, icon: category.icon })
+        
+        // Mostra toast di errore
+        toast({
+          title: "❌ Errore nel salvataggio",
+          description: `Impossibile aggiornare l'icona della categoria: ${errorData.error || response.statusText}`,
+          variant: "destructive",
+          duration: 4000,
+        })
+      }
+    } catch (err) {
+      console.error('❌ Errore di rete:', err)
+      
+      // Revert allo stato originale
+      setIcon(category.icon)
+      onUpdateCategory({ ...category, icon: category.icon })
+      
+      // Mostra toast di errore
+      toast({
+        title: "❌ Errore di connessione",
+        description: "Impossibile salvare le modifiche. Verifica la connessione internet.",
+        variant: "destructive",
+        duration: 4000,
+      })
     }
   }
 
@@ -1366,10 +1509,19 @@ const CategoryAccordion = ({
       value={category.id}
       className="group bg-transparent border-none rounded-2xl shadow-sm overflow-visible"
     >
-      <div className="relative rounded-2xl border-b-4 border-[#d8d8d8] transition-transform group-data-[state=open]:translate-y-1">
+      <div className={cn(
+        "relative rounded-2xl border-b-4 border-[#d8d8d8] transition-transform group-data-[state=open]:translate-y-1 category-drop-target",
+        isOver && "is-over"
+      )}>
         <span className="absolute inset-0 -bottom-1 rounded-2xl bg-[#e5e5e5]"></span>
         <div className="relative bg-white rounded-2xl overflow-hidden">
-          <AccordionTrigger className="text-lg font-bold text-gray-700 p-4 hover:no-underline w-full data-[state=open]:border-b">
+          <AccordionTrigger 
+            ref={setDropRef}
+            className={cn(
+              "text-lg font-bold text-gray-700 p-4 hover:no-underline w-full data-[state=open]:border-b transition-colors duration-200",
+              isOver && "bg-blue-50 border-blue-300 border-2"
+            )}
+          >
             <div className="flex items-center gap-3 w-full">
               <Input
                 value={icon}
@@ -1411,44 +1563,32 @@ const CategoryAccordion = ({
             </div>
           </AccordionTrigger>
           <AccordionContent className="p-4 pt-6">
-            <DndContext
-              sensors={useSensors(
-                useSensor(PointerSensor),
-                useSensor(TouchSensor)
-              )}
-              collisionDetection={closestCenter}
-              onDragEnd={(event) => {
-                const { active, over } = event
-                if (active.id !== over?.id) {
-                  const oldIndex = category.dishes.findIndex((dish) => dish.id === active.id)
-                  const newIndex = category.dishes.findIndex((dish) => dish.id === over?.id)
-                  const newDishes = arrayMove(category.dishes, oldIndex, newIndex)
-                  onDishReorder?.(category.id, newDishes)
-                }
-              }}
-            >
-              <SortableContext
-                items={category.dishes.map(dish => dish.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-3">
-                  {category.dishes.map((dish) => (
-                    <SortableDish
-                      key={dish.id}
-                      dish={dish}
-                      onUpdateDish={(updatedDish) => onDishUpdate(category.id, updatedDish)}
-                      onDuplicateDish={() => onDishDuplicate(category.id, dish)}
-                      onDeleteDish={() => onDishDelete(category.id, dish.id)}
-                      availableTags={availableTags}
-                      restaurantId={restaurantId}
-                      showBulkCheckbox={showBulkCheckbox}
-                      isSelectedForBulk={selectedBulkItems.includes(dish.id)}
-                      onBulkToggle={onBulkToggle}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            <div className="space-y-3">
+              {category.dishes.map((dish) => (
+                <SortableDish
+                  key={dish.id}
+                  dish={dish}
+                  onUpdateDish={(updatedDish) => onDishUpdate(category.id, updatedDish)}
+                  onDuplicateDish={() => onDishDuplicate(category.id, dish)}
+                  onDeleteDish={() => onDishDelete(category.id, dish.id)}
+                  availableTags={availableTags}
+                  restaurantId={restaurantId}
+                  showBulkCheckbox={showBulkCheckbox}
+                  isSelectedForBulk={selectedBulkItems.includes(dish.id)}
+                  onBulkToggle={onBulkToggle}
+                />
+              ))}
+            </div>
+            
+            {/* Zona di drop per trasferimento piatti */}
+            {isOver && (
+              <div className="mt-3 p-3 border-2 border-dashed border-blue-400 bg-blue-50 rounded-xl text-center">
+                <p className="text-blue-700 font-medium text-sm">
+                  🍽️ Rilascia qui per spostare il piatto in "{category.name}"
+                </p>
+              </div>
+            )}
+            
             <button
               className="relative w-full mt-4 rounded-2xl border-b-4 border-gray-900/20 font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0"
               onClick={() => onAddDish(category.id)}
@@ -2761,14 +2901,126 @@ export default function MenuAdminPage() {
     }
   }
 
-  const handleCategoryDragEnd = (event: DragEndEvent) => {
+  // Funzione per trasferire un piatto tra categorie
+  const handleDishTransfer = async (dishId: string, targetCategoryId: string) => {
+    try {
+      console.log('🍽️ Trasferisco piatto:', { dishId, targetCategoryId })
+      
+      const response = await fetch(`/api/menu/item/${dishId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryId: targetCategoryId })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Piatto trasferito con successo')
+        // Ricarica i dati del menu per riflettere il cambiamento
+        await loadMenuData()
+        
+        toast({
+          title: "✅ Piatto spostato!",
+          description: "Il piatto è stato trasferito nella nuova categoria.",
+          duration: 3000,
+        })
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Errore sconosciuto' }))
+        console.error('❌ Errore nel trasferimento:', errorData)
+        
+        toast({
+          title: "❌ Errore nel trasferimento",
+          description: `Impossibile spostare il piatto: ${errorData.error || 'Errore sconosciuto'}`,
+          variant: "destructive",
+          duration: 4000,
+        })
+      }
+    } catch (err) {
+      console.error('❌ Errore di rete nel trasferimento:', err)
+      
+      toast({
+        title: "❌ Errore di connessione",
+        description: "Impossibile spostare il piatto. Verifica la connessione internet.",
+        variant: "destructive",
+        duration: 4000,
+      })
+    }
+  }
+
+  // Funzione helper per trovare la categoria di un piatto
+  const findCategoryByDishId = (dishId: string): Category | undefined => {
+    return categories.find(cat => cat.dishes.some(dish => dish.id === dishId))
+  }
+
+  // Gestione drag and drop unificata per piatti e categorie
+  const handleUnifiedDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-    if (active.id !== over?.id) {
+    
+    if (!over || active.id === over.id) return
+    
+    console.log('🖱️ Drag end event:', {
+      activeId: active.id,
+      overId: over.id,
+      activeType: typeof active.id,
+      overType: typeof over.id
+    })
+    
+    // Determina se stiamo trascinando una categoria o un piatto
+    const isActiveCategory = categories.some(cat => cat.id === active.id)
+    const isOverCategory = categories.some(cat => cat.id === over.id)
+    
+    if (isActiveCategory && isOverCategory) {
+      // Drag di categoria: riordino categorie
+      console.log('📂 Riordinando categorie')
       const oldIndex = categories.findIndex((cat) => cat.id === active.id)
-      const newIndex = categories.findIndex((cat) => cat.id === over?.id)
+      const newIndex = categories.findIndex((cat) => cat.id === over.id)
       const newCategories = arrayMove(categories, oldIndex, newIndex)
       handleCategoryReorder(newCategories)
+    } else if (!isActiveCategory) {
+      // Drag di piatto
+      const activeDish = categories.flatMap(cat => cat.dishes).find(dish => dish.id === active.id)
+      const activeCategory = findCategoryByDishId(active.id as string)
+      
+      if (!activeDish || !activeCategory) {
+        console.warn('⚠️ Piatto o categoria non trovati')
+        return
+      }
+      
+      if (isOverCategory) {
+        // Trasferimento a categoria diversa
+        const targetCategoryId = over.id as string
+        
+        if (targetCategoryId !== activeCategory.id) {
+          console.log(`🔄 Trasferendo piatto "${activeDish.name}" da "${activeCategory.name}" alla categoria ${targetCategoryId}`)
+          handleDishTransfer(activeDish.id, targetCategoryId)
+        }
+      } else {
+        // Riordino all'interno della stessa categoria o tra categorie
+        const overDish = categories.flatMap(cat => cat.dishes).find(dish => dish.id === over.id)
+        const overCategory = findCategoryByDishId(over.id as string)
+        
+        if (!overDish || !overCategory) {
+          console.warn('⚠️ Piatto o categoria target non trovati')
+          return
+        }
+        
+        if (activeCategory.id === overCategory.id) {
+          // Riordino nella stessa categoria
+          console.log(`🔄 Riordinando piatti nella categoria "${activeCategory.name}"`)
+          const oldIndex = activeCategory.dishes.findIndex((dish) => dish.id === active.id)
+          const newIndex = activeCategory.dishes.findIndex((dish) => dish.id === over.id)
+          const newDishes = arrayMove(activeCategory.dishes, oldIndex, newIndex)
+          handleDishReorder(activeCategory.id, newDishes)
+        } else {
+          // Trasferimento a categoria diversa
+          console.log(`🔄 Trasferendo piatto "${activeDish.name}" da "${activeCategory.name}" a "${overCategory.name}"`)
+          handleDishTransfer(activeDish.id, overCategory.id)
+        }
+      }
     }
+  }
+
+  const handleCategoryDragEnd = (event: DragEndEvent) => {
+    // Questa funzione ora è deprecata, usiamo handleUnifiedDragEnd
+    handleUnifiedDragEnd(event)
   }
 
   if (status === "loading" || isLoading) {
@@ -2941,10 +3193,13 @@ export default function MenuAdminPage() {
         <DndContext
           sensors={searchQuery ? [] : sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleCategoryDragEnd}
+          onDragEnd={handleUnifiedDragEnd}
         >
           <SortableContext
-            items={filteredCategories.map(cat => cat.id)}
+            items={[
+              ...filteredCategories.map(cat => cat.id),
+              ...filteredCategories.flatMap(cat => cat.dishes.map(dish => dish.id))
+            ]}
             strategy={verticalListSortingStrategy}
           >
             <Accordion 
