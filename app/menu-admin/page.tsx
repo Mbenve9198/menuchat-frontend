@@ -4238,73 +4238,78 @@ export default function MenuAdminPage() {
                 </div>
               </div>
 
-              {/* Sezione Fornitori */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              {/* Sezione Fornitori - Mobile Optimized */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                {/* Header Mobile-First */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2">
                     🏭 Fornitori
                   </h3>
                   <CustomButton
                     onClick={() => handleOpenSupplierDialog()}
-                    size="sm"
-                    className="flex items-center gap-2"
+                    className="w-full h-12 text-base font-semibold flex items-center justify-center gap-2"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                     Aggiungi Fornitore
                   </CustomButton>
                 </div>
                 
                 {brandSettings.suppliers.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {brandSettings.suppliers.map((supplier, index) => (
-                      <div key={supplier.id || (supplier as any)._id || index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                        <img
-                          src={supplier.logoUrl}
-                          alt={supplier.name}
-                          className="w-16 h-16 object-contain rounded-lg border border-gray-200 bg-white"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{supplier.name}</h4>
-                          <p className="text-sm text-gray-500">Logo fornitore</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CustomButton
-                            onClick={() => handleOpenSupplierDialog(supplier)}
-                            size="sm"
-                            variant="outline"
-                            className="flex items-center gap-1"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            Modifica
-                          </CustomButton>
-                          <CustomButton
-                            onClick={() => handleDeleteSupplier(supplier.id || (supplier as any)._id)}
-                            size="sm"
-                            variant="outline"
-                            className="flex items-center gap-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Elimina
-                          </CustomButton>
+                      <div key={supplier.id || (supplier as any)._id || index} className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+                        {/* Supplier Info - Mobile Layout */}
+                        <div className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <img
+                              src={supplier.logoUrl}
+                              alt={supplier.name}
+                              className="w-12 h-12 object-contain rounded-lg border border-gray-200 bg-white flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 text-base truncate">{supplier.name}</h4>
+                              <p className="text-sm text-gray-500">Logo fornitore</p>
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons - Mobile Touch-Friendly */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <CustomButton
+                              onClick={() => handleOpenSupplierDialog(supplier)}
+                              variant="outline"
+                              className="h-11 text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Modifica
+                            </CustomButton>
+                            <CustomButton
+                              onClick={() => handleDeleteSupplier(supplier.id || (supplier as any)._id)}
+                              variant="outline"
+                              className="h-11 text-sm font-medium flex items-center justify-center gap-2 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Elimina
+                            </CustomButton>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl">🏭</span>
+                  <div className="text-center py-8 px-4">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-3xl">🏭</span>
                     </div>
-                    <p className="text-gray-500 mb-4">Nessun fornitore aggiunto</p>
-                    <p className="text-sm text-gray-400">
+                    <h4 className="font-semibold text-gray-800 mb-2 text-lg">Nessun fornitore</h4>
+                    <p className="text-gray-500 text-base leading-relaxed">
                       Aggiungi i loghi dei tuoi fornitori per mostrarli nel footer del menu
                     </p>
                   </div>
                 )}
                 
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                  <h4 className="font-medium text-blue-900 mb-2 text-base">💡 Come funziona:</h4>
+                  <ul className="text-sm text-blue-800 space-y-2">
                     <li>• I fornitori verranno mostrati nel footer del menu pubblico</li>
                     <li>• I loghi scorreranno automaticamente in orizzontale</li>
                     <li>• Ideale per valorizzare partnership e qualità</li>
@@ -4341,48 +4346,48 @@ export default function MenuAdminPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Supplier Dialog */}
+        {/* Supplier Dialog - Mobile Optimized */}
         <Dialog open={showAddSupplierDialog} onOpenChange={setShowAddSupplierDialog}>
-          <DialogContent className="w-full max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-gray-800">
+          <DialogContent className="w-full max-w-sm h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800">
                 {editingSupplier ? '✏️ Modifica Fornitore' : '➕ Aggiungi Fornitore'}
               </DialogTitle>
-              <DialogDescription className="text-gray-600">
+              <DialogDescription className="text-gray-600 text-base">
                 {editingSupplier ? 'Modifica le informazioni del fornitore' : 'Aggiungi un nuovo fornitore al tuo menu'}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
               {/* Nome Fornitore */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-base font-semibold text-gray-700 mb-3">
                   Nome Fornitore *
                 </label>
                 <Input
                   value={supplierForm.name}
                   onChange={(e) => setSupplierForm(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Es: Azienda Agricola Bio, Caseificio Locale..."
-                  className="w-full"
+                  className="w-full h-12 text-base"
                   maxLength={100}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 mt-2 leading-relaxed">
                   Il nome verrà mostrato sotto il logo nel footer del menu
                 </p>
               </div>
 
               {/* Logo Fornitore */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-base font-semibold text-gray-700 mb-3">
                   Logo Fornitore *
                 </label>
                 
                 {supplierForm.logoUrl && (
-                  <div className="mb-4 flex justify-center">
+                  <div className="mb-6 flex justify-center">
                     <img
                       src={supplierForm.logoUrl}
                       alt="Anteprima logo"
-                      className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                      className="w-32 h-32 object-contain rounded-xl border border-gray-200 bg-gray-50"
                     />
                   </div>
                 )}
@@ -4402,26 +4407,33 @@ export default function MenuAdminPage() {
                   className="w-full"
                 />
                 
-                <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-3 rounded-lg">
-                  💡 Consigliato: logo su sfondo trasparente, formato quadrato, dimensione minima 200x200px
-                </p>
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h4 className="font-medium text-blue-900 mb-2">💡 Consigli per il logo:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Sfondo trasparente o bianco</li>
+                    <li>• Formato quadrato preferibile</li>
+                    <li>• Dimensione minima 200x200px</li>
+                    <li>• File PNG o JPG</li>
+                  </ul>
+                </div>
               </div>
             </div>
             
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
-              <CustomButton
-                onClick={() => setShowAddSupplierDialog(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Annulla
-              </CustomButton>
+            {/* Buttons - Mobile Touch-Friendly */}
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200 space-y-3">
               <CustomButton
                 onClick={handleSaveSupplier}
-                className="flex-1"
+                className="w-full h-14 text-base font-semibold"
                 disabled={!supplierForm.name.trim() || !supplierForm.logoUrl}
               >
                 {editingSupplier ? '💾 Salva Modifiche' : '➕ Aggiungi Fornitore'}
+              </CustomButton>
+              <CustomButton
+                onClick={() => setShowAddSupplierDialog(false)}
+                variant="outline"
+                className="w-full h-12 text-base font-medium"
+              >
+                Annulla
               </CustomButton>
             </div>
           </DialogContent>

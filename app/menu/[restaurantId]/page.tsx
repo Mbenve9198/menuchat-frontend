@@ -978,28 +978,28 @@ export default function PublicMenuPage() {
         <div className="max-w-4xl mx-auto">
           {/* Suppliers Section */}
           {designSettings.suppliers && designSettings.suppliers.length > 0 && (
-            <div className="py-8 px-6">
-              <h3 className="text-center text-lg font-semibold text-gray-800 mb-6">
+            <div className="py-10 px-6">
+              <h3 className="text-center text-xl font-bold text-gray-800 mb-8">
                 I nostri fornitori
               </h3>
               
               {/* Scrolling Suppliers Container */}
               <div className="relative overflow-hidden">
-                <div className="flex animate-scroll-x space-x-8 w-max">
+                <div className="flex animate-scroll-x space-x-12 w-max">
                   {/* Duplicate suppliers for seamless loop */}
                   {[...designSettings.suppliers, ...designSettings.suppliers].map((supplier, index) => (
                     <div 
                       key={`${supplier.id || (supplier as any)._id || index}-${index}`}
-                      className="flex flex-col items-center space-y-2 min-w-[120px]"
+                      className="flex flex-col items-center space-y-3 min-w-[160px]"
                     >
-                      <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center p-2">
+                      <div className="w-24 h-24 bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center p-3 shadow-sm">
                         <img
                           src={supplier.logoUrl}
                           alt={supplier.name}
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>
-                      <p className="text-xs text-gray-600 text-center font-medium leading-tight">
+                      <p className="text-sm text-gray-700 text-center font-semibold leading-tight max-w-[140px]">
                         {supplier.name}
                       </p>
                     </div>
