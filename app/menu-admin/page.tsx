@@ -107,6 +107,15 @@ type Category = {
   dishes: Dish[]
 }
 
+type Supplier = {
+  _id: string
+  name: string
+  logoUrl: string
+  logoCloudinaryId?: string
+  sortOrder: number
+  isActive: boolean
+}
+
 type MenuData = {
   menu: {
     id: string
@@ -1748,7 +1757,17 @@ export default function MenuAdminPage() {
 
   // Stati per la sezione Brand
   const [showBrandDialog, setShowBrandDialog] = React.useState(false)
-  const [brandSettings, setBrandSettings] = React.useState({
+  const [brandSettings, setBrandSettings] = React.useState<{
+    primaryColor: string
+    secondaryColor: string
+    coverImageUrl: string
+    logoUrl: string
+    hideDescription: boolean
+    hideIngredients: boolean
+    tagDisplayMode: string
+    fontFamily: string
+    suppliers: Supplier[]
+  }>({
     primaryColor: '#3B82F6',
     secondaryColor: '#64748B',
     coverImageUrl: '',
@@ -1756,9 +1775,19 @@ export default function MenuAdminPage() {
     hideDescription: false,
     hideIngredients: false,
     tagDisplayMode: 'full',
-    fontFamily: 'Inter'
+    fontFamily: 'Inter',
+    suppliers: []
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
+  
+  // Stati per gestire i fornitori
+  const [showAddSupplierDialog, setShowAddSupplierDialog] = React.useState(false)
+  const [editingSupplier, setEditingSupplier] = React.useState<Supplier | null>(null)
+  const [supplierForm, setSupplierForm] = React.useState({
+    name: '',
+    logoUrl: ''
+  })
+  const [isUploadingSupplierLogo, setIsUploadingSupplierLogo] = React.useState(false)
 
   // Stati per le traduzioni
   const [showTranslationsDialog, setShowTranslationsDialog] = React.useState(false)
@@ -1941,7 +1970,8 @@ export default function MenuAdminPage() {
           hideDescription: data.data.menu.designSettings.hideDescription || false,
           hideIngredients: data.data.menu.designSettings.hideIngredients || false,
           tagDisplayMode: data.data.menu.designSettings.tagDisplayMode || 'full',
-          fontFamily: data.data.menu.designSettings.fontFamily || 'Inter'
+          fontFamily: data.data.menu.designSettings.fontFamily || 'Inter',
+          suppliers: data.data.menu.designSettings.suppliers || []
         })
       }
       
@@ -2848,6 +2878,128 @@ export default function MenuAdminPage() {
       }
     } catch (err) {
       console.error('Error updating font family:', err)
+    }
+  }
+
+  // Funzioni per gestione Fornitori
+  const handleOpenSupplierDialog = (supplier: Supplier | null = null) => {
+    if (supplier) {
+      setEditingSupplier(supplier)
+      setSupplierForm({
+        name: supplier.name,
+        logoUrl: supplier.logoUrl
+      })
+    } else {
+      setEditingSupplier(null)
+      setSupplierForm({
+        name: '',
+        logoUrl: ''
+      })
+    }
+    setShowAddSupplierDialog(true)
+  }
+
+  const handleSupplierLogoUpload = (fileUrl: string) => {
+    setSupplierForm(prev => ({
+      ...prev,
+      logoUrl: fileUrl
+    }))
+  }
+
+  const handleSaveSupplier = async () => {
+    if (!supplierForm.name.trim()) {
+      alert('Il nome del fornitore è obbligatorio')
+      return
+    }
+    
+    if (!supplierForm.logoUrl) {
+      alert('Il logo del fornitore è obbligatorio')
+      return
+    }
+
+    try {
+      const suppliers = [...brandSettings.suppliers]
+      
+      if (editingSupplier) {
+        // Modifica fornitore esistente
+        const index = suppliers.findIndex(s => s._id === editingSupplier._id)
+        if (index !== -1) {
+          suppliers[index] = {
+            ...suppliers[index],
+            name: supplierForm.name.trim(),
+            logoUrl: supplierForm.logoUrl
+          }
+        }
+      } else {
+        // Aggiungi nuovo fornitore
+        const newSupplier = {
+          _id: Date.now().toString(), // ID temporaneo per il frontend
+          name: supplierForm.name.trim(),
+          logoUrl: supplierForm.logoUrl,
+          sortOrder: suppliers.length,
+          isActive: true
+        }
+        suppliers.push(newSupplier)
+      }
+      
+      const updatedSettings = {
+        ...brandSettings,
+        suppliers
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+        setShowAddSupplierDialog(false)
+        setSupplierForm({ name: '', logoUrl: '' })
+        setEditingSupplier(null)
+        alert(`Fornitore ${editingSupplier ? 'aggiornato' : 'aggiunto'} con successo!`)
+      } else {
+        alert('Errore nel salvataggio del fornitore')
+      }
+    } catch (err) {
+      console.error('Error saving supplier:', err)
+      alert('Errore nel salvataggio del fornitore')
+    }
+  }
+
+  const handleDeleteSupplier = async (supplierId: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo fornitore?')) {
+      return
+    }
+
+    try {
+      const suppliers = brandSettings.suppliers.filter(s => s._id !== supplierId)
+      
+      const updatedSettings = {
+        ...brandSettings,
+        suppliers
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+        alert('Fornitore eliminato con successo!')
+      } else {
+        alert('Errore nell\'eliminazione del fornitore')
+      }
+    } catch (err) {
+      console.error('Error deleting supplier:', err)
+      alert('Errore nell\'eliminazione del fornitore')
     }
   }
 
@@ -4079,6 +4231,81 @@ export default function MenuAdminPage() {
                 </div>
               </div>
 
+              {/* Sezione Fornitori */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    🏭 Fornitori
+                  </h3>
+                  <CustomButton
+                    onClick={() => handleOpenSupplierDialog()}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Aggiungi Fornitore
+                  </CustomButton>
+                </div>
+                
+                {brandSettings.suppliers.length > 0 ? (
+                  <div className="space-y-4">
+                    {brandSettings.suppliers.map((supplier, index) => (
+                      <div key={supplier._id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                        <img
+                          src={supplier.logoUrl}
+                          alt={supplier.name}
+                          className="w-16 h-16 object-contain rounded-lg border border-gray-200 bg-white"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{supplier.name}</h4>
+                          <p className="text-sm text-gray-500">Logo fornitore</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CustomButton
+                            onClick={() => handleOpenSupplierDialog(supplier)}
+                            size="sm"
+                            variant="outline"
+                            className="flex items-center gap-1"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            Modifica
+                          </CustomButton>
+                          <CustomButton
+                            onClick={() => handleDeleteSupplier(supplier._id)}
+                            size="sm"
+                            variant="outline"
+                            className="flex items-center gap-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Elimina
+                          </CustomButton>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🏭</span>
+                    </div>
+                    <p className="text-gray-500 mb-4">Nessun fornitore aggiunto</p>
+                    <p className="text-sm text-gray-400">
+                      Aggiungi i loghi dei tuoi fornitori per mostrarli nel footer del menu
+                    </p>
+                  </div>
+                )}
+                
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h4 className="font-medium text-blue-900 mb-2">💡 Come funziona:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• I fornitori verranno mostrati nel footer del menu pubblico</li>
+                    <li>• I loghi scorreranno automaticamente in orizzontale</li>
+                    <li>• Ideale per valorizzare partnership e qualità</li>
+                    <li>• Consigliato: loghi su sfondo trasparente o bianco</li>
+                  </ul>
+                </div>
+              </div>
+
               {/* Anteprima URL Menu Pubblico */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
                 <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
@@ -4102,6 +4329,92 @@ export default function MenuAdminPage() {
                 onClick={() => setShowBrandDialog(false)}
               >
                 ✅ Fatto
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Supplier Dialog */}
+        <Dialog open={showAddSupplierDialog} onOpenChange={setShowAddSupplierDialog}>
+          <DialogContent className="w-full max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-800">
+                {editingSupplier ? '✏️ Modifica Fornitore' : '➕ Aggiungi Fornitore'}
+              </DialogTitle>
+              <DialogDescription className="text-gray-600">
+                {editingSupplier ? 'Modifica le informazioni del fornitore' : 'Aggiungi un nuovo fornitore al tuo menu'}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Nome Fornitore */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Nome Fornitore *
+                </label>
+                <Input
+                  value={supplierForm.name}
+                  onChange={(e) => setSupplierForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Es: Azienda Agricola Bio, Caseificio Locale..."
+                  className="w-full"
+                  maxLength={100}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Il nome verrà mostrato sotto il logo nel footer del menu
+                </p>
+              </div>
+
+              {/* Logo Fornitore */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Logo Fornitore *
+                </label>
+                
+                {supplierForm.logoUrl && (
+                  <div className="mb-4 flex justify-center">
+                    <img
+                      src={supplierForm.logoUrl}
+                      alt="Anteprima logo"
+                      className="w-24 h-24 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                    />
+                  </div>
+                )}
+                
+                <MediaUpload
+                  onFileSelect={(fileUrl, fileType) => {
+                    if (fileType === "image") {
+                      handleSupplierLogoUpload(fileUrl)
+                    } else {
+                      alert("Solo le immagini sono supportate")
+                    }
+                  }}
+                  selectedFile={isUploadingSupplierLogo ? "updating" : supplierForm.logoUrl || ""}
+                  mediaType="image"
+                  maxSize={5}
+                  label={supplierForm.logoUrl ? "Sostituisci Logo" : "Carica Logo"}
+                  className="w-full"
+                />
+                
+                <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-3 rounded-lg">
+                  💡 Consigliato: logo su sfondo trasparente, formato quadrato, dimensione minima 200x200px
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <CustomButton
+                onClick={() => setShowAddSupplierDialog(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Annulla
+              </CustomButton>
+              <CustomButton
+                onClick={handleSaveSupplier}
+                className="flex-1"
+                disabled={!supplierForm.name.trim() || !supplierForm.logoUrl}
+              >
+                {editingSupplier ? '💾 Salva Modifiche' : '➕ Aggiungi Fornitore'}
               </CustomButton>
             </div>
           </DialogContent>

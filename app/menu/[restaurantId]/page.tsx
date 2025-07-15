@@ -39,6 +39,16 @@ interface DesignSettings {
   hideIngredients?: boolean
   tagDisplayMode?: string
   fontFamily?: string
+  suppliers?: Supplier[]
+}
+
+interface Supplier {
+  _id: string
+  name: string
+  logoUrl: string
+  logoCloudinaryId?: string
+  sortOrder: number
+  isActive: boolean
 }
 
 interface Tag {
@@ -965,8 +975,44 @@ export default function PublicMenuPage() {
 
       {/* Footer */}
       <div className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-4xl mx-auto p-6 text-center text-gray-500 text-sm">
-          <p>Powered by <span className="font-medium">MenuChat</span></p>
+        <div className="max-w-4xl mx-auto">
+          {/* Suppliers Section */}
+          {designSettings.suppliers && designSettings.suppliers.length > 0 && (
+            <div className="py-8 px-6">
+              <h3 className="text-center text-lg font-semibold text-gray-800 mb-6">
+                I nostri fornitori
+              </h3>
+              
+              {/* Scrolling Suppliers Container */}
+              <div className="relative overflow-hidden">
+                <div className="flex animate-scroll-x space-x-8 w-max">
+                  {/* Duplicate suppliers for seamless loop */}
+                  {[...designSettings.suppliers, ...designSettings.suppliers].map((supplier, index) => (
+                    <div 
+                      key={`${supplier._id}-${index}`}
+                      className="flex flex-col items-center space-y-2 min-w-[120px]"
+                    >
+                      <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center p-2">
+                        <img
+                          src={supplier.logoUrl}
+                          alt={supplier.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600 text-center font-medium leading-tight">
+                        {supplier.name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Powered by MenuChat */}
+          <div className="p-6 text-center text-gray-500 text-sm border-t border-gray-100">
+            <p>Powered by <span className="font-medium">MenuChat</span></p>
+          </div>
         </div>
       </div>
 
