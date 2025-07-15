@@ -108,7 +108,7 @@ type Category = {
 }
 
 type Supplier = {
-  _id: string
+  id: string
   name: string
   logoUrl: string
   logoCloudinaryId?: string
@@ -1962,6 +1962,12 @@ export default function MenuAdminPage() {
       
       // Carica le impostazioni brand dal menu
       if (data.data.menu?.designSettings) {
+        // Normalizza i fornitori per assicurarsi che abbiano sempre un campo id
+        const normalizedSuppliers = (data.data.menu.designSettings.suppliers || []).map((supplier: any) => ({
+          ...supplier,
+          id: supplier.id || supplier._id || Date.now().toString()
+        }))
+
         setBrandSettings({
           primaryColor: data.data.menu.designSettings.primaryColor || '#3B82F6',
           secondaryColor: data.data.menu.designSettings.secondaryColor || '#64748B',
@@ -1971,7 +1977,7 @@ export default function MenuAdminPage() {
           hideIngredients: data.data.menu.designSettings.hideIngredients || false,
           tagDisplayMode: data.data.menu.designSettings.tagDisplayMode || 'full',
           fontFamily: data.data.menu.designSettings.fontFamily || 'Inter',
-          suppliers: data.data.menu.designSettings.suppliers || []
+          suppliers: normalizedSuppliers
         })
       }
       
@@ -2922,10 +2928,11 @@ export default function MenuAdminPage() {
       
       if (editingSupplier) {
         // Modifica fornitore esistente
-        const index = suppliers.findIndex(s => s._id === editingSupplier._id)
+        const index = suppliers.findIndex(s => (s.id || (s as any)._id) === (editingSupplier.id || (editingSupplier as any)._id))
         if (index !== -1) {
           suppliers[index] = {
             ...suppliers[index],
+            id: editingSupplier.id || (editingSupplier as any)._id || Date.now().toString(), // Assicura che ci sia sempre un id
             name: supplierForm.name.trim(),
             logoUrl: supplierForm.logoUrl
           }
@@ -2933,7 +2940,7 @@ export default function MenuAdminPage() {
       } else {
         // Aggiungi nuovo fornitore
         const newSupplier = {
-          _id: Date.now().toString(), // ID temporaneo per il frontend
+          id: Date.now().toString(), // ID temporaneo per il frontend
           name: supplierForm.name.trim(),
           logoUrl: supplierForm.logoUrl,
           sortOrder: suppliers.length,
@@ -2976,7 +2983,7 @@ export default function MenuAdminPage() {
     }
 
     try {
-      const suppliers = brandSettings.suppliers.filter(s => s._id !== supplierId)
+      const suppliers = brandSettings.suppliers.filter(s => (s.id || (s as any)._id) !== supplierId)
       
       const updatedSettings = {
         ...brandSettings,
@@ -4250,7 +4257,7 @@ export default function MenuAdminPage() {
                 {brandSettings.suppliers.length > 0 ? (
                   <div className="space-y-4">
                     {brandSettings.suppliers.map((supplier, index) => (
-                      <div key={supplier._id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                      <div key={supplier.id || (supplier as any)._id || index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         <img
                           src={supplier.logoUrl}
                           alt={supplier.name}
@@ -4271,7 +4278,7 @@ export default function MenuAdminPage() {
                             Modifica
                           </CustomButton>
                           <CustomButton
-                            onClick={() => handleDeleteSupplier(supplier._id)}
+                            onClick={() => handleDeleteSupplier(supplier.id || (supplier as any)._id)}
                             size="sm"
                             variant="outline"
                             className="flex items-center gap-1 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"

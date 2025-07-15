@@ -43,7 +43,7 @@ interface DesignSettings {
 }
 
 interface Supplier {
-  _id: string
+  id: string
   name: string
   logoUrl: string
   logoCloudinaryId?: string
@@ -989,7 +989,7 @@ export default function PublicMenuPage() {
                   {/* Duplicate suppliers for seamless loop */}
                   {[...designSettings.suppliers, ...designSettings.suppliers].map((supplier, index) => (
                     <div 
-                      key={`${supplier._id}-${index}`}
+                      key={`${supplier.id || (supplier as any)._id || index}-${index}`}
                       className="flex flex-col items-center space-y-2 min-w-[120px]"
                     >
                       <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center p-2">
