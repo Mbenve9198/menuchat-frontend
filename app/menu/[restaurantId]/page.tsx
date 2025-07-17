@@ -933,9 +933,21 @@ export default function PublicMenuPage() {
                           </div>
 
                           {dish.description && !designSettings.hideDescription && (
-                            <p className="text-gray-600 text-base mt-2 leading-relaxed">
-                              {dish.description}
-                            </p>
+                            <div className="text-gray-600 text-base mt-2 leading-relaxed">
+                              {dish.description.length > 120 ? (
+                                <p>
+                                  {dish.description.substring(0, 120)}...{' '}
+                                  <button 
+                                    onClick={() => setSelectedDish(dish)}
+                                    className="text-blue-600 hover:text-blue-800 font-medium underline"
+                                  >
+                                    leggi tutto
+                                  </button>
+                                </p>
+                              ) : (
+                                <p>{dish.description}</p>
+                              )}
+                            </div>
                           )}
 
                           {dish.ingredients && dish.ingredients.length > 0 && !designSettings.hideIngredients && (

@@ -246,8 +246,19 @@ const DishAccordionItem = ({
     const updates: any = {}
     
     if (field === "name" && name.trim() && name !== dish.name) {
-      updates.name = name.trim()
+      const trimmedName = name.trim()
+      if (trimmedName.length > 150) {
+        alert('Il nome del piatto non può superare i 150 caratteri')
+        setName(dish.name)
+        return
+      }
+      updates.name = trimmedName
     } else if (field === "description" && description !== (dish.description || "")) {
+      if (description.length > 700) {
+        alert('La descrizione non può superare i 700 caratteri')
+        setDescription(dish.description || '')
+        return
+      }
       updates.description = description
     } else if (field === "ingredients" && ingredients !== (dish.ingredients || []).join(", ")) {
       updates.ingredients = ingredients.split(",").map(i => i.trim()).filter(Boolean)
@@ -271,9 +282,21 @@ const DishAccordionItem = ({
         
         if (response.ok) {
           onUpdateDish({ ...dish, ...updates })
+        } else {
+          const errorData = await response.json()
+          if (errorData.field === 'description' && errorData.currentLength) {
+            alert(`La descrizione è troppo lunga: ${errorData.currentLength}/${errorData.maxLength} caratteri`)
+            setDescription(dish.description || '')
+          } else if (errorData.field === 'name' && errorData.currentLength) {
+            alert(`Il nome è troppo lungo: ${errorData.currentLength}/${errorData.maxLength} caratteri`)
+            setName(dish.name)
+          } else {
+            alert(errorData.error || 'Errore nel salvataggio')
+          }
         }
       } catch (err) {
         console.error('Error updating dish:', err)
+        alert('Errore di connessione. Riprova.')
       }
     }
   }
@@ -767,13 +790,27 @@ const DishAccordionItem = ({
                     )}
                   </button>
                 </div>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={() => handleFieldBlur("description")}
-                  className="mt-1 w-full border rounded-md p-2 h-20 text-sm"
-                  placeholder="Descrizione breve del piatto..."
-                />
+                <div className="space-y-2">
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    onBlur={() => handleFieldBlur("description")}
+                    className="mt-1 w-full border rounded-md p-2 h-20 text-sm"
+                    placeholder="Descrizione breve del piatto..."
+                  />
+                  <div className="flex justify-between items-center text-xs">
+                    <span className={`${
+                      description.length > 700 ? 'text-red-500' : 
+                      description.length > 600 ? 'text-orange-500' : 
+                      'text-gray-500'
+                    }`}>
+                      {description.length}/700 caratteri
+                    </span>
+                    {description.length > 700 && (
+                      <span className="text-red-500 text-xs">Limite superato!</span>
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <div className="flex items-center justify-between">
