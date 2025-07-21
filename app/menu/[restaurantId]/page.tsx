@@ -594,7 +594,9 @@ export default function PublicMenuPage() {
 
   return (
     <div 
-      className={`min-h-screen bg-gray-50 ${getFontClass(designSettings.fontFamily || 'Inter')}`}
+      className={`min-h-screen bg-gray-50 ${getFontClass(designSettings.fontFamily || 'Inter')} ${
+        designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-20' : ''
+      }`}
       style={{ 
         backgroundColor: designSettings.backgroundColor,
         color: designSettings.textColor 
