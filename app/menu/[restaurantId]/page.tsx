@@ -39,6 +39,7 @@ interface DesignSettings {
   hideIngredients?: boolean
   tagDisplayMode?: string
   fontFamily?: string
+  categoryBannerPosition?: string
   suppliers?: Supplier[]
 }
 
@@ -207,6 +208,16 @@ export default function PublicMenuPage() {
     // Aspetta che menuData sia caricato
     if (!menuData) return
 
+    // Controlla la modalità di posizionamento del banner
+    const categoryBannerPosition = menuData.menu?.designSettings?.categoryBannerPosition || 'dynamic'
+    
+    // Se è impostato come fisso in alto, mantieni sempre la navigation visibile
+    if (categoryBannerPosition === 'fixed-top') {
+      console.log('📌 Banner fisso in alto, navigation sempre visibile')
+      setShowNavigation(true)
+      return
+    }
+
     // Se non c'è immagine di copertina, mantieni sempre la navigation visibile
     const coverImageUrl = menuData.menu?.designSettings?.coverImageUrl
     if (!coverImageUrl) {
@@ -222,7 +233,7 @@ export default function PublicMenuPage() {
       return
     }
 
-    console.log('🔍 Setting up intersection observer for cover')
+    console.log('🔍 Setting up intersection observer for cover (dynamic mode)')
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -717,7 +728,7 @@ export default function PublicMenuPage() {
         </div>
       </div>
 
-      {/* Smart Navigation - appare solo quando la copertina non è visibile */}
+      {/* Smart Navigation - appare solo quando la copertina non è visibile o sempre se fisso */}
       {showNavigation && (
         <motion.div
           initial={{ opacity: 0, y: -50 }}
@@ -729,7 +740,9 @@ export default function PublicMenuPage() {
             stiffness: 300,
             damping: 25
           }}
-          className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg"
+          className={`${designSettings.categoryBannerPosition === 'fixed-top' 
+            ? 'fixed top-0 left-0 right-0 z-40' 
+            : 'fixed top-0 left-0 right-0 z-30'} bg-white/95 backdrop-blur-lg border-b border-gray-200 shadow-lg`}
         >
           <div className="max-w-4xl mx-auto p-3">
             {/* Filter Tags - solo quelli utilizzati con scorrimento orizzontale */}
@@ -823,7 +836,11 @@ export default function PublicMenuPage() {
       )}
 
       {/* Menu Content */}
-      <div className={`max-w-4xl mx-auto px-4 pb-8 ${showNavigation ? 'pt-20' : 'pt-2'}`}>
+      <div className={`max-w-4xl mx-auto px-4 pb-8 ${
+        showNavigation ? 
+          (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-32' : 'pt-20') 
+          : 'pt-2'
+      }`}>
         {filteredCategories.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

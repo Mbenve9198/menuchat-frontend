@@ -1803,6 +1803,7 @@ export default function MenuAdminPage() {
     hideIngredients: boolean
     tagDisplayMode: string
     fontFamily: string
+    categoryBannerPosition: string
     suppliers: Supplier[]
   }>({
     primaryColor: '#3B82F6',
@@ -1813,6 +1814,7 @@ export default function MenuAdminPage() {
     hideIngredients: false,
     tagDisplayMode: 'full',
     fontFamily: 'Inter',
+    categoryBannerPosition: 'dynamic',
     suppliers: []
   })
   const [isUpdatingBrand, setIsUpdatingBrand] = React.useState(false)
@@ -2014,6 +2016,7 @@ export default function MenuAdminPage() {
           hideIngredients: data.data.menu.designSettings.hideIngredients || false,
           tagDisplayMode: data.data.menu.designSettings.tagDisplayMode || 'full',
           fontFamily: data.data.menu.designSettings.fontFamily || 'Inter',
+          categoryBannerPosition: data.data.menu.designSettings.categoryBannerPosition || 'dynamic',
           suppliers: normalizedSuppliers
         })
       }
@@ -2921,6 +2924,29 @@ export default function MenuAdminPage() {
       }
     } catch (err) {
       console.error('Error updating font family:', err)
+    }
+  }
+
+  const handleBrandCategoryBannerUpdate = async (categoryBannerPosition: string) => {
+    try {
+      const updatedSettings = {
+        ...brandSettings,
+        categoryBannerPosition
+      }
+      
+      const response = await fetch(`/api/menu/${restaurantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designSettings: updatedSettings
+        })
+      })
+      
+      if (response.ok) {
+        setBrandSettings(updatedSettings)
+      }
+    } catch (err) {
+      console.error('Error updating category banner position:', err)
     }
   }
 
@@ -4272,6 +4298,75 @@ export default function MenuAdminPage() {
                     <li>• Le etichette nel dialog dettaglio sono sempre complete</li>
                     <li>• Utile per menu più puliti e minimalisti</li>
                   </ul>
+                </div>
+              </div>
+
+              {/* Posizionamento Banner Categorie */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    📍 Banner Categorie
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Scegli se il banner con categorie e filtri deve apparire subito o solo dopo lo scroll della copertina
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <input
+                      type="radio"
+                      id="banner-dynamic"
+                      name="categoryBannerPosition"
+                      value="dynamic"
+                      checked={brandSettings.categoryBannerPosition === 'dynamic'}
+                      onChange={(e) => handleBrandCategoryBannerUpdate(e.target.value)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
+                    />
+                    <label htmlFor="banner-dynamic" className="flex-1">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                        <span className="text-blue-500">🔄</span>
+                        <span>Dinamico (predefinito)</span>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Il banner appare solo dopo aver fatto scroll oltre la copertina. Ideale per menu con immagine di copertina.
+                      </p>
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <input
+                      type="radio"
+                      id="banner-fixed"
+                      name="categoryBannerPosition"
+                      value="fixed-top"
+                      checked={brandSettings.categoryBannerPosition === 'fixed-top'}
+                      onChange={(e) => handleBrandCategoryBannerUpdate(e.target.value)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
+                    />
+                    <label htmlFor="banner-fixed" className="flex-1">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                        <span className="text-green-500">📌</span>
+                        <span>Fisso in alto</span>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Il banner è sempre visibile in alto, anche sopra la copertina. Ottimo per accesso rapido alle categorie.
+                      </p>
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-start gap-2">
+                    <span className="text-yellow-600 text-sm">💡</span>
+                    <div className="text-xs text-yellow-800">
+                      <p className="font-medium mb-1">Suggerimento:</p>
+                      <ul className="space-y-1">
+                        <li>• Usa "Dinamico" se hai una bella copertina che vuoi mostrare per prima</li>
+                        <li>• Usa "Fisso" se vuoi dare priorità alla navigazione delle categorie</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
 
