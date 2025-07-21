@@ -595,7 +595,7 @@ export default function PublicMenuPage() {
   return (
     <div 
       className={`min-h-screen bg-gray-50 ${getFontClass(designSettings.fontFamily || 'Inter')} ${
-        designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-24' : ''
+        designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-28' : ''
       }`}
       style={{ 
         backgroundColor: designSettings.backgroundColor,
@@ -694,8 +694,8 @@ export default function PublicMenuPage() {
         >
           <div className={`max-w-4xl mx-auto px-4 ${
             designSettings.coverImageUrl ? 
-              (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-2 pb-1' : 'pt-4 pb-2') : 
-              (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-6 pb-1' : 'pt-12 pb-2')
+              (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-1 pb-0' : 'pt-4 pb-2') : 
+              (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-2 pb-0' : 'pt-12 pb-2')
           }`}>
             <div className="text-left ml-28">
               {/* Personalized Greeting - più piccolo */}
@@ -844,7 +844,7 @@ export default function PublicMenuPage() {
       {/* Menu Content */}
       <div className={`max-w-4xl mx-auto px-4 pb-8 ${
         showNavigation ? 
-          (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-32' : 'pt-20') 
+          (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-4' : 'pt-20') 
           : 'pt-2'
       }`}>
         {filteredCategories.length === 0 ? (
