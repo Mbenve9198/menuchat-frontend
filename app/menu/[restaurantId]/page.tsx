@@ -595,7 +595,7 @@ export default function PublicMenuPage() {
   return (
     <div 
       className={`min-h-screen bg-gray-50 ${getFontClass(designSettings.fontFamily || 'Inter')} ${
-        designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-20' : ''
+        designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-24' : ''
       }`}
       style={{ 
         backgroundColor: designSettings.backgroundColor,
@@ -692,7 +692,11 @@ export default function PublicMenuPage() {
           } : {}}
           ref={!designSettings.coverImageUrl ? coverRef : undefined}
         >
-          <div className={`max-w-4xl mx-auto px-4 ${designSettings.coverImageUrl ? 'pt-4 pb-2' : 'pt-12 pb-2'}`}>
+          <div className={`max-w-4xl mx-auto px-4 ${
+            designSettings.coverImageUrl ? 
+              (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-2 pb-1' : 'pt-4 pb-2') : 
+              (designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-6 pb-1' : 'pt-12 pb-2')
+          }`}>
             <div className="text-left ml-28">
               {/* Personalized Greeting - più piccolo */}
               {customerName && (
