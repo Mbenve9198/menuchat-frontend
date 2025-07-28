@@ -941,13 +941,13 @@ export default function PublicMenuPage() {
 
                         {/* Dish Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-3 mb-2">
-                            <h3 className="font-bold text-xl text-gray-900 leading-tight">
+                          <div className="flex flex-wrap items-start gap-x-3 gap-y-1 mb-2">
+                            <h3 className="font-bold text-xl text-gray-900 leading-tight break-words flex-1 min-w-0">
                               {dish.name}
                             </h3>
                             {designSettings.showPrices && (
                               <span 
-                                className="font-bold text-lg whitespace-nowrap"
+                                className="font-bold text-lg whitespace-nowrap flex-shrink-0"
                                 style={{ color: designSettings.primaryColor }}
                               >
                                 €{dish.price.toFixed(2)}
