@@ -940,48 +940,56 @@ export default function PublicMenuPage() {
                         )}
 
                         {/* Dish Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-3 mb-2">
-                            <h3 className="font-bold text-xl text-gray-900 leading-tight">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex flex-col gap-2 mb-2">
+                            <h3 className="font-bold text-xl text-gray-900 leading-tight break-words">
                               {dish.name}
                             </h3>
                             {designSettings.showPrices && (
-                              <span 
-                                className="font-bold text-lg whitespace-nowrap"
-                                style={{ color: designSettings.primaryColor }}
-                              >
-                                €{dish.price.toFixed(2)}
-                              </span>
+                              <div className="flex justify-end">
+                                <span 
+                                  className="font-bold text-lg px-3 py-1 rounded-lg shadow-sm bg-opacity-10"
+                                  style={{ 
+                                    color: designSettings.primaryColor,
+                                    backgroundColor: designSettings.primaryColor + '20'
+                                  }}
+                                >
+                                  €{dish.price.toFixed(2)}
+                                </span>
+                              </div>
                             )}
                           </div>
 
                           {dish.description && !designSettings.hideDescription && (
-                            <div className="text-gray-600 text-base mt-2 leading-relaxed">
+                            <div className="text-gray-600 text-base mt-2 leading-relaxed break-words">
                               {dish.description.length > 120 ? (
-                                <p>
+                                <p className="break-words">
                                   {dish.description.substring(0, 120)}...{' '}
                                   <button 
-                                    onClick={() => setSelectedDish(dish)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedDish(dish)
+                                    }}
                                     className="text-blue-600 hover:text-blue-800 font-medium underline"
                                   >
                                     leggi tutto
                                   </button>
                                 </p>
                               ) : (
-                                <p>{dish.description}</p>
+                                <p className="break-words">{dish.description}</p>
                               )}
                             </div>
                           )}
 
                           {dish.ingredients && dish.ingredients.length > 0 && !designSettings.hideIngredients && (
-                            <div className="mt-3">
+                            <div className="mt-3 break-words">
                               <span className="text-gray-700 font-medium text-sm">Ingredienti: </span>
-                              <span className="text-gray-500 text-sm">{dish.ingredients.join(', ')}</span>
+                              <span className="text-gray-500 text-sm break-words">{dish.ingredients.join(', ')}</span>
                             </div>
                           )}
 
                           {dish.tags.length > 0 && designSettings.tagDisplayMode !== 'hidden' && (
-                            <div className="flex flex-wrap gap-2 mt-3">
+                            <div className="flex flex-wrap gap-2 mt-3 overflow-hidden">
                               {dish.tags.map((tag) => {
                                 const tagContent = renderTag(tag, false)
                                 if (!tagContent) return null
@@ -989,7 +997,7 @@ export default function PublicMenuPage() {
                                 return (
                                   <span
                                     key={tag.id}
-                                    className={`flex items-center ${designSettings.tagDisplayMode === 'emoji-only' ? 'gap-0 text-lg' : 'gap-1'} px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${tag.color}`}
+                                    className={`flex items-center ${designSettings.tagDisplayMode === 'emoji-only' ? 'gap-0 text-lg' : 'gap-1'} px-3 py-1 rounded-full text-xs font-bold text-white shadow-md ${tag.color} break-words flex-shrink-0`}
                                   >
                                     {tagContent}
                                   </span>
