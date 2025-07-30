@@ -59,6 +59,12 @@ interface Tag {
   emoji?: string
 }
 
+interface Variant {
+  name: string
+  price: number
+  available: boolean
+}
+
 interface Dish {
   id: string
   name: string
@@ -68,6 +74,7 @@ interface Dish {
   tags: Tag[]
   description?: string
   ingredients?: string[]
+  variants?: Variant[]
 }
 
 interface Category {
@@ -946,12 +953,33 @@ export default function PublicMenuPage() {
                               {dish.name}
                             </h3>
                             {designSettings.showPrices && (
-                              <span 
-                                className="font-bold text-lg whitespace-nowrap flex-shrink-0"
-                                style={{ color: designSettings.primaryColor }}
-                              >
-                                €{dish.price.toFixed(2)}
-                              </span>
+                              dish.variants && dish.variants.length > 0 ? (
+                                <div className="flex flex-col gap-1 flex-shrink-0">
+                                  {dish.variants.filter(v => v.available).map((variant, index) => (
+                                    <div 
+                                      key={index}
+                                      className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1 border"
+                                    >
+                                      <span className="text-sm font-medium text-gray-700">
+                                        {variant.name}
+                                      </span>
+                                      <span 
+                                        className="font-bold text-base whitespace-nowrap"
+                                        style={{ color: designSettings.primaryColor }}
+                                      >
+                                        €{variant.price.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span 
+                                  className="font-bold text-lg whitespace-nowrap flex-shrink-0"
+                                  style={{ color: designSettings.primaryColor }}
+                                >
+                                  €{dish.price.toFixed(2)}
+                                </span>
+                              )
                             )}
                           </div>
 
@@ -1119,17 +1147,44 @@ export default function PublicMenuPage() {
                 </h2>
                 
                 {designSettings.showPrices && (
-                  <div className="flex items-center">
-                    <span 
-                      className="text-2xl md:text-3xl font-bold px-3 py-2 md:px-4 rounded-xl shadow-lg"
-                      style={{ 
-                        color: designSettings.primaryColor,
-                        backgroundColor: `${designSettings.primaryColor}15`
-                      }}
-                    >
-                      €{selectedDish.price.toFixed(2)}
-                    </span>
-                  </div>
+                  selectedDish.variants && selectedDish.variants.length > 0 ? (
+                    <div className="space-y-3">
+                      <h4 className="text-lg font-semibold text-gray-700">💰 Prezzi disponibili:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedDish.variants.filter(v => v.available).map((variant, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 shadow-sm"
+                          >
+                            <span className="font-medium text-gray-800">
+                              {variant.name}
+                            </span>
+                            <span 
+                              className="text-xl md:text-2xl font-bold px-3 py-1 rounded-lg"
+                              style={{ 
+                                color: designSettings.primaryColor,
+                                backgroundColor: `${designSettings.primaryColor}15`
+                              }}
+                            >
+                              €{variant.price.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <span 
+                        className="text-2xl md:text-3xl font-bold px-3 py-2 md:px-4 rounded-xl shadow-lg"
+                        style={{ 
+                          color: designSettings.primaryColor,
+                          backgroundColor: `${designSettings.primaryColor}15`
+                        }}
+                      >
+                        €{selectedDish.price.toFixed(2)}
+                      </span>
+                    </div>
+                  )
                 )}
               </motion.div>
 

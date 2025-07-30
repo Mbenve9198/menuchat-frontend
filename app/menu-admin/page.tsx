@@ -89,6 +89,12 @@ type Tag = {
   emoji?: string
 }
 
+type Variant = {
+  name: string
+  price: number
+  available: boolean
+}
+
 type Dish = {
   id: string
   name: string
@@ -98,6 +104,7 @@ type Dish = {
   tags: Tag[]
   description?: string
   ingredients?: string[]
+  variants?: Variant[]
 }
 
 type Category = {
@@ -220,6 +227,10 @@ const DishAccordionItem = ({
   const [newTagText, setNewTagText] = React.useState("")
   const [isCreatingTag, setIsCreatingTag] = React.useState(false)
   
+  // Stati per le varianti
+  const [hasVariants, setHasVariants] = React.useState(dish.variants && dish.variants.length > 0)
+  const [variants, setVariants] = React.useState<Variant[]>(dish.variants || [])
+  
   // Stati per gestione immagine
   const [showImageDialog, setShowImageDialog] = React.useState(false)
   const [isUpdatingImage, setIsUpdatingImage] = React.useState(false)
@@ -240,6 +251,8 @@ const DishAccordionItem = ({
     setPrice(dish.price.toFixed(2))
     setDescription(dish.description || "")
     setIngredients((dish.ingredients || []).join(", "))
+    setHasVariants(dish.variants && dish.variants.length > 0)
+    setVariants(dish.variants || [])
   }, [dish])
 
   const handleFieldBlur = async (field: "name" | "description" | "ingredients" | "price") => {
@@ -680,6 +693,74 @@ const DishAccordionItem = ({
     })
   }
 
+  // Funzioni per gestire le varianti
+  const handleVariantModeToggle = async (enabled: boolean) => {
+    setHasVariants(enabled)
+    
+    if (enabled && variants.length === 0) {
+      // Inizializza con varianti di esempio
+      setVariants([
+        { name: "Piccola", price: dish.price * 0.8, available: true },
+        { name: "Media", price: dish.price, available: true },
+        { name: "Grande", price: dish.price * 1.3, available: true }
+      ])
+    } else if (!enabled) {
+      // Salva il piatto senza varianti
+      await updateDishVariants([])
+    }
+  }
+
+  const addVariant = () => {
+    const newVariant: Variant = {
+      name: `Variante ${variants.length + 1}`,
+      price: dish.price,
+      available: true
+    }
+    setVariants([...variants, newVariant])
+  }
+
+  const removeVariant = (index: number) => {
+    if (variants.length > 1) {
+      setVariants(variants.filter((_, i) => i !== index))
+    }
+  }
+
+  const updateVariant = (index: number, field: keyof Variant, value: any) => {
+    const newVariants = [...variants]
+    newVariants[index] = { ...newVariants[index], [field]: value }
+    setVariants(newVariants)
+  }
+
+  const updateDishVariants = async (newVariants: Variant[]) => {
+    try {
+      const response = await fetch(`/api/menu/item/${dish.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variants: newVariants })
+      })
+
+      if (response.ok) {
+        const updatedDish = await response.json()
+        onUpdateDish(updatedDish.item)
+        toast({
+          title: "✅ Aggiornato",
+          description: "Varianti salvate con successo"
+        })
+      }
+    } catch (error) {
+      console.error('Error updating variants:', error)
+      toast({
+        title: "❌ Errore",
+        description: "Errore durante il salvataggio delle varianti",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const saveVariants = async () => {
+    await updateDishVariants(hasVariants ? variants : [])
+  }
+
   return (
     <>
       <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-gray-200">
@@ -836,6 +917,109 @@ const DishAccordionItem = ({
                   placeholder="Salmone, Olio, Sale..."
                 />
               </div>
+
+              {/* Sezione Varianti */}
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold text-gray-600">Varianti Piatto</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">
+                      {hasVariants ? "Multi-formato" : "Formato singolo"}
+                    </span>
+                    <Button
+                      type="button"
+                      variant={hasVariants ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleVariantModeToggle(!hasVariants)}
+                      className="h-7 px-3 text-xs"
+                    >
+                      {hasVariants ? "Disabilita" : "Abilita"} varianti
+                    </Button>
+                  </div>
+                </div>
+
+                {hasVariants && (
+                  <div className="space-y-3">
+                    <div className="text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      💡 <strong>Modalità Multi-formato:</strong> Crea diverse varianti dello stesso piatto (es. pizza piccola/media/grande, bevanda 33cl/50cl, etc.)
+                    </div>
+                    
+                    {variants.map((variant, index) => (
+                      <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Input
+                            value={variant.name}
+                            onChange={(e) => updateVariant(index, 'name', e.target.value)}
+                            className="flex-1 h-8 text-sm"
+                            placeholder="Nome variante (es. Piccola, Media...)"
+                          />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={variant.price.toFixed(2)}
+                            onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
+                            className="w-20 h-8 text-sm"
+                            placeholder="Prezzo"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateVariant(index, 'available', !variant.available)}
+                            className={cn(
+                              "h-8 w-8 p-0",
+                              variant.available ? "text-green-600" : "text-gray-400"
+                            )}
+                            title={variant.available ? "Disponibile" : "Non disponibile"}
+                          >
+                            {variant.available ? "✓" : "✗"}
+                          </Button>
+                          {variants.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeVariant(index)}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              title="Rimuovi variante"
+                            >
+                              🗑️
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addVariant}
+                        className="flex items-center gap-1 h-8 px-3 text-xs"
+                      >
+                        ➕ Aggiungi variante
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={saveVariants}
+                        className="flex items-center gap-1 h-8 px-3 text-xs"
+                      >
+                        💾 Salva varianti
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!hasVariants && (
+                  <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    🍽️ <strong>Modalità Formato Singolo:</strong> Il piatto ha un unico prezzo. Attiva le varianti per creare diverse opzioni (taglie, formati, etc.)
+                  </div>
+                )}
+              </div>
+
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-semibold text-gray-600">Etichette</label>
