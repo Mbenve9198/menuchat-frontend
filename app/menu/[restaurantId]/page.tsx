@@ -955,13 +955,19 @@ export default function PublicMenuPage() {
                             {designSettings.showPrices && (
                               dish.variants && dish.variants.length > 0 ? (
                                 <div className="flex flex-col gap-1 flex-shrink-0">
-                                  {dish.variants.filter(v => v.available).map((variant, index) => (
+                                  {dish.variants.map((variant, index) => (
                                     <div 
                                       key={index}
-                                      className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1 border"
+                                      className={`flex items-center gap-2 rounded-lg px-3 py-1 border ${
+                                        variant.available 
+                                          ? "bg-gray-50" 
+                                          : "bg-red-50 border-red-200 opacity-70"
+                                      }`}
                                     >
-                                      <span className="text-sm font-medium text-gray-700">
-                                        {variant.name}
+                                      <span className={`text-sm font-medium ${
+                                        variant.available ? "text-gray-700" : "text-red-600"
+                                      }`}>
+                                        {variant.name} {!variant.available && "(Non disponibile)"}
                                       </span>
                                       <span 
                                         className="font-bold text-base whitespace-nowrap"
@@ -1150,25 +1156,31 @@ export default function PublicMenuPage() {
                   selectedDish.variants && selectedDish.variants.length > 0 ? (
                     <div className="space-y-3">
                       <h4 className="text-lg font-semibold text-gray-700">💰 Prezzi disponibili:</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {selectedDish.variants.filter(v => v.available).map((variant, index) => (
-                          <div 
-                            key={index}
-                            className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 shadow-sm"
-                          >
-                            <span className="font-medium text-gray-800">
-                              {variant.name}
-                            </span>
-                            <span 
-                              className="text-xl md:text-2xl font-bold px-3 py-1 rounded-lg"
-                              style={{ 
-                                color: designSettings.primaryColor,
-                                backgroundColor: `${designSettings.primaryColor}15`
-                              }}
-                            >
-                              €{variant.price.toFixed(2)}
-                            </span>
-                          </div>
+                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                         {selectedDish.variants.map((variant, index) => (
+                                                     <div 
+                             key={index}
+                             className={`flex items-center justify-between border rounded-xl px-4 py-3 shadow-sm ${
+                               variant.available 
+                                 ? "bg-gray-50 border-gray-200" 
+                                 : "bg-red-50 border-red-200 opacity-70"
+                             }`}
+                           >
+                             <span className={`font-medium ${
+                               variant.available ? "text-gray-800" : "text-red-600"
+                             }`}>
+                               {variant.name} {!variant.available && "(Non disponibile)"}
+                             </span>
+                             <span 
+                               className="text-xl md:text-2xl font-bold px-3 py-1 rounded-lg"
+                               style={{ 
+                                 color: designSettings.primaryColor,
+                                 backgroundColor: `${designSettings.primaryColor}15`
+                               }}
+                             >
+                               €{variant.price.toFixed(2)}
+                             </span>
+                           </div>
                         ))}
                       </div>
                     </div>

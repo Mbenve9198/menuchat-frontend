@@ -230,6 +230,7 @@ const DishAccordionItem = ({
   // Stati per le varianti
   const [hasVariants, setHasVariants] = React.useState(dish.variants && dish.variants.length > 0)
   const [variants, setVariants] = React.useState<Variant[]>(dish.variants || [])
+  const [variantsSaveTimeout, setVariantsSaveTimeout] = React.useState<NodeJS.Timeout | null>(null)
   
   // Stati per gestione immagine
   const [showImageDialog, setShowImageDialog] = React.useState(false)
@@ -254,6 +255,15 @@ const DishAccordionItem = ({
     setHasVariants(dish.variants && dish.variants.length > 0)
     setVariants(dish.variants || [])
   }, [dish])
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (variantsSaveTimeout) {
+        clearTimeout(variantsSaveTimeout)
+      }
+    }
+  }, [variantsSaveTimeout])
 
   const handleFieldBlur = async (field: "name" | "description" | "ingredients" | "price") => {
     const updates: any = {}
@@ -699,29 +709,36 @@ const DishAccordionItem = ({
     
     if (enabled && variants.length === 0) {
       // Inizializza con varianti di esempio
-      setVariants([
-        { name: "Piccola", price: dish.price * 0.8, available: true },
+      const exampleVariants = [
+        { name: "Piccola", price: Math.round(dish.price * 0.8 * 100) / 100, available: true },
         { name: "Media", price: dish.price, available: true },
-        { name: "Grande", price: dish.price * 1.3, available: true }
-      ])
+        { name: "Grande", price: Math.round(dish.price * 1.3 * 100) / 100, available: true }
+      ]
+      setVariants(exampleVariants)
+      await updateDishVariants(exampleVariants)
     } else if (!enabled) {
       // Salva il piatto senza varianti
+      setVariants([])
       await updateDishVariants([])
     }
   }
 
-  const addVariant = () => {
+  const addVariant = async () => {
     const newVariant: Variant = {
       name: `Variante ${variants.length + 1}`,
       price: dish.price,
       available: true
     }
-    setVariants([...variants, newVariant])
+    const newVariants = [...variants, newVariant]
+    setVariants(newVariants)
+    await updateDishVariants(newVariants)
   }
 
-  const removeVariant = (index: number) => {
+  const removeVariant = async (index: number) => {
     if (variants.length > 1) {
-      setVariants(variants.filter((_, i) => i !== index))
+      const newVariants = variants.filter((_, i) => i !== index)
+      setVariants(newVariants)
+      await updateDishVariants(newVariants)
     }
   }
 
@@ -729,6 +746,15 @@ const DishAccordionItem = ({
     const newVariants = [...variants]
     newVariants[index] = { ...newVariants[index], [field]: value }
     setVariants(newVariants)
+    
+    // Debounce il salvataggio
+    if (variantsSaveTimeout) {
+      clearTimeout(variantsSaveTimeout)
+    }
+    const timeout = setTimeout(() => {
+      updateDishVariants(newVariants)
+    }, 1500)
+    setVariantsSaveTimeout(timeout)
   }
 
   const updateDishVariants = async (newVariants: Variant[]) => {
@@ -757,9 +783,7 @@ const DishAccordionItem = ({
     }
   }
 
-  const saveVariants = async () => {
-    await updateDishVariants(hasVariants ? variants : [])
-  }
+
 
   return (
     <>
@@ -808,16 +832,24 @@ const DishAccordionItem = ({
                   onBlur={() => handleFieldBlur("name")}
                   className="font-bold text-gray-800 text-base border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent w-full"
                 />
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-gray-400">€</span>
-                  <Input
-                    type="text"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    onBlur={() => handleFieldBlur("price")}
-                    className="w-20 h-8 p-1 text-lg font-semibold border-gray-300 focus:ring-green-500"
-                  />
-                </div>
+                {!hasVariants && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-gray-400">€</span>
+                    <Input
+                      type="text"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      onBlur={() => handleFieldBlur("price")}
+                      className="w-20 h-8 p-1 text-lg font-semibold border-gray-300 focus:ring-green-500"
+                    />
+                  </div>
+                )}
+
+                {hasVariants && (
+                  <div className="text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded-lg p-2 mt-1">
+                    💡 <strong>Prezzo gestito dalle varianti</strong>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col items-center gap-2 px-2" onClick={(e) => e.stopPropagation()}>
                 <Switch
@@ -924,7 +956,7 @@ const DishAccordionItem = ({
                   <label className="text-sm font-semibold text-gray-600">Varianti Piatto</label>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">
-                      {hasVariants ? "Multi-formato" : "Formato singolo"}
+                      {hasVariants ? `Multi-formato (${variants.length} varianti)` : "Formato singolo"}
                     </span>
                     <CustomButton
                       type="button"
@@ -946,45 +978,43 @@ const DishAccordionItem = ({
                     
                     {variants.map((variant, index) => (
                       <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-3">
                           <Input
                             value={variant.name}
                             onChange={(e) => updateVariant(index, 'name', e.target.value)}
                             className="flex-1 h-8 text-sm"
                             placeholder="Nome variante (es. Piccola, Media...)"
                           />
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={variant.price.toFixed(2)}
-                            onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
-                            className="w-20 h-8 text-sm"
-                            placeholder="Prezzo"
-                          />
-                          <CustomButton
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateVariant(index, 'available', !variant.available)}
-                            className={cn(
-                              "h-8 w-8 p-0",
-                              variant.available ? "text-green-600" : "text-gray-400"
-                            )}
-                            title={variant.available ? "Disponibile" : "Non disponibile"}
-                          >
-                            {variant.available ? "✓" : "✗"}
-                          </CustomButton>
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-400 text-sm">€</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={variant.price.toFixed(2)}
+                              onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
+                              className="w-20 h-8 text-sm"
+                              placeholder="Prezzo"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Switch
+                              checked={variant.available}
+                              onCheckedChange={(checked) => updateVariant(index, 'available', checked)}
+                              className="scale-75"
+                            />
+                            <span className="text-xs text-gray-500 whitespace-nowrap">
+                              {variant.available ? "Attiva" : "Disattiva"}
+                            </span>
+                          </div>
                           {variants.length > 1 && (
-                            <CustomButton
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="sm"
                               onClick={() => removeVariant(index)}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
                               title="Rimuovi variante"
                             >
-                              🗑️
-                            </CustomButton>
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1000,15 +1030,9 @@ const DishAccordionItem = ({
                       >
                         ➕ Aggiungi variante
                       </CustomButton>
-                      <CustomButton
-                        type="button"
-                        variant="default"
-                        size="sm"
-                        onClick={saveVariants}
-                        className="flex items-center gap-1 h-8 px-3 text-xs"
-                      >
-                        💾 Salva varianti
-                      </CustomButton>
+                      <div className="text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-1 flex items-center">
+                        ✅ Salvataggio automatico
+                      </div>
                     </div>
                   </div>
                 )}
