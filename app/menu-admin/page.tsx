@@ -708,22 +708,34 @@ const DishAccordionItem = ({
     setHasVariants(enabled)
     
     if (enabled && variants.length === 0) {
-      // Inizializza con varianti di esempio
+      // Inizializza con varianti di esempio SENZA salvare
       const exampleVariants = [
         { name: "Piccola", price: Math.round(dish.price * 0.8 * 100) / 100, available: true },
         { name: "Media", price: dish.price, available: true },
         { name: "Grande", price: Math.round(dish.price * 1.3 * 100) / 100, available: true }
       ]
       setVariants(exampleVariants)
-      // Ritarda il salvataggio per evitare che l'accordion si chiuda
-      setTimeout(() => {
-        updateDishVariants(exampleVariants)
-      }, 500)
+      // NON salviamo automaticamente - l'utente deve salvare manualmente
     } else if (!enabled) {
-      // Salva il piatto senza varianti
+      // Disattiva le varianti e salva
       setVariants([])
       await updateDishVariants([])
     }
+  }
+
+  const saveVariantsManually = async () => {
+    await updateDishVariants(hasVariants ? variants : [])
+    toast({
+      title: "✅ Salvato",
+      description: "Varianti salvate con successo"
+    })
+  }
+
+  const updateVariant = (index: number, field: keyof Variant, value: any) => {
+    const newVariants = [...variants]
+    newVariants[index] = { ...newVariants[index], [field]: value }
+    setVariants(newVariants)
+    // Rimuovo il salvataggio automatico per evitare che l'accordion si chiuda
   }
 
   const addVariant = () => {
@@ -734,46 +746,15 @@ const DishAccordionItem = ({
     }
     const newVariants = [...variants, newVariant]
     setVariants(newVariants)
-    
-    // Usa debounce per il salvataggio
-    if (variantsSaveTimeout) {
-      clearTimeout(variantsSaveTimeout)
-    }
-    const timeout = setTimeout(() => {
-      updateDishVariants(newVariants)
-    }, 2000)
-    setVariantsSaveTimeout(timeout)
+    // Rimuovo il salvataggio automatico
   }
 
   const removeVariant = (index: number) => {
     if (variants.length > 1) {
       const newVariants = variants.filter((_, i) => i !== index)
       setVariants(newVariants)
-      
-      // Usa debounce per il salvataggio
-      if (variantsSaveTimeout) {
-        clearTimeout(variantsSaveTimeout)
-      }
-      const timeout = setTimeout(() => {
-        updateDishVariants(newVariants)
-      }, 2000)
-      setVariantsSaveTimeout(timeout)
+      // Rimuovo il salvataggio automatico
     }
-  }
-
-  const updateVariant = (index: number, field: keyof Variant, value: any) => {
-    const newVariants = [...variants]
-    newVariants[index] = { ...newVariants[index], [field]: value }
-    setVariants(newVariants)
-    
-    // Debounce il salvataggio - più lungo per evitare il collasso dell'accordion
-    if (variantsSaveTimeout) {
-      clearTimeout(variantsSaveTimeout)
-    }
-    const timeout = setTimeout(() => {
-      updateDishVariants(newVariants)
-    }, 3000) // Aumentato a 3 secondi
-    setVariantsSaveTimeout(timeout)
   }
 
   const updateDishVariants = async (newVariants: Variant[]) => {
@@ -994,8 +975,9 @@ const DishAccordionItem = ({
 
                 {hasVariants && (
                   <div className="space-y-3">
-                    <div className="text-xs text-gray-500 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
                       💡 <strong>Modalità Multi-formato:</strong> Crea diverse varianti dello stesso piatto (es. pizza piccola/media/grande, bevanda 33cl/50cl, etc.)
+                      <br/>⚠️ <strong>Ricordati di cliccare "Salva varianti" per confermare le modifiche!</strong>
                     </div>
                     
                     {variants.map((variant, index) => (
@@ -1058,9 +1040,18 @@ const DishAccordionItem = ({
                       >
                         ➕ Aggiungi variante
                       </CustomButton>
-                      <div className="text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-1 flex items-center">
-                        ✅ Salvataggio automatico
-                      </div>
+                      <CustomButton
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          saveVariantsManually()
+                        }}
+                        className="flex items-center gap-1 h-8 px-3 text-xs"
+                      >
+                        💾 Salva varianti
+                      </CustomButton>
                     </div>
                   </div>
                 )}
