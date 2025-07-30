@@ -230,7 +230,7 @@ const DishAccordionItem = ({
   // Stati per le varianti
   const [hasVariants, setHasVariants] = React.useState(dish.variants && dish.variants.length > 0)
   const [variants, setVariants] = React.useState<Variant[]>(dish.variants || [])
-  const [variantsSaveTimeout, setVariantsSaveTimeout] = React.useState<NodeJS.Timeout | null>(null)
+  const [localVariantsModified, setLocalVariantsModified] = React.useState(false)
   
   // Stati per gestione immagine
   const [showImageDialog, setShowImageDialog] = React.useState(false)
@@ -252,18 +252,18 @@ const DishAccordionItem = ({
     setPrice(dish.price.toFixed(2))
     setDescription(dish.description || "")
     setIngredients((dish.ingredients || []).join(", "))
-    setHasVariants(dish.variants && dish.variants.length > 0)
-    setVariants(dish.variants || [])
-  }, [dish])
-
-  // Cleanup timeout on unmount
-  React.useEffect(() => {
-    return () => {
-      if (variantsSaveTimeout) {
-        clearTimeout(variantsSaveTimeout)
+    
+    // Aggiorna le varianti solo se NON sono state modificate localmente
+    if (!localVariantsModified) {
+      if (dish.variants && dish.variants.length > 0) {
+        setHasVariants(true)
+        setVariants(dish.variants)
+      } else {
+        setHasVariants(false)
+        setVariants([])
       }
     }
-  }, [variantsSaveTimeout])
+  }, [dish, localVariantsModified])
 
   const handleFieldBlur = async (field: "name" | "description" | "ingredients" | "price") => {
     const updates: any = {}
@@ -706,6 +706,7 @@ const DishAccordionItem = ({
   // Funzioni per gestire le varianti
   const handleVariantModeToggle = async (enabled: boolean) => {
     setHasVariants(enabled)
+    setLocalVariantsModified(true) // Marca come modificato localmente
     
     if (enabled && variants.length === 0) {
       // Inizializza con varianti di esempio SENZA salvare
@@ -720,11 +721,13 @@ const DishAccordionItem = ({
       // Disattiva le varianti e salva
       setVariants([])
       await updateDishVariants([])
+      setLocalVariantsModified(false) // Reset flag dopo salvataggio
     }
   }
 
   const saveVariantsManually = async () => {
     await updateDishVariants(hasVariants ? variants : [])
+    setLocalVariantsModified(false) // Reset flag dopo salvataggio
     toast({
       title: "✅ Salvato",
       description: "Varianti salvate con successo"
@@ -735,7 +738,7 @@ const DishAccordionItem = ({
     const newVariants = [...variants]
     newVariants[index] = { ...newVariants[index], [field]: value }
     setVariants(newVariants)
-    // Rimuovo il salvataggio automatico per evitare che l'accordion si chiuda
+    setLocalVariantsModified(true) // Marca come modificato localmente
   }
 
   const addVariant = () => {
@@ -746,19 +749,21 @@ const DishAccordionItem = ({
     }
     const newVariants = [...variants, newVariant]
     setVariants(newVariants)
-    // Rimuovo il salvataggio automatico
+    setLocalVariantsModified(true) // Marca come modificato localmente
   }
 
   const removeVariant = (index: number) => {
     if (variants.length > 1) {
       const newVariants = variants.filter((_, i) => i !== index)
       setVariants(newVariants)
-      // Rimuovo il salvataggio automatico
+      setLocalVariantsModified(true) // Marca come modificato localmente
     }
   }
 
   const updateDishVariants = async (newVariants: Variant[]) => {
     try {
+      console.log('🔄 Salvando varianti:', newVariants)
+      
       const response = await fetch(`/api/menu/item/${dish.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -766,15 +771,22 @@ const DishAccordionItem = ({
       })
 
       if (response.ok) {
-        const updatedDish = await response.json()
-        onUpdateDish(updatedDish.item)
-        toast({
-          title: "✅ Aggiornato",
-          description: "Varianti salvate con successo"
-        })
+        const result = await response.json()
+        console.log('✅ Risposta backend:', result)
+        
+        if (result.success && result.item) {
+          // Aggiorna solo se abbiamo una risposta valida
+          onUpdateDish(result.item)
+        } else {
+          console.error('❌ Risposta backend non valida:', result)
+        }
+      } else {
+        const errorText = await response.text()
+        console.error('❌ Errore HTTP:', response.status, errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
     } catch (error) {
-      console.error('Error updating variants:', error)
+      console.error('❌ Errore updating variants:', error)
       toast({
         title: "❌ Errore",
         description: "Errore durante il salvataggio delle varianti",
