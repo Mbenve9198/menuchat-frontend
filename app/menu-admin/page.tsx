@@ -926,7 +926,7 @@ const DishAccordionItem = ({
                     <span className="text-xs text-gray-500">
                       {hasVariants ? "Multi-formato" : "Formato singolo"}
                     </span>
-                    <Button
+                    <CustomButton
                       type="button"
                       variant={hasVariants ? "default" : "outline"}
                       size="sm"
@@ -934,7 +934,7 @@ const DishAccordionItem = ({
                       className="h-7 px-3 text-xs"
                     >
                       {hasVariants ? "Disabilita" : "Abilita"} varianti
-                    </Button>
+                    </CustomButton>
                   </div>
                 </div>
 
@@ -961,7 +961,7 @@ const DishAccordionItem = ({
                             className="w-20 h-8 text-sm"
                             placeholder="Prezzo"
                           />
-                          <Button
+                          <CustomButton
                             type="button"
                             variant="ghost"
                             size="sm"
@@ -973,9 +973,9 @@ const DishAccordionItem = ({
                             title={variant.available ? "Disponibile" : "Non disponibile"}
                           >
                             {variant.available ? "✓" : "✗"}
-                          </Button>
+                          </CustomButton>
                           {variants.length > 1 && (
-                            <Button
+                            <CustomButton
                               type="button"
                               variant="ghost"
                               size="sm"
@@ -984,14 +984,14 @@ const DishAccordionItem = ({
                               title="Rimuovi variante"
                             >
                               🗑️
-                            </Button>
+                            </CustomButton>
                           )}
                         </div>
                       </div>
                     ))}
 
                     <div className="flex gap-2">
-                      <Button
+                      <CustomButton
                         type="button"
                         variant="outline"
                         size="sm"
@@ -999,8 +999,8 @@ const DishAccordionItem = ({
                         className="flex items-center gap-1 h-8 px-3 text-xs"
                       >
                         ➕ Aggiungi variante
-                      </Button>
-                      <Button
+                      </CustomButton>
+                      <CustomButton
                         type="button"
                         variant="default"
                         size="sm"
@@ -1008,7 +1008,7 @@ const DishAccordionItem = ({
                         className="flex items-center gap-1 h-8 px-3 text-xs"
                       >
                         💾 Salva varianti
-                      </Button>
+                      </CustomButton>
                     </div>
                   </div>
                 )}
