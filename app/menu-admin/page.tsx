@@ -715,7 +715,10 @@ const DishAccordionItem = ({
         { name: "Grande", price: Math.round(dish.price * 1.3 * 100) / 100, available: true }
       ]
       setVariants(exampleVariants)
-      await updateDishVariants(exampleVariants)
+      // Ritarda il salvataggio per evitare che l'accordion si chiuda
+      setTimeout(() => {
+        updateDishVariants(exampleVariants)
+      }, 500)
     } else if (!enabled) {
       // Salva il piatto senza varianti
       setVariants([])
@@ -723,7 +726,7 @@ const DishAccordionItem = ({
     }
   }
 
-  const addVariant = async () => {
+  const addVariant = () => {
     const newVariant: Variant = {
       name: `Variante ${variants.length + 1}`,
       price: dish.price,
@@ -731,14 +734,30 @@ const DishAccordionItem = ({
     }
     const newVariants = [...variants, newVariant]
     setVariants(newVariants)
-    await updateDishVariants(newVariants)
+    
+    // Usa debounce per il salvataggio
+    if (variantsSaveTimeout) {
+      clearTimeout(variantsSaveTimeout)
+    }
+    const timeout = setTimeout(() => {
+      updateDishVariants(newVariants)
+    }, 2000)
+    setVariantsSaveTimeout(timeout)
   }
 
-  const removeVariant = async (index: number) => {
+  const removeVariant = (index: number) => {
     if (variants.length > 1) {
       const newVariants = variants.filter((_, i) => i !== index)
       setVariants(newVariants)
-      await updateDishVariants(newVariants)
+      
+      // Usa debounce per il salvataggio
+      if (variantsSaveTimeout) {
+        clearTimeout(variantsSaveTimeout)
+      }
+      const timeout = setTimeout(() => {
+        updateDishVariants(newVariants)
+      }, 2000)
+      setVariantsSaveTimeout(timeout)
     }
   }
 
@@ -747,13 +766,13 @@ const DishAccordionItem = ({
     newVariants[index] = { ...newVariants[index], [field]: value }
     setVariants(newVariants)
     
-    // Debounce il salvataggio
+    // Debounce il salvataggio - più lungo per evitare il collasso dell'accordion
     if (variantsSaveTimeout) {
       clearTimeout(variantsSaveTimeout)
     }
     const timeout = setTimeout(() => {
       updateDishVariants(newVariants)
-    }, 1500)
+    }, 3000) // Aumentato a 3 secondi
     setVariantsSaveTimeout(timeout)
   }
 
@@ -951,7 +970,7 @@ const DishAccordionItem = ({
               </div>
 
               {/* Sezione Varianti */}
-              <div className="border-t pt-4 mt-4">
+              <div className="border-t pt-4 mt-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-semibold text-gray-600">Varianti Piatto</label>
                   <div className="flex items-center gap-2">
@@ -962,7 +981,10 @@ const DishAccordionItem = ({
                       type="button"
                       variant={hasVariants ? "default" : "outline"}
                       size="sm"
-                      onClick={() => handleVariantModeToggle(!hasVariants)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleVariantModeToggle(!hasVariants)
+                      }}
                       className="h-7 px-3 text-xs"
                     >
                       {hasVariants ? "Disabilita" : "Abilita"} varianti
@@ -1009,7 +1031,10 @@ const DishAccordionItem = ({
                           {variants.length > 1 && (
                             <button
                               type="button"
-                              onClick={() => removeVariant(index)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                removeVariant(index)
+                              }}
                               className="h-7 w-7 flex items-center justify-center rounded-md bg-transparent text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
                               title="Rimuovi variante"
                             >
@@ -1025,7 +1050,10 @@ const DishAccordionItem = ({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={addVariant}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          addVariant()
+                        }}
                         className="flex items-center gap-1 h-8 px-3 text-xs"
                       >
                         ➕ Aggiungi variante
