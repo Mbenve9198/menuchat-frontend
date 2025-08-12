@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const campaignType = formData.get('campaignType') as string || 'campaign';
     const optimizeForWhatsApp = formData.get('optimizeForWhatsApp') === 'true';
-
+    
     if (!file) {
       console.log('❌ [VERCEL] Nessun file nella richiesta');
       return NextResponse.json({
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         error: 'Nessun file trovato nella richiesta'
       }, { status: 400 });
     }
-
+    
     console.log('📤 [VERCEL] Dati file:', {
       fileName: file.name,
       size: file.size,
