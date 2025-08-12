@@ -1,96 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { formidable } from 'formidable';
-import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs';
 
-// Configurazione Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
-  api_key: process.env.CLOUDINARY_API_KEY || '',
-  api_secret: process.env.CLOUDINARY_API_SECRET || ''
+// Importa il client ImageKit
+const ImageKit = require('imagekit');
+
+// Configurazione ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || 'your_public_key',
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || 'your_private_key',
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/your_imagekit_id/'
 });
 
-// Configurazione per non utilizzare bodyParser di Next.js
-export const config = {
-  api: {
-    bodyParser: false,
-  },
+// Helper per generare nome file unico per menu PDF
+const generateMenuPdfFileName = (originalName: string, restaurantName: string = 'restaurant') => {
+  const sanitizedRestaurantName = restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const timestamp = Date.now();
+  return `menu-${sanitizedRestaurantName}-${timestamp}`;
 };
 
-// Questo approccio con formidable non funzionerà in App Router, quindi useremo l'API FormData nativa
 export async function POST(request: NextRequest) {
   try {
-    // Estrai i dati multipart dalla richiesta
     const formData = await request.formData();
-    
-    // Ottieni il file dal formData
     const file = formData.get('file') as File;
-    
+    const restaurantId = formData.get('restaurantId') as string;
+    const menuId = formData.get('menuId') as string;
+    const languageCode = formData.get('languageCode') as string || 'it';
+    const restaurantName = formData.get('restaurantName') as string || 'restaurant';
+
     if (!file) {
       return NextResponse.json({
         success: false,
-        error: 'Nessun file caricato'
+        error: 'Nessun file trovato nella richiesta'
       }, { status: 400 });
     }
-    
+
     // Verifica che sia un PDF
     if (file.type !== 'application/pdf') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Il file deve essere in formato PDF' 
+      return NextResponse.json({
+        success: false,
+        error: 'Solo file PDF sono accettati'
       }, { status: 400 });
     }
-    
-    // Estrai informazioni dal file
+
+    // Verifica dimensione (15MB max per PDF)
+    const maxSize = 15 * 1024 * 1024; // 15MB
+    if (file.size > maxSize) {
+      return NextResponse.json({
+        success: false,
+        error: 'Il file PDF è troppo grande. La dimensione massima è 15MB'
+      }, { status: 400 });
+    }
+
+    console.log('📄 Inizio upload PDF menu su ImageKit:', {
+      fileName: file.name,
+      size: file.size,
+      restaurantId,
+      menuId,
+      languageCode
+    });
+
+    // Converte il file in buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Crea un file temporaneo
-    const tempFilePath = `/tmp/${file.name}`;
-    fs.writeFileSync(tempFilePath, buffer);
+    // Genera nome file unico
+    const fileName = generateMenuPdfFileName(file.name, restaurantName);
     
-    // Estrai il codice della lingua dai campi
-    const languageCode = formData.get('languageCode')?.toString() || 'it';
-    const restaurantName = formData.get('restaurantName')?.toString() || 'restaurant';
-    
-    // Genera un nome file sicuro
-    const safeFileName = `${restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}.pdf`;
-    
-    // Carica il file su Cloudinary
-    console.log('Inizio upload su Cloudinary', { tempFilePath, safeFileName });
-    const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, {
-      public_id: safeFileName,
+    // Opzioni di upload per ImageKit
+    const uploadOptions = {
+      file: buffer,
+      fileName: fileName,
       folder: 'menu-pdf',
-      resource_type: 'raw',
-      type: 'upload'
+      customMetadata: {
+        originalName: file.name,
+        restaurantId: restaurantId || '',
+        menuId: menuId || '',
+        languageCode: languageCode,
+        restaurantName: restaurantName,
+        uploadTimestamp: Date.now().toString()
+      }
+    };
+    
+    console.log(`📁 Upload PDF in cartella menu-pdf, nome: ${fileName}`);
+    
+    // Upload su ImageKit
+    const imagekitResult = await imagekit.upload(uploadOptions);
+    
+    console.log('✅ Upload PDF completato su ImageKit:', {
+      url: imagekitResult.url,
+      fileId: imagekitResult.fileId,
+      size: imagekitResult.size
     });
     
-    // Log della risposta completa di Cloudinary
-    console.log('Risposta di Cloudinary:', JSON.stringify(cloudinaryResponse, null, 2));
-    
-    // Elimina il file temporaneo
-    fs.unlinkSync(tempFilePath);
-    
-    // Usa l'URL sicuro fornito da Cloudinary
-    const menuUrl = cloudinaryResponse.secure_url;
+    // Se è stata fornita l'informazione del menu, possiamo aggiornare il database
+    // (questa parte potrebbe essere spostata nel controller backend)
     
     // Restituisci i dati del file caricato
     return NextResponse.json({
       success: true,
       file: {
-        url: menuUrl,
+        url: imagekitResult.url,
         originalName: file.name,
         size: file.size,
         languageCode: languageCode,
-        fileName: cloudinaryResponse.public_id,
-        publicId: cloudinaryResponse.public_id
+        fileName: imagekitResult.name,
+        publicId: imagekitResult.fileId,
+        restaurantId: restaurantId,
+        menuId: menuId
       }
     });
   } catch (error: any) {
-    console.error('Errore durante l\'upload del file:', error);
+    console.error('Errore durante l\'upload del PDF menu:', error);
     return NextResponse.json({
       success: false,
-      error: 'Errore durante l\'upload del file',
+      error: 'Errore durante l\'upload del PDF menu',
       details: error.message
     }, { status: 500 });
   }

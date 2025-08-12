@@ -1,164 +1,167 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
-// Configurazione Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || '',
-  api_key: process.env.CLOUDINARY_API_KEY || '',
-  api_secret: process.env.CLOUDINARY_API_SECRET || ''
+// Importa il client ImageKit dal backend (o ridefiniamo qui)
+const ImageKit = require('imagekit');
+
+// Configurazione ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || 'your_public_key',
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || 'your_private_key',
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/your_imagekit_id/'
 });
 
-// Configurazione per non utilizzare bodyParser di Next.js
-export const config = {
-  api: {
-    bodyParser: false,
-  },
+// Helper per determinare il tipo di file e cartella
+const getFileTypeAndFolder = (filename: string, mimetype: string) => {
+  const isVideo = mimetype.startsWith('video/');
+  const isImage = mimetype.startsWith('image/');
+  const isPdf = mimetype === 'application/pdf';
+  
+  let fileType = 'raw';
+  let folder = 'campaign-media/misc';
+  
+  if (isVideo) {
+    fileType = 'video';
+    folder = 'campaign-media/videos';
+  } else if (isImage) {
+    fileType = 'image';
+    folder = 'campaign-media/images';
+  } else if (isPdf) {
+    fileType = 'raw';
+    folder = 'campaign-media/pdfs';
+  }
+  
+  return { fileType, folder, isVideo, isImage, isPdf };
+};
+
+// Helper per generare nome file unico
+const generateFileName = (originalName: string, campaignType: string = 'campaign') => {
+  const sanitizedType = campaignType.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const fileExtension = path.extname(originalName);
+  const baseName = path.basename(originalName, fileExtension);
+  const timestamp = Date.now();
+  
+  return `${sanitizedType}-${timestamp}-${baseName}`;
 };
 
 export async function POST(request: NextRequest) {
   try {
-    // Estrai i dati multipart dalla richiesta
     const formData = await request.formData();
-    
-    // Ottieni il file dal formData
     const file = formData.get('file') as File;
-    
+    const campaignType = formData.get('campaignType') as string || 'campaign';
+    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp') === 'true';
+
     if (!file) {
       return NextResponse.json({
         success: false,
-        error: 'Nessun file caricato'
+        error: 'Nessun file trovato nella richiesta'
       }, { status: 400 });
     }
-    
-    // Ottieni parametri di trasformazione e ottimizzazione
-    const optimizeForWhatsApp = formData.get('optimizeForWhatsApp')?.toString() === 'true';
-    const noTransformations = formData.get('noTransformations')?.toString() === 'true';
-    
-    console.log('Parametri upload:', {
-      optimizeForWhatsApp,
-      noTransformations,
-      fileType: file.type,
-      fileName: file.name
+
+    console.log('📤 Inizio upload su ImageKit:', {
+      fileName: file.name,
+      size: file.size,
+      type: file.type,
+      campaignType,
+      optimizeForWhatsApp
     });
+
+    // Determina tipo di file e cartella
+    const { fileType, folder, isVideo, isImage, isPdf } = getFileTypeAndFolder(file.name, file.type);
     
-    // Determina il tipo di risorsa basato sul MIME type
-    let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'image';
-    let fileType = 'image';
+    // Crea nome file unico
+    const fileName = generateFileName(file.name, campaignType);
     
-    if (file.type.startsWith('video/')) {
-      // Per tutti i video, usa sempre conversione standard in MP4
-      resourceType = 'video';
-      fileType = 'video';
-    } else if (file.type === 'application/pdf') {
-      resourceType = 'raw'; // I PDF vanno caricati come raw in Cloudinary
-      fileType = 'pdf';
-    } else if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Il file deve essere un\'immagine, un video o un PDF' 
-      }, { status: 400 });
-    }
-    
-    // Verifica dimensione massima in base al tipo di file
-    let maxSize = 10 * 1024 * 1024; // Default 10MB per immagini
-    
-    if (fileType === 'video') {
-      maxSize = 30 * 1024 * 1024; // 30MB per video
-    } else if (fileType === 'pdf') { 
-      maxSize = 15 * 1024 * 1024; // 15MB per PDF
-    }
-    
-    if (file.size > maxSize) {
-      const sizeInMB = Math.round(maxSize / (1024 * 1024));
-      return NextResponse.json({ 
-        success: false, 
-        error: `Il file è troppo grande. La dimensione massima è ${sizeInMB}MB` 
-      }, { status: 400 });
-    }
-    
-    // Estrai informazioni dal file
+    // Converte il file in buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    // Crea un file temporaneo
-    const tempFilePath = `/tmp/${file.name}`;
-    fs.writeFileSync(tempFilePath, buffer);
+    console.log(`📁 Upload in cartella: ${folder}, tipo: ${fileType}, nome: ${fileName}`);
     
-    // Estrai informazioni aggiuntive
-    const campaignType = formData.get('campaignType')?.toString() || 'campaign';
-    
-    // Genera un nome file sicuro
-    let fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-    
-    // Se è un video e ottimizziamo per WhatsApp, forza estensione mp4
-    if (fileType === 'video') {
-      fileExtension = 'mp4';
-    }
-    
-    const timestamp = Date.now();
-    const safeFileName = `campaign-${campaignType}-${timestamp}`;
-    
-    // Opzioni di upload standard - SEMPRE per tutti i video
+    // Prepara le opzioni di upload per ImageKit
     const uploadOptions: any = {
-      public_id: safeFileName,
-      folder: 'campaign-media',
-      resource_type: resourceType,
-      type: 'upload'
-    };
-    
-    // Per i video, imposta sempre il formato mp4 per la conversione automatica
-    if (resourceType === 'video') {
-      uploadOptions.format = 'mp4';
-      // Aggiungi trasformazioni di base per ottimizzare per WhatsApp
-      if (optimizeForWhatsApp) {
-        uploadOptions.transformation = [
-          { quality: 'auto:good' },
-          { video_codec: 'h264' },
-          { audio_codec: 'aac' }
-        ];
+      file: buffer,
+      fileName: fileName,
+      folder: folder,
+      customMetadata: {
+        originalName: file.name,
+        campaignType: campaignType,
+        optimizedForWhatsApp: optimizeForWhatsApp.toString(),
+        uploadTimestamp: Date.now().toString()
       }
+    };
+
+    // Se è un video e serve ottimizzazione per WhatsApp, aggiungi trasformazioni
+    if (isVideo && optimizeForWhatsApp) {
+      uploadOptions.transformation = {
+        post: [
+          {
+            format: 'mp4',
+            videoCodec: 'h264',
+            audioCodec: 'aac',
+            quality: 80
+          }
+        ]
+      };
+      console.log('🎬 Applicando ottimizzazioni video per WhatsApp');
     }
     
-    // Carica il file su Cloudinary
-    console.log('Inizio upload su Cloudinary', { 
-      tempFilePath, 
-      safeFileName, 
-      resourceType, 
-      fileType,
-      uploadOptions
+    // Upload su ImageKit
+    const imagekitResult = await imagekit.upload(uploadOptions);
+    
+    console.log('✅ Upload ImageKit completato:', {
+      url: imagekitResult.url,
+      fileId: imagekitResult.fileId,
+      size: imagekitResult.size
     });
     
-    const cloudinaryResponse = await cloudinary.uploader.upload(tempFilePath, uploadOptions);
-    
-    // Log della risposta completa di Cloudinary
-    console.log('Risposta di Cloudinary:', JSON.stringify(cloudinaryResponse, null, 2));
-    
-    // Elimina il file temporaneo
-    fs.unlinkSync(tempFilePath);
-    
-    // Ottieni l'URL e assicurati che per i video termini con .mp4
-    let mediaUrl = cloudinaryResponse.secure_url;
-    
-    // Se è un video, assicurati che l'estensione sia .mp4
-    if (fileType === 'video' && !mediaUrl.endsWith('.mp4')) {
-      mediaUrl = `${mediaUrl}.mp4`;
-      console.log('URL corretto a .mp4:', mediaUrl);
+    // Test dell'URL finale se è un video
+    if (isVideo) {
+      console.log('🎬 Verifica accessibilità URL video:', imagekitResult.url);
+      
+      try {
+        const testResponse = await fetch(imagekitResult.url, { 
+          method: 'HEAD',
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (testResponse.ok) {
+          console.log('🎬 ✅ URL video accessibile - Status:', testResponse.status);
+          console.log('🎬 ✅ Content-Type:', testResponse.headers.get('content-type'));
+        } else {
+          console.warn('🎬 ⚠️ URL video restituisce status:', testResponse.status);
+        }
+        
+      } catch (testError) {
+        console.error('🎬 ❌ Errore test URL video:', testError);
+        
+        return NextResponse.json({
+          success: false,
+          error: 'URL video non accessibile dopo l\'upload',
+          details: {
+            url: imagekitResult.url,
+            error: testError instanceof Error ? testError.message : 'Errore sconosciuto',
+            fileId: imagekitResult.fileId
+          }
+        }, { status: 500 });
+      }
     }
-    
-    console.log('URL finale restituito al client:', mediaUrl);
     
     // Restituisci i dati del file caricato
     return NextResponse.json({
       success: true,
       file: {
-        url: mediaUrl,
+        url: imagekitResult.url,
         originalName: file.name,
         size: file.size,
-        format: fileType === 'video' ? 'mp4' : fileExtension,
-        resourceType: fileType, // Usiamo fileType invece di resourceType per la risposta
-        fileName: cloudinaryResponse.public_id,
-        publicId: cloudinaryResponse.public_id
+        format: isVideo ? 'mp4' : isPdf ? 'pdf' : imagekitResult.fileType,
+        resourceType: fileType,
+        fileName: imagekitResult.name,
+        publicId: imagekitResult.fileId,
+        optimizedForWhatsApp: isVideo && optimizeForWhatsApp,
+        isVideo: isVideo
       }
     });
   } catch (error: any) {
