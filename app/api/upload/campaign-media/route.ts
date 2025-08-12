@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       }
       throw new Error(errorData.error || `Backend error: ${response.status}`);
     }
-
+    
     console.log('📄 [VERCEL] Parsing risposta backend...');
     const result = await response.json();
     console.log('✅ [VERCEL] Upload completato:', result.success);

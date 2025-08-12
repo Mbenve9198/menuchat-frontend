@@ -11,8 +11,13 @@ interface MediaUploadProps extends React.HTMLAttributes<HTMLDivElement> {
   mediaType?: "image" | "video" | "pdf" | "both" | "all"
   maxSize?: number // in MB
   campaignType?: string
+  uploadType?: "campaign" | "menu-item" | "brand-logo" | "brand-cover" | "supplier-logo" // Tipi specifici
   label?: string
   className?: string
+  // Parametri specifici per menu items
+  restaurantId?: string
+  itemId?: string
+  itemName?: string
 }
 
 export function MediaUpload({
@@ -21,8 +26,12 @@ export function MediaUpload({
   mediaType = "all",
   maxSize = 10, // Default 10MB
   campaignType = "",
+  uploadType = "campaign", // Default per retrocompatibilità
   label = "Aggiungi media",
   className,
+  restaurantId,
+  itemId,
+  itemName,
   ...props
 }: MediaUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
@@ -114,19 +123,56 @@ export function MediaUpload({
       const formData = new FormData()
       formData.append('file', file)
       
-      // Per i video, specifichiamo che non vogliamo trasformazioni
-      // nell'URL finale, ma vogliamo un file già compatibile con WhatsApp
-      if (isVideo) {
-        formData.append('optimizeForWhatsApp', 'true')
-        console.log('📹 Video rilevato - ottimizzazione WhatsApp abilitata')
+      // Aggiungi parametri specifici in base al tipo di upload
+      if (uploadType === "menu-item") {
+        // Parametri per upload immagini menu
+        if (restaurantId) formData.append('restaurantId', restaurantId)
+        if (itemId) formData.append('itemId', itemId)
+        if (itemName) formData.append('itemName', itemName)
+      } else if (uploadType === "brand-logo" || uploadType === "brand-cover") {
+        // Parametri per upload brand assets
+        if (restaurantId) formData.append('restaurantId', restaurantId)
+      } else if (uploadType === "supplier-logo") {
+        // Parametri per upload logo fornitori
+        if (restaurantId) formData.append('supplierId', restaurantId) // O supplierName se disponibile
+      } else {
+        // Parametri per upload campagne (comportamento esistente)
+        if (campaignType) formData.append('campaignType', campaignType)
+        
+        // Per i video, specifichiamo che non vogliamo trasformazioni
+        // nell'URL finale, ma vogliamo un file già compatibile con WhatsApp
+        if (isVideo) {
+          formData.append('optimizeForWhatsApp', 'true')
+          console.log('📹 Video rilevato - ottimizzazione WhatsApp abilitata')
+        }
       }
       
-      if (campaignType) {
-        formData.append('campaignType', campaignType)
+      // Determina l'endpoint corretto
+      let uploadEndpoint = '/api/upload/campaign-media' // Default
+      
+      switch (uploadType) {
+        case "menu-item":
+          uploadEndpoint = '/api/upload/menu-item-image'
+          break
+        case "brand-logo":
+          uploadEndpoint = '/api/upload/brand-logo'
+          break
+        case "brand-cover":
+          uploadEndpoint = '/api/upload/brand-cover'
+          break
+        case "supplier-logo":
+          uploadEndpoint = '/api/upload/supplier-logo'
+          break
+        case "campaign":
+        default:
+          uploadEndpoint = '/api/upload/campaign-media'
+          break
       }
+      
+      console.log(`📤 Upload tipo: ${uploadType}, endpoint: ${uploadEndpoint}`)
       
       // Upload using fetch
-      const response = await fetch('/api/upload/campaign-media', {
+      const response = await fetch(uploadEndpoint, {
         method: 'POST',
         body: formData
       })

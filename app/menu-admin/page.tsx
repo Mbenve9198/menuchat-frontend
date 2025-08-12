@@ -1206,6 +1206,10 @@ const DishAccordionItem = ({
                 selectedFile={isUpdatingImage ? "updating" : ""}
                 mediaType="image"
                 maxSize={10}
+                uploadType="menu-item"
+                restaurantId={restaurantId}
+                itemId={dish.id}
+                itemName={dish.name}
                 label={dish.photoUrl ? "Seleziona nuova immagine" : "Seleziona immagine"}
                 className="w-full"
               />
@@ -4384,6 +4388,8 @@ export default function MenuAdminPage() {
                   selectedFile={isUpdatingBrand ? "updating" : ""}
                   mediaType="image"
                   maxSize={10}
+                  uploadType="brand-cover"
+                  restaurantId={restaurantId}
                   label={brandSettings.coverImageUrl ? "Sostituisci Copertina" : "Carica Copertina"}
                   className="w-full"
                 />
@@ -4420,6 +4426,8 @@ export default function MenuAdminPage() {
                   selectedFile={isUpdatingBrand ? "updating" : ""}
                   mediaType="image"
                   maxSize={5}
+                  uploadType="brand-logo"
+                  restaurantId={restaurantId}
                   label={brandSettings.logoUrl ? "Sostituisci Logo" : "Carica Logo"}
                   className="w-full"
                 />
@@ -4774,6 +4782,8 @@ export default function MenuAdminPage() {
                   selectedFile={isUploadingSupplierLogo ? "updating" : supplierForm.logoUrl || ""}
                   mediaType="image"
                   maxSize={5}
+                  uploadType="supplier-logo"
+                  restaurantId={restaurantId}
                   label={supplierForm.logoUrl ? "Sostituisci Logo" : "Carica Logo"}
                   className="w-full"
                 />
