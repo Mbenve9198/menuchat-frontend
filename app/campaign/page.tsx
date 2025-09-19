@@ -502,32 +502,14 @@ export default function CampaignsPage() {
         </div>
         )}
 
-        {/* Campaign Stats Summary */}
+        {/* Campaign Stats Summary - SOLO CLICK RATE */}
         {!isLoading && !error && filteredCampaigns.length > 0 && (
           <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4">{t("campaigns.performanceCampaigns")}</h3>
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-center">
-                <p className="text-xs text-gray-500">{t("campaigns.totalSent")}</p>
-                <p className="text-2xl font-extrabold text-[#1B9AAA]">
-                  {campaigns.filter((c) => c.status === "sent" || c.status === "in_progress").length}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-500">{t("campaigns.avgOpenRate")}</p>
-                <p className="text-2xl font-extrabold text-[#EF476F]">
-                  {campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).length > 0 ? (
-                    Math.round(
-                      campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).reduce((sum, c) => sum + (c.openRate || 0), 0) /
-                        campaigns.filter((c) => c.openRate !== null && c.openRate !== undefined).length,
-                    )
-                  ) : 0}
-                  %
-                </p>
-              </div>
+            <div className="flex items-center justify-center">
               <div className="text-center">
                 <p className="text-xs text-gray-500">{t("campaigns.avgClickRate")}</p>
-                <p className="text-2xl font-extrabold text-[#06D6A0]">
+                <p className="text-3xl font-extrabold text-[#1B9AAA]">
                   {campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).length > 0 ? (
                     Math.round(
                       campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).reduce((sum, c) => sum + (c.clickRate || 0), 0) /

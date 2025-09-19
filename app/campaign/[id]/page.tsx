@@ -400,37 +400,16 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   </div>
                 </div>
 
-                {/* Campaign Stats */}
+                {/* Campaign Stats - SOLO CLICK RATE */}
                 <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl">
                   <h3 className="text-lg font-bold text-gray-800 mb-4">{t("campaignDetails.campaignStats")}</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex justify-center">
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">📤</span>
+                        <span className="text-xl">🔗</span>
                       </div>
-                      <p className="text-xs text-gray-500">{t("campaignDetails.totalSent")}</p>
-                      <p className="text-lg font-bold text-gray-800">{campaign.totalSent || 0}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">✅</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{t("campaignDetails.delivered")}</p>
-                      <p className="text-lg font-bold text-gray-800">{campaign.delivered || 0}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">👁️</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{t("campaignDetails.opened")}</p>
-                      <p className="text-lg font-bold text-gray-800">{campaign.opened || 0}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <span className="text-xl">👆</span>
-                      </div>
-                      <p className="text-xs text-gray-500">{t("campaignDetails.clicked")}</p>
-                      <p className="text-lg font-bold text-gray-800">{campaign.clicked || 0}</p>
+                      <p className="text-xs text-gray-500">{t("campaignDetails.clickRate")}</p>
+                      <p className="text-2xl font-bold text-[#1B9AAA]">{campaign.clickRate || 0}%</p>
                     </div>
                   </div>
                 </div>
