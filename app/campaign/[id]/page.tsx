@@ -79,6 +79,19 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isCanceling, setIsCanceling] = useState(false)
 
+  // 🆕 Stati per attribution tracking
+  const [attributionData, setAttributionData] = useState<{
+    totalReturns: number
+    returnRate: number
+    averageDaysToReturn: number
+    returns: Array<{
+      phoneNumber: string
+      returnDate: string
+      daysAfterCampaign: number
+    }>
+  } | null>(null)
+  const [isLoadingAttribution, setIsLoadingAttribution] = useState(false)
+
   // Fetch campaign details from API
   const fetchCampaignDetails = async () => {
     try {
@@ -133,6 +146,11 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
       setCampaign(transformedCampaign)
 
+      // 🆕 Carica anche i dati di attribution per la overview
+      if (transformedCampaign.status === 'completed' || transformedCampaign.status === 'sent') {
+        fetchAttributionData()
+      }
+
     } catch (err: any) {
       console.error('Errore nel recupero della campagna:', err)
       setError(err.message)
@@ -149,6 +167,40 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
       router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
     }
   }, [status, session, params.id])
+
+  // �� Funzione per caricare i dati di attribution
+  const fetchAttributionData = async () => {
+    if (!campaign) return
+
+    try {
+      setIsLoadingAttribution(true)
+      
+      const response = await fetch(`/api/campaign/${campaign.id}/attribution`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setAttributionData(data.data.attributionStats)
+        }
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento attribution:', error)
+    } finally {
+      setIsLoadingAttribution(false)
+    }
+  }
+
+  // Carica attribution quando si apre il tab analytics
+  useEffect(() => {
+    if (activeTab === "analytics" && campaign && !attributionData && !isLoadingAttribution) {
+      fetchAttributionData()
+    }
+  }, [activeTab, campaign])
 
   // 🆕 Funzione per cancellare la campagna
   const handleCancelCampaign = async () => {
@@ -535,18 +587,53 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   </div>
                 </div>
 
-                {/* Campaign Stats - SOLO CLICK RATE */}
+                {/* Campaign Stats - Attribution + Click Rate */}
                 <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">{t("campaignDetails.campaignStats")}</h3>
-                  <div className="flex justify-center">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4">Risultati Campagna</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Clienti Tornati */}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-1">
+                        <span className="text-xl">🎯</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Clienti Tornati</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {isLoadingAttribution ? (
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                        ) : (
+                          attributionData?.totalReturns || 0
+                        )}
+                      </p>
+                      {attributionData?.returnRate !== undefined && (
+                        <p className="text-xs text-green-600 font-medium">
+                          {attributionData.returnRate}% tasso ritorno
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Click Rate */}
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-1">
                         <span className="text-xl">🔗</span>
                       </div>
-                      <p className="text-xs text-gray-500">{t("campaignDetails.clickRate")}</p>
+                      <p className="text-xs text-gray-500">Click Rate</p>
                       <p className="text-2xl font-bold text-[#1B9AAA]">{campaign.clickRate || 0}%</p>
                     </div>
                   </div>
+
+                  {/* Call to Action per vedere dettagli */}
+                  {attributionData && attributionData.totalReturns > 0 && (
+                    <div className="mt-4 text-center">
+                      <CustomButton
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveTab("analytics")}
+                        className="text-xs"
+                      >
+                        📊 Vedi dettagli attribution
+                      </CustomButton>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -586,11 +673,120 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
             {activeTab === "analytics" && (
               <div className="space-y-6">
-                {/* Performance metrics */}
-                <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl text-center">
-                  <span className="text-4xl mb-2 block">📊</span>
-                  <p className="text-gray-500">{t("campaignDetails.analytics")} coming soon</p>
+                {/* Attribution Tracking - Clienti Tornati */}
+                <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-2xl">🎯</span>
+                    <h3 className="text-lg font-bold text-gray-800">Clienti Tornati</h3>
+                  </div>
+                  
+                  {isLoadingAttribution ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">Caricamento statistiche...</p>
+                    </div>
+                  ) : attributionData ? (
+                    <div className="space-y-4">
+                      {/* Statistiche principali */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-green-50 rounded-xl border border-green-200">
+                          <div className="text-2xl font-bold text-green-600">
+                            {attributionData.totalReturns}
+                          </div>
+                          <div className="text-xs text-green-700 font-medium">Clienti tornati</div>
+                        </div>
+                        <div className="text-center p-3 bg-blue-50 rounded-xl border border-blue-200">
+                          <div className="text-2xl font-bold text-blue-600">
+                            {attributionData.returnRate}%
+                          </div>
+                          <div className="text-xs text-blue-700 font-medium">Tasso di ritorno</div>
+                        </div>
+                      </div>
+
+                      {/* Tempo medio di ritorno */}
+                      {attributionData.averageDaysToReturn > 0 && (
+                        <div className="text-center p-3 bg-purple-50 rounded-xl border border-purple-200">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <Clock className="w-4 h-4 text-purple-600" />
+                            <span className="text-lg font-bold text-purple-600">
+                              {attributionData.averageDaysToReturn} giorni
+                            </span>
+                          </div>
+                          <div className="text-xs text-purple-700 font-medium">Tempo medio di ritorno</div>
+                        </div>
+                      )}
+
+                      {/* Lista clienti tornati */}
+                      {attributionData.returns && attributionData.returns.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <span>👥</span> Ultimi ritorni
+                          </h4>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {attributionData.returns.slice(0, 5).map((returnVisit, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">📱</span>
+                                  <span className="text-sm font-medium text-gray-800">
+                                    {returnVisit.phoneNumber.replace(/(\+\d{2})(\d{3})(\d{3})(\d{4})/, '$1 $2 ***$4')}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {returnVisit.daysAfterCampaign === 0 ? 'Oggi' : 
+                                   returnVisit.daysAfterCampaign === 1 ? 'Ieri' : 
+                                   `${returnVisit.daysAfterCampaign} giorni fa`}
+                                </div>
+                              </div>
+                            ))}
+                            {attributionData.returns.length > 5 && (
+                              <div className="text-center text-xs text-gray-500 py-2">
+                                ... e altri {attributionData.returns.length - 5} clienti
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Spiegazione */}
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <span className="text-yellow-600 text-sm">💡</span>
+                          <div className="text-xs text-yellow-800 leading-relaxed">
+                            <strong>Come funziona:</strong> Tracciamo i clienti che tornano al ristorante 
+                            scrivendo il trigger menu dopo aver ricevuto questa campagna.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <span className="text-4xl mb-3 block">🎯</span>
+                      <h4 className="font-semibold text-gray-800 mb-2">Nessun ritorno ancora</h4>
+                      <p className="text-gray-500 text-sm leading-relaxed">
+                        I clienti che torneranno al ristorante e scriveranno il trigger menu 
+                        verranno tracciati automaticamente qui.
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {/* Click Rate (se disponibile) */}
+                {campaign.clickRate !== null && campaign.clickRate !== undefined && (
+                  <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">🔗</span>
+                      <h3 className="text-lg font-bold text-gray-800">Click Rate</h3>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600 mb-2">
+                        {campaign.clickRate}%
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Percentuale di click sui link della campagna
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

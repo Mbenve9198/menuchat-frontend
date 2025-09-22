@@ -34,6 +34,9 @@ interface Campaign {
   createdAt?: string
   updatedAt?: string
   template?: any
+  // 🆕 Attribution tracking
+  returnVisits?: number
+  returnRate?: number
 }
 
 // Campaign status options
@@ -124,7 +127,10 @@ export default function CampaignsPage() {
         responseRate: campaign.statistics?.responseRate || null,
         createdAt: campaign.createdAt,
         updatedAt: campaign.updatedAt,
-        template: campaign.template
+        template: campaign.template,
+        // 🆕 Attribution tracking
+        returnVisits: campaign.statistics?.returnVisits || 0,
+        returnRate: campaign.statistics?.returnRate || 0,
       }))
 
       setCampaigns(transformedCampaigns)
@@ -534,21 +540,27 @@ export default function CampaignsPage() {
                     <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
                   </div>
 
+                  {/* 🆕 Clienti Tornati invece di Open Rate */}
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">👁️</span>
+                      <span className="text-xl">🎯</span>
                     </div>
-                      <p className="text-xs text-gray-500">{t("common.openRate")}</p>
-                    <p className="text-sm font-bold text-gray-800">
-                        {campaign.openRate !== null && campaign.openRate !== undefined ? `${campaign.openRate}%` : "—"}
+                    <p className="text-xs text-gray-500">Tornati</p>
+                    <p className="text-sm font-bold text-green-600">
+                      {campaign.returnVisits || 0}
                     </p>
+                    {campaign.returnRate > 0 && (
+                      <p className="text-xs text-green-600">
+                        {campaign.returnRate}%
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">👆</span>
+                      <span className="text-xl">🔗</span>
                     </div>
-                      <p className="text-xs text-gray-500">{t("common.clickRate")}</p>
+                      <p className="text-xs text-gray-500">Click Rate</p>
                     <p className="text-sm font-bold text-gray-800">
                         {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
                     </p>

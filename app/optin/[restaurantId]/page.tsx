@@ -138,7 +138,8 @@ export default function OptinPage() {
           phoneNumber: phoneNumber || 'anonymous',
           action: 'view',
           ipAddress: null, // Verrà popolato dal server se necessario
-          userAgent: navigator.userAgent
+          userAgent: navigator.userAgent,
+          customerName: customerName !== 'Cliente' ? customerName : null // 🆕 Passa il nome del cliente
         }),
       })
     } catch (error) {
@@ -163,7 +164,8 @@ export default function OptinPage() {
           phoneNumber: phoneNumber || 'anonymous',
           action: optinChoice ? 'optin' : 'optout',
           ipAddress: null,
-          userAgent: navigator.userAgent
+          userAgent: navigator.userAgent,
+          customerName: customerName !== 'Cliente' ? customerName : null // 🆕 Passa il nome del cliente
         }),
       })
       
