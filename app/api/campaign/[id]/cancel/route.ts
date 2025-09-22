@@ -1,37 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 
-// PUT: annulla una campagna programmata
-export async function PUT(
+/**
+ * 🚫 API per cancellare una campagna schedulata su Twilio
+ * @route POST /api/campaign/[id]/cancel
+ * @access Private
+ */
+export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Ottieni la sessione e verifica l'autenticazione
     const session = await auth()
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Non autorizzato' },
-        { status: 401 }
-      )
+    
+    if (!session?.user?.restaurantId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Non autenticato'
+      }, { status: 401 })
     }
 
-    // Ottieni l'ID della campagna
-    const campaignId = params.id
+    const { id: campaignId } = params
 
     if (!campaignId) {
-      return NextResponse.json(
-        { success: false, error: 'ID campagna mancante' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        success: false,
+        error: 'ID campagna è richiesto'
+      }, { status: 400 })
     }
 
-    // URL dell'API backend
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+    // Costruisci l'URL del backend
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
     
-    // Invia la richiesta di annullamento al backend
+    console.log(`🚫 Frontend: Cancellazione campagna ${campaignId}`)
+    
+    // Chiama l'API del backend per cancellare la campagna
     const response = await fetch(`${backendUrl}/api/campaign/${campaignId}/cancel`, {
-      method: 'PUT',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
@@ -41,22 +46,24 @@ export async function PUT(
     const data = await response.json()
 
     if (!response.ok) {
-      return NextResponse.json(
-        { success: false, error: data.error || data.message || 'Errore nell\'annullamento della campagna' },
-        { status: response.status }
-      )
+      console.error(`❌ Errore backend (${response.status}):`, data)
+      return NextResponse.json({
+        success: false,
+        error: data.error || data.message || 'Errore nella cancellazione della campagna'
+      }, { status: response.status })
     }
 
+    console.log(`✅ Frontend: Campagna ${campaignId} cancellata con successo`)
+    console.log(`📊 Risultati: ${data.data?.canceledMessages || 0} messaggi cancellati`)
+
     return NextResponse.json(data)
+
   } catch (error: any) {
-    console.error('Errore nell\'annullamento della campagna:', error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Errore interno del server',
-        details: error.message || String(error)
-      },
-      { status: 500 }
-    )
+    console.error('❌ Errore nella cancellazione campagna (frontend):', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Errore interno del server',
+      details: error.message
+    }, { status: 500 })
   }
 } 

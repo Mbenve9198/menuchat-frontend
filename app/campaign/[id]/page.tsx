@@ -18,16 +18,20 @@ import {
   Share2,
   Edit3,
   FileText,
+  XCircle,
+  Loader2,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import BubbleBackground from "@/components/bubble-background"
 import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { useSession } from "next-auth/react"
 import { useTranslation } from "react-i18next"
+import { useToast } from "@/hooks/use-toast"
 
 // Tipi TypeScript
 interface Campaign {
@@ -48,16 +52,32 @@ interface Campaign {
   templateParameters?: any
   targetAudience?: any
   statistics?: any
+  // 🆕 Nuovi campi per Twilio Scheduling
+  twilioScheduledMessages?: Array<{
+    twilioMessageSid: string
+    phoneNumber: string
+    status: string
+  }>
+  schedulingStats?: {
+    totalContacts: number
+    successfulSchedules: number
+    failedSchedules: number
+  }
 }
 
 export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("overview")
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // 🆕 Stati per la cancellazione
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [isCanceling, setIsCanceling] = useState(false)
 
   // Fetch campaign details from API
   const fetchCampaignDetails = async () => {
@@ -101,7 +121,14 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         template: data.data.template,
         templateParameters: data.data.templateParameters,
         targetAudience: data.data.targetAudience,
-        statistics: data.data.statistics
+        statistics: data.data.statistics,
+        // 🆕 Aggiungi i nuovi campi Twilio Scheduling
+        twilioScheduledMessages: data.data.twilioScheduledMessages || [],
+        schedulingStats: data.data.schedulingStats || {
+          totalContacts: 0,
+          successfulSchedules: 0,
+          failedSchedules: 0,
+        },
       }
 
       setCampaign(transformedCampaign)
@@ -122,6 +149,65 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
       router.push(`/auth/login?callbackUrl=${encodeURIComponent(window.location.href)}`)
     }
   }, [status, session, params.id])
+
+  // 🆕 Funzione per cancellare la campagna
+  const handleCancelCampaign = async () => {
+    if (!campaign) return
+
+    try {
+      setIsCanceling(true)
+      
+      const response = await fetch(`/api/campaign/${campaign.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `Errore ${response.status}`)
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Errore nella cancellazione della campagna')
+      }
+
+      // Aggiorna lo stato della campagna
+      setCampaign(prev => prev ? { ...prev, status: 'canceled' } : null)
+      
+      // Chiudi il dialog
+      setShowCancelDialog(false)
+
+      // Mostra messaggio di successo
+      toast({
+        title: "✅ Campagna cancellata",
+        description: `${data.data.canceledMessages || 0} messaggi sono stati cancellati con successo.`,
+        duration: 4000,
+      })
+
+      // Ricarica i dettagli per essere sicuri
+      await fetchCampaignDetails()
+
+    } catch (error: any) {
+      console.error('Errore nella cancellazione:', error)
+      
+      toast({
+        title: "❌ Errore nella cancellazione",
+        description: error.message || "Impossibile cancellare la campagna. Riprova.",
+        variant: "destructive",
+        duration: 6000,
+      })
+    } finally {
+      setIsCanceling(false)
+    }
+  }
+
+  // 🆕 Funzione per verificare se la campagna può essere cancellata
+  const canCancelCampaign = (campaign: Campaign): boolean => {
+    return campaign.status === 'scheduled'
+  }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -153,6 +239,12 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         return (
           <Badge className="bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1">
             <span>❌</span> {t("campaigns.status.failed")}
+          </Badge>
+        )
+      case "canceled":
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1">
+            <span>🚫</span> Cancellata
           </Badge>
         )
       default:
@@ -327,22 +419,49 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
               {/* Action Buttons */}
             <div className="flex gap-2">
+              {/* Pulsante Duplica */}
               <CustomButton
                 className="flex-1 py-2 flex items-center justify-center text-xs"
-                  onClick={() => router.push(`/campaign/create?duplicate=${campaign.id}`)}
+                onClick={() => router.push(`/campaign/create?duplicate=${campaign.id}`)}
               >
-                  <Edit3 className="w-4 h-4 mr-1" /> Duplica
+                <Edit3 className="w-4 h-4 mr-1" /> Duplica
               </CustomButton>
-              <CustomButton
+
+              {/* 🆕 Pulsante Cancella (solo per campagne scheduled) */}
+              {canCancelCampaign(campaign) && (
+                <CustomButton
+                  variant="destructive"
+                  className="flex-1 py-2 flex items-center justify-center text-xs"
+                  onClick={() => setShowCancelDialog(true)}
+                  disabled={isCanceling}
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      Cancellando...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Cancella
+                    </>
+                  )}
+                </CustomButton>
+              )}
+
+              {/* Pulsante Condividi (solo se non è una campagna scheduled che può essere cancellata) */}
+              {!canCancelCampaign(campaign) && (
+                <CustomButton
                   variant="outline"
-                className="flex-1 py-2 flex items-center justify-center text-xs"
+                  className="flex-1 py-2 flex items-center justify-center text-xs"
                   onClick={() => {
                     // TODO: Implementare condivisione
                     console.log("Condividi campagna")
                   }}
-              >
+                >
                   <Share2 className="w-4 h-4 mr-1" /> Condividi
-              </CustomButton>
+                </CustomButton>
+              )}
             </div>
           </div>
 
@@ -396,6 +515,22 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                           {formatDate(campaign.sentDate)}
                       </span>
                     </div>
+                    )}
+                    {/* 🆕 Informazioni aggiuntive per campagne Twilio */}
+                    {campaign.twilioScheduledMessages && campaign.twilioScheduledMessages.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-blue-600">🚀</span>
+                          <span className="text-sm font-medium text-blue-800">Schedulata su Twilio</span>
+                        </div>
+                        <div className="text-xs text-blue-700 space-y-1">
+                          <div>📤 {campaign.schedulingStats?.successfulSchedules || 0} messaggi programmati</div>
+                          {campaign.schedulingStats?.failedSchedules && campaign.schedulingStats.failedSchedules > 0 && (
+                            <div>❌ {campaign.schedulingStats.failedSchedules} errori di schedulazione</div>
+                          )}
+                          <div>🕒 Invio gestito direttamente da Twilio</div>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -534,6 +669,70 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
           </>
         )}
       </div>
+
+             {/* 🆕 Dialog per la cancellazione */}
+       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+         <DialogContent className="w-full max-w-md">
+           <DialogHeader>
+             <DialogTitle className="flex items-center gap-2 text-xl">
+               <XCircle className="w-6 h-6 text-red-500" />
+               Cancella Campagna
+             </DialogTitle>
+             <DialogDescription className="text-base leading-relaxed">
+               {campaign && (
+                 <>
+                   Sei sicuro di voler cancellare la campagna <strong>"{campaign.name}"</strong>?
+                   <br /><br />
+                   <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                     <div className="flex items-start gap-2">
+                       <span className="text-red-600">⚠️</span>
+                       <div className="text-red-800">
+                         <strong>Attenzione:</strong> Questa azione cancellerà tutti i {campaign.recipients} messaggi programmati su Twilio. L'operazione è irreversibile.
+                         {campaign.scheduledDate && (
+                           <>
+                             <br /><br />
+                             <strong>Data programmata:</strong> {new Date(campaign.scheduledDate).toLocaleString('it-IT')}
+                           </>
+                         )}
+                       </div>
+                     </div>
+                   </div>
+                 </>
+               )}
+             </DialogDescription>
+           </DialogHeader>
+           
+           <div className="flex flex-col gap-3 mt-6">
+             <CustomButton
+               variant="destructive"
+               onClick={handleCancelCampaign}
+               disabled={isCanceling}
+               className="w-full h-12 text-base font-semibold"
+             >
+               {isCanceling ? (
+                 <>
+                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                   Cancellando su Twilio...
+                 </>
+               ) : (
+                 <>
+                   <XCircle className="w-5 h-5 mr-2" />
+                   Sì, Cancella Campagna
+                 </>
+               )}
+             </CustomButton>
+             
+             <CustomButton
+               variant="outline"
+               onClick={() => setShowCancelDialog(false)}
+               disabled={isCanceling}
+               className="w-full h-10"
+             >
+               Annulla
+             </CustomButton>
+           </div>
+         </DialogContent>
+       </Dialog>
     </main>
   )
 }

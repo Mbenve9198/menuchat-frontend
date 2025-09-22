@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ChevronLeft, Search, Plus, Filter, ArrowUpDown, MessageSquare } from "lucide-react"
+import { ChevronLeft, Search, Plus, Filter, ArrowUpDown, MessageSquare, XCircle, Loader2, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Input } from "@/components/ui/input"
@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import BubbleBackground from "@/components/bubble-background"
 import UILanguageSelector from "@/components/ui-language-selector"
 import { CustomButton } from "@/components/ui/custom-button"
 import { useSession } from "next-auth/react"
 import { useTranslation } from "react-i18next"
+import { useToast } from "@/hooks/use-toast"
 
 // Tipi TypeScript per le campagne
 interface Campaign {
@@ -67,6 +69,7 @@ export default function CampaignsPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
@@ -76,6 +79,11 @@ export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // 🆕 Stati per la cancellazione
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [campaignToCancel, setCampaignToCancel] = useState<Campaign | null>(null)
+  const [isCanceling, setIsCanceling] = useState(false)
 
   // Fetch campaigns from API
   const fetchCampaigns = async () => {
@@ -231,6 +239,12 @@ export default function CampaignsPage() {
             <span>❌</span> {t("campaigns.status.failed")}
           </Badge>
         )
+      case "canceled":
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1">
+            <span>🚫</span> Cancellata
+          </Badge>
+        )
       default:
         return null
     }
@@ -273,6 +287,75 @@ export default function CampaignsPage() {
 
   const getMascotImage = () => {
     return "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
+  }
+
+  // 🆕 Funzione per cancellare una campagna
+  const handleCancelCampaign = async (campaign: Campaign) => {
+    try {
+      setIsCanceling(true)
+      
+      const response = await fetch(`/api/campaign/${campaign.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `Errore ${response.status}`)
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Errore nella cancellazione della campagna')
+      }
+
+      // Aggiorna la lista delle campagne
+      setCampaigns(prevCampaigns => 
+        prevCampaigns.map(c => 
+          c.id === campaign.id ? { ...c, status: 'canceled' } : c
+        )
+      )
+      
+      // Chiudi il dialog
+      setShowCancelDialog(false)
+      setCampaignToCancel(null)
+
+      // Mostra messaggio di successo
+      toast({
+        title: "✅ Campagna cancellata",
+        description: `${data.data.canceledMessages || 0} messaggi sono stati cancellati con successo.`,
+        duration: 4000,
+      })
+
+      // Ricarica la lista per essere sicuri
+      await fetchCampaigns()
+
+    } catch (error: any) {
+      console.error('Errore nella cancellazione:', error)
+      
+      toast({
+        title: "❌ Errore nella cancellazione",
+        description: error.message || "Impossibile cancellare la campagna. Riprova.",
+        variant: "destructive",
+        duration: 6000,
+      })
+    } finally {
+      setIsCanceling(false)
+    }
+  }
+
+  // 🆕 Funzione per verificare se la campagna può essere cancellata
+  const canCancelCampaign = (campaign: Campaign): boolean => {
+    return campaign.status === 'scheduled'
+  }
+
+  // 🆕 Funzione per aprire il dialog di cancellazione
+  const openCancelDialog = (campaign: Campaign, event: React.MouseEvent) => {
+    event.stopPropagation() // Previene la navigazione al dettaglio
+    setCampaignToCancel(campaign)
+    setShowCancelDialog(true)
   }
 
   return (
@@ -418,7 +501,28 @@ export default function CampaignsPage() {
                         </div>
                       </div>
                     </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                  
+                  <div className="flex items-center gap-2">
+                    {/* 🆕 Pulsante Cancella (solo per campagne scheduled) */}
+                    {canCancelCampaign(campaign) && (
+                      <CustomButton
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => openCancelDialog(campaign, e)}
+                        disabled={isCanceling}
+                        title="Cancella campagna"
+                      >
+                        {isCanceling && campaignToCancel?.id === campaign.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <XCircle className="w-4 h-4" />
+                        )}
+                      </CustomButton>
+                    )}
+                    
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-3">
@@ -546,11 +650,72 @@ export default function CampaignsPage() {
               <Plus className="w-5 h-5 mr-2" /> {t("campaigns.createNewCampaign")}
           </CustomButton>
         </div>
-        )}
-      </div>
-    </main>
-  )
-}
+                  )}
+        </div>
+
+        {/* 🆕 Dialog per la cancellazione delle campagne */}
+        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <DialogContent className="w-full max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <XCircle className="w-6 h-6 text-red-500" />
+                Cancella Campagna
+              </DialogTitle>
+              <DialogDescription className="text-base leading-relaxed">
+                {campaignToCancel && (
+                  <>
+                    Sei sicuro di voler cancellare la campagna <strong>"{campaignToCancel.name}"</strong>?
+                    <br /><br />
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                      <div className="flex items-start gap-2">
+                        <span className="text-red-600">⚠️</span>
+                        <div className="text-red-800">
+                          <strong>Attenzione:</strong> Questa azione cancellerà tutti i {campaignToCancel.recipients} messaggi programmati su Twilio. L'operazione è irreversibile.
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col gap-3 mt-6">
+              <CustomButton
+                variant="destructive"
+                onClick={() => campaignToCancel && handleCancelCampaign(campaignToCancel)}
+                disabled={isCanceling}
+                className="w-full h-12 text-base font-semibold"
+              >
+                {isCanceling ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Cancellando su Twilio...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-5 h-5 mr-2" />
+                    Sì, Cancella Campagna
+                  </>
+                )}
+              </CustomButton>
+              
+              <CustomButton
+                variant="outline"
+                onClick={() => {
+                  setShowCancelDialog(false)
+                  setCampaignToCancel(null)
+                }}
+                disabled={isCanceling}
+                className="w-full h-10"
+              >
+                Annulla
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </main>
+    )
+  }
 
 // Custom Edit icon component
 function Edit({ className }: { className?: string }) {
