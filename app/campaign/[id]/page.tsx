@@ -299,6 +299,12 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             <span>🚫</span> Cancellata
           </Badge>
         )
+      case "completed":
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1">
+            <span>✅</span> Completata
+          </Badge>
+        )
       default:
         return null
     }

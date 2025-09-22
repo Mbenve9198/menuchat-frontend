@@ -44,10 +44,11 @@ const statusOptions = [
   { value: "all", label: "campaigns.allCampaigns" },
   { value: "sent", label: "campaigns.sent" },
   { value: "scheduled", label: "campaigns.scheduled" },
+  { value: "completed", label: "campaigns.status.completed" },
   { value: "in_progress", label: "campaigns.status.inProgress" },
   { value: "draft", label: "campaigns.status.draft" },
   { value: "failed", label: "campaigns.status.failed" },
-  { value: "cancelled", label: "campaigns.status.cancelled" },
+  { value: "canceled", label: "campaigns.status.canceled" },
 ]
 
 // Campaign type options
@@ -249,6 +250,12 @@ export default function CampaignsPage() {
         return (
           <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 flex items-center gap-1">
             <span>🚫</span> Cancellata
+          </Badge>
+        )
+      case "completed":
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1">
+            <span>✅</span> Completata
           </Badge>
         )
       default:
