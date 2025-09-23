@@ -295,15 +295,15 @@ export default function AdminDashboard() {
       setSendingTestEmail(true);
       setTestResult('');
 
-      // Prima genera il suggerimento per l'utente selezionato
-      const suggestionResponse = await fetch('/api/email-test/weekly-campaign-suggestion', {
-        method: 'POST',
-        headers: {
-          ...getAuthHeaders(),
-          'X-Test-User-Id': selectedUser,
-          'X-Test-Email': testEmail
-        }
-      });
+             // Prima genera il suggerimento per l'utente selezionato
+       const suggestionResponse = await fetch('/api/admin/weekly-campaign-test', {
+         method: 'POST',
+         headers: getAuthHeaders(),
+         body: JSON.stringify({
+           email: testEmail,
+           userId: selectedUser
+         })
+       });
 
       if (suggestionResponse.status === 401) {
         handleAuthError();
@@ -336,10 +336,10 @@ export default function AdminDashboard() {
       setSendingTestEmail(true);
       setTestResult('');
 
-      const response = await fetch('/api/admin/trigger-weekly-campaign-suggestions', {
-        method: 'POST',
-        headers: getAuthHeaders()
-      });
+             const response = await fetch('/api/admin/trigger-weekly-campaign-suggestions', {
+         method: 'POST',
+         headers: getAuthHeaders()
+       });
 
       if (response.status === 401) {
         handleAuthError();

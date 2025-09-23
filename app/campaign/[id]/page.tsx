@@ -172,7 +172,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     }
   }, [status, session, params.id])
 
-  // �� Funzione per caricare i dati di attribution
+  // 📊 Funzione per caricare i dati di attribution
   const fetchAttributionData = async () => {
     if (!campaign) return
 
