@@ -303,7 +303,7 @@ export default function AdminDashboard() {
       setTestResult('');
 
              // Prima genera il suggerimento per l'utente selezionato
-       const suggestionResponse = await fetch('/api/admin/weekly-campaign-test', {
+       const suggestionResponse = await fetch('/api/admin/test-weekly-campaign-suggestion', {
          method: 'POST',
          headers: {
            ...getAuthHeaders(),
