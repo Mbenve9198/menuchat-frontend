@@ -187,8 +187,14 @@ export default function AdminDashboard() {
       if (data.success) {
         // Il backend restituisce i dati in data.data
         const responseData = data.data || {};
-        setUsersStats(responseData.users || []);
+        const users = responseData.users || [];
+        setUsersStats(users);
         setSummary(responseData.summary || null);
+        // Popola anche la lista per i test se non è già popolata
+        if (availableUsers.length === 0) {
+          setAvailableUsers(users);
+          console.log('👥 Utenti caricati per test:', users.length, users.map(u => ({ id: u.userId, email: u.userEmail, restaurant: u.restaurantName })));
+        }
       } else {
         setError(data.message || 'Errore nel caricamento dei dati');
       }
@@ -264,6 +270,13 @@ export default function AdminDashboard() {
   const fetchAvailableUsers = async () => {
     try {
       setLoadingUsers(true);
+      // Riutilizza i dati già caricati se disponibili
+      if (usersStats && usersStats.length > 0) {
+        setAvailableUsers(usersStats);
+        setLoadingUsers(false);
+        return;
+      }
+
       const response = await fetch('/api/admin/users-stats', {
         headers: getAuthHeaders(),
       });
@@ -1044,21 +1057,30 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Utente per analisi</label>
-                  <div className="flex gap-2">
-                    <Select value={selectedUser} onValueChange={setSelectedUser}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Seleziona utente..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableUsers.map((user) => (
-                          <SelectItem key={user.userId} value={user.userId}>
-                            {user.restaurantName} ({user.userEmail})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                                 <div>
+                   <label className="block text-sm font-medium mb-2">Utente per analisi</label>
+                   <div className="flex gap-2">
+                     <Select value={selectedUser} onValueChange={(value) => {
+                       console.log('🔍 Utente selezionato:', value);
+                       setSelectedUser(value);
+                     }}>
+                       <SelectTrigger className="flex-1">
+                         <SelectValue placeholder={`Seleziona utente... (${availableUsers.length} disponibili)`} />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {availableUsers.length > 0 ? (
+                           availableUsers.map((user) => (
+                             <SelectItem key={user.userId} value={user.userId}>
+                               {user.restaurantName} ({user.userEmail})
+                             </SelectItem>
+                           ))
+                         ) : (
+                           <SelectItem value="no-users" disabled>
+                             Nessun utente disponibile
+                           </SelectItem>
+                         )}
+                       </SelectContent>
+                     </Select>
                     <Button
                       onClick={fetchAvailableUsers}
                       disabled={loadingUsers}
