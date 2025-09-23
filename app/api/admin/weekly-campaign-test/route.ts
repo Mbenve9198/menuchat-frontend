@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const { email, userId } = body;
     
     // URL del backend - usa variabile d'ambiente o fallback
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     
     const response = await fetch(`${backendUrl}/api/email-test/weekly-campaign-suggestion`, {
       method: 'POST',

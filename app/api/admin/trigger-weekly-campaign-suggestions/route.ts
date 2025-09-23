@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     // URL del backend - usa variabile d'ambiente o fallback
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     
     const response = await fetch(`${backendUrl}/api/admin/trigger-weekly-campaign-suggestions`, {
       method: 'POST',
