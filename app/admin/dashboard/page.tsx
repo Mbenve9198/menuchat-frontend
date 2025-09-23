@@ -190,11 +190,6 @@ export default function AdminDashboard() {
         const users = responseData.users || [];
         setUsersStats(users);
         setSummary(responseData.summary || null);
-        // Popola anche la lista per i test se non è già popolata
-        if (availableUsers.length === 0) {
-          setAvailableUsers(users);
-          console.log('👥 Utenti caricati per test:', users.length, users.map(u => ({ id: u.userId, email: u.userEmail, restaurant: u.restaurantName })));
-        }
       } else {
         setError(data.message || 'Errore nel caricamento dei dati');
       }
@@ -270,14 +265,8 @@ export default function AdminDashboard() {
   const fetchAvailableUsers = async () => {
     try {
       setLoadingUsers(true);
-      // Riutilizza i dati già caricati se disponibili
-      if (usersStats && usersStats.length > 0) {
-        setAvailableUsers(usersStats);
-        setLoadingUsers(false);
-        return;
-      }
 
-      const response = await fetch('/api/admin/users-stats', {
+      const response = await fetch('/api/admin/users-list', {
         headers: getAuthHeaders(),
       });
 
@@ -287,8 +276,13 @@ export default function AdminDashboard() {
       }
 
       const data = await response.json();
-      if (data.success && data.data?.users) {
-        setAvailableUsers(data.data.users);
+      console.log('👥 Risposta users-list:', data);
+      
+      if (data.success && data.data) {
+        setAvailableUsers(data.data);
+        console.log('✅ Utenti caricati per test:', data.data.length);
+      } else {
+        console.error('❌ Errore risposta users-list:', data);
       }
     } catch (error) {
       console.error('Errore caricamento utenti:', error);
@@ -311,7 +305,10 @@ export default function AdminDashboard() {
              // Prima genera il suggerimento per l'utente selezionato
        const suggestionResponse = await fetch('/api/admin/weekly-campaign-test', {
          method: 'POST',
-         headers: getAuthHeaders(),
+         headers: {
+           ...getAuthHeaders(),
+           'Content-Type': 'application/json'
+         },
          body: JSON.stringify({
            email: testEmail,
            userId: selectedUser
@@ -351,7 +348,10 @@ export default function AdminDashboard() {
 
              const response = await fetch('/api/admin/trigger-weekly-campaign-suggestions', {
          method: 'POST',
-         headers: getAuthHeaders()
+         headers: {
+           ...getAuthHeaders(),
+           'Content-Type': 'application/json'
+         }
        });
 
       if (response.status === 401) {
@@ -1047,6 +1047,14 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Auto-carica utenti quando si apre questo tab */}
+                {availableUsers.length === 0 && !loadingUsers && (
+                  <div className="text-center py-4">
+                    <Button onClick={fetchAvailableUsers} variant="outline">
+                      Carica Lista Utenti
+                    </Button>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium mb-2">Email destinatario</label>
                   <Input
