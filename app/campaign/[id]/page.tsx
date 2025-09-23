@@ -997,10 +997,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-    </main>
-  )
-}
+      </main>
+    )
+  }
 
 // Custom Edit icon component
 function Edit({ className }: { className?: string }) {

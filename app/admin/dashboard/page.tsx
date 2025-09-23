@@ -8,6 +8,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { 
   Loader2, 
@@ -129,6 +132,14 @@ export default function AdminDashboard() {
   const [trendsMonths, setTrendsMonths] = useState(12);
   const [loadingMonthly, setLoadingMonthly] = useState(false);
   
+  // Stati per test email campagne settimanali
+  const [testEmail, setTestEmail] = useState('');
+  const [selectedUser, setSelectedUser] = useState('');
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [testResult, setTestResult] = useState('');
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  
   const router = useRouter();
 
   // Verifica autenticazione
@@ -246,6 +257,109 @@ export default function AdminDashboard() {
       setError('Errore di connessione per i trend mensili.');
     } finally {
       setLoadingMonthly(false);
+    }
+  };
+
+  // Carica lista utenti per i test
+  const fetchAvailableUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await fetch('/api/admin/users-stats', {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success && data.data?.users) {
+        setAvailableUsers(data.data.users);
+      }
+    } catch (error) {
+      console.error('Errore caricamento utenti:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Gestisce l'invio del test email
+  const handleSendTestEmail = async () => {
+    if (!testEmail || !selectedUser) {
+      setTestResult('❌ Inserisci email e seleziona un utente');
+      return;
+    }
+
+    try {
+      setSendingTestEmail(true);
+      setTestResult('');
+
+      // Prima genera il suggerimento per l'utente selezionato
+      const suggestionResponse = await fetch('/api/email-test/weekly-campaign-suggestion', {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'X-Test-User-Id': selectedUser,
+          'X-Test-Email': testEmail
+        }
+      });
+
+      if (suggestionResponse.status === 401) {
+        handleAuthError();
+        return;
+      }
+
+      const suggestionData = await suggestionResponse.json();
+
+      if (suggestionData.success) {
+        setTestResult(`✅ Email inviata con successo!
+📧 Email ID: ${suggestionData.data.emailId}
+📝 Suggerimento: ${suggestionData.data.suggestion.title}
+🎯 Tipo: ${suggestionData.data.suggestion.campaignType}
+📈 Impatto: ${suggestionData.data.suggestion.estimatedImpact}`);
+      } else {
+        setTestResult(`❌ Errore: ${suggestionData.error}`);
+      }
+
+    } catch (error) {
+      console.error('Errore invio test email:', error);
+      setTestResult(`❌ Errore di connessione: ${error.message}`);
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
+
+  // Trigger per tutti gli utenti
+  const handleTriggerAllUsers = async () => {
+    try {
+      setSendingTestEmail(true);
+      setTestResult('');
+
+      const response = await fetch('/api/admin/trigger-weekly-campaign-suggestions', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setTestResult(`✅ Email inviate a tutti gli utenti!
+⏰ Timestamp: ${new Date(data.timestamp).toLocaleString()}`);
+      } else {
+        setTestResult(`❌ Errore: ${data.error}`);
+      }
+
+    } catch (error) {
+      console.error('Errore trigger email:', error);
+      setTestResult(`❌ Errore di connessione: ${error.message}`);
+    } finally {
+      setSendingTestEmail(false);
     }
   };
 
@@ -454,6 +568,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="tabella">Tabella Utenti</TabsTrigger>
           <TabsTrigger value="grafici">Grafici</TabsTrigger>
           <TabsTrigger value="mensili">Statistiche Mensili</TabsTrigger>
+          <TabsTrigger value="email-test">🚀 Test Email Campagne</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tabella" className="space-y-4">
@@ -904,6 +1019,146 @@ export default function AdminDashboard() {
               </Card>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="email-test" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Test Singolo Utente */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🧪 Test Email Campagna Settimanale
+                </CardTitle>
+                <CardDescription>
+                  Testa il nuovo sistema di suggerimenti campagne intelligenti con Gemini AI
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email destinatario</label>
+                  <Input
+                    type="email"
+                    placeholder="test@example.com"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Utente per analisi</label>
+                  <div className="flex gap-2">
+                    <Select value={selectedUser} onValueChange={setSelectedUser}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Seleziona utente..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableUsers.map((user) => (
+                          <SelectItem key={user.userId} value={user.userId}>
+                            {user.restaurantName} ({user.userEmail})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={fetchAvailableUsers}
+                      disabled={loadingUsers}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {loadingUsers ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSendTestEmail}
+                  disabled={sendingTestEmail || !testEmail || !selectedUser}
+                  className="w-full"
+                >
+                  {sendingTestEmail ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    '🚀'
+                  )}
+                  Invia Email Test
+                </Button>
+
+                {testResult && (
+                  <div className="mt-4">
+                    <Textarea
+                      value={testResult}
+                      readOnly
+                      className="min-h-[120px] font-mono text-sm"
+                      placeholder="Risultato test apparirà qui..."
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Trigger Globale */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  📧 Trigger Globale
+                </CardTitle>
+                <CardDescription>
+                  Invia email settimanali con suggerimenti a tutti gli utenti attivi
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Attenzione:</strong> Questo invierà email reali a tutti gli utenti che hanno abilitato i suggerimenti settimanali.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    <strong>Sistema:</strong> Utilizza Gemini AI per analizzare ogni ristorante
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Frequenza:</strong> Automatico ogni venerdì alle 11:00
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Filtri:</strong> Solo utenti attivi con preferenze email abilitate
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>Anti-spam:</strong> Max 1 email ogni 6 giorni per ristorante
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleTriggerAllUsers}
+                  disabled={sendingTestEmail}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {sendingTestEmail ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    '⚡'
+                  )}
+                  Trigger Email per Tutti gli Utenti
+                </Button>
+
+                <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+                  <strong>Nota tecnica:</strong> Il sistema analizza automaticamente:
+                  <ul className="mt-1 space-y-1 ml-4">
+                    <li>• Dati ristorante e performance</li>
+                    <li>• Campagne precedenti (evita duplicati)</li>
+                    <li>• Stagionalità e contesto temporale</li>
+                    <li>• Genera suggerimenti specifici e actionable</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
