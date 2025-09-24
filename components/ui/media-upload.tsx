@@ -139,11 +139,14 @@ export function MediaUpload({
         // Parametri per upload campagne (comportamento esistente)
         if (campaignType) formData.append('campaignType', campaignType)
         
-        // Per i video, specifichiamo che non vogliamo trasformazioni
-        // nell'URL finale, ma vogliamo un file già compatibile con WhatsApp
+        // Per le campagne, abilita sempre l'ottimizzazione per WhatsApp
+        // per garantire URL compatibili con Twilio (con estensioni corrette)
+        formData.append('optimizeForWhatsApp', 'true')
+        
         if (isVideo) {
-          formData.append('optimizeForWhatsApp', 'true')
           console.log('📹 Video rilevato - ottimizzazione WhatsApp abilitata')
+        } else if (isImage) {
+          console.log('🖼️ Immagine rilevata - ottimizzazione WhatsApp abilitata per URL compatibile con Twilio')
         }
       }
       

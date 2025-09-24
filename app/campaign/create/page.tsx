@@ -870,6 +870,8 @@ export default function CreateCampaign() {
       setIsSubmittingTemplate(true);
       setTemplateApprovalStatus("pending");
       
+      let templateSubmissionSuccessful = false;
+      
       try {
         console.log("Invio template a Twilio per approvazione...");
         const submitResponse = await fetch(`/api/campaign/${campaignResult.data._id}/submit-template`, {
@@ -903,36 +905,54 @@ export default function CreateCampaign() {
             return; // Interrompe l'esecuzione
           }
           
-          // Per altri errori, loggiamo ma continuiamo
-          console.warn("Template submission fallito ma continuiamo con la schedulazione:", errorMessage);
-        } else {
-          const submitData = await submitResponse.json();
-          console.log("Template inviato con successo a Twilio:", submitData);
-        }
-      } catch (submitError: any) {
-        console.error("Errore nell'invio del template a Twilio:", submitError);
-        
-        // Controlla se l'errore è relativo al formato media
-        const errorMessage = submitError.message || '';
-        if (errorMessage.includes('Invalid file') || 
-            errorMessage.includes('Media non compatibile') ||
-            errorMessage.includes('supported-mime-types') ||
-            errorMessage.includes('Content-Type')) {
+          // Per altri errori di template submission, fermiamo comunque tutto
+          console.error("Template submission fallito - blocco scheduling:", errorMessage);
           
           setIsSubmitting(false);
           setIsSubmittingTemplate(false);
           
           toast({
-            title: "Errore formato media",
-            description: `Il formato dell'immagine/video non è supportato da WhatsApp. ${errorMessage}`,
+            title: "Errore template",
+            description: `Errore nella creazione del template WhatsApp: ${errorMessage}`,
             variant: "destructive",
           });
           
           return; // Interrompe l'esecuzione
+        } else {
+          const submitData = await submitResponse.json();
+          console.log("Template inviato con successo a Twilio:", submitData);
+          templateSubmissionSuccessful = true;
         }
+      } catch (submitError: any) {
+        console.error("Errore nell'invio del template a Twilio:", submitError);
         
-        // Per altri errori, loggiamo ma continuiamo
-        console.warn("Template submission fallito ma continuiamo con la schedulazione:", errorMessage);
+        // Per qualsiasi errore durante il template submission, fermiamo tutto
+        setIsSubmitting(false);
+        setIsSubmittingTemplate(false);
+        
+        const errorMessage = submitError.message || '';
+        toast({
+          title: "Errore template",
+          description: `Errore nella sottomissione del template: ${errorMessage}`,
+          variant: "destructive",
+        });
+        
+        return; // Interrompe l'esecuzione
+      }
+      
+      // 🔒 SICUREZZA: Procedi al scheduling solo se il template submission è andato a buon fine
+      if (!templateSubmissionSuccessful) {
+        console.error("❌ Template submission non riuscito - blocco scheduling");
+        setIsSubmitting(false);
+        setIsSubmittingTemplate(false);
+        
+        toast({
+          title: "Errore",
+          description: "Impossibile programmare la campagna: template non valido",
+          variant: "destructive",
+        });
+        
+        return;
       }
       
       // 4. Programma l'invio della campagna
