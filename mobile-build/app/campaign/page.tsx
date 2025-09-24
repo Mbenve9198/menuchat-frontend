@@ -32,6 +32,19 @@ interface Campaign {
   createdAt?: string
   updatedAt?: string
   template?: any
+  // 🆕 Gestione fallimenti
+  statistics?: {
+    sentCount?: number
+    deliveredCount?: number
+    readCount?: number
+    failedCount?: number
+    failureDetails?: Array<{
+      phoneNumber: string
+      error: string
+      errorCode?: string
+      timestamp: string
+    }>
+  }
 }
 
 // Campaign status options
@@ -116,7 +129,15 @@ export default function CampaignsPage() {
         responseRate: campaign.statistics?.responseRate || null,
         createdAt: campaign.createdAt,
         updatedAt: campaign.updatedAt,
-        template: campaign.template
+        template: campaign.template,
+        // 🆕 Statistiche fallimenti
+        statistics: {
+          sentCount: campaign.statistics?.sentCount || 0,
+          deliveredCount: campaign.statistics?.deliveredCount || 0,
+          readCount: campaign.statistics?.readCount || 0,
+          failedCount: campaign.statistics?.failedCount || 0,
+          failureDetails: campaign.statistics?.failureDetails || []
+        }
       }))
 
       setCampaigns(transformedCampaigns)
@@ -199,7 +220,7 @@ export default function CampaignsPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, campaign?: Campaign) => {
     switch (status) {
       case "sent":
         return (
@@ -229,6 +250,18 @@ export default function CampaignsPage() {
         return (
           <Badge className="bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1">
             <span>❌</span> {t("campaigns.status.failed")}
+          </Badge>
+        )
+      case "completed":
+        const hasFailures = campaign?.statistics?.failedCount && campaign.statistics.failedCount > 0;
+        return (
+          <Badge className={hasFailures 
+            ? "bg-orange-100 text-orange-800 hover:bg-orange-200 flex items-center gap-1"
+            : "bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1"
+          }>
+            <span>{hasFailures ? "⚠️" : "✅"}</span> 
+            Completata
+            {hasFailures && <span className="ml-1 text-xs">({campaign.statistics.failedCount} falliti)</span>}
           </Badge>
         )
       default:
@@ -407,7 +440,7 @@ export default function CampaignsPage() {
                     <div>
                       <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        {getStatusBadge(campaign.status)}
+                        {getStatusBadge(campaign.status, campaign)}
                         <span className="text-xs text-gray-500">
                           {campaign.sentDate
                               ? `${t("campaigns.sent")}: ${formatDate(campaign.sentDate)}`

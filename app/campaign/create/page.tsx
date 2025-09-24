@@ -143,6 +143,51 @@ export default function CreateCampaign() {
   // Payment-related state variables
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [isPaymentCompleted, setIsPaymentCompleted] = useState(false)
+
+  // 🔧 NUOVO: Recupera il pagamento dalla sessione quando il componente si monta
+  useEffect(() => {
+    const sessionPaymentData = sessionStorage.getItem('menuchat_payment_session')
+    if (sessionPaymentData) {
+      try {
+        const paymentData = JSON.parse(sessionPaymentData)
+        const now = Date.now()
+        
+        // Controlla se il pagamento è ancora valido (entro 1 ora)
+        if (paymentData.timestamp && (now - paymentData.timestamp) < 3600000) {
+          setPaymentIntentId(paymentData.paymentIntentId)
+          setIsPaymentCompleted(true)
+          console.log('🔄 Pagamento recuperato dalla sessione:', paymentData.paymentIntentId)
+        } else {
+          // Rimuovi il pagamento scaduto
+          sessionStorage.removeItem('menuchat_payment_session')
+          console.log('⏰ Pagamento di sessione scaduto, rimosso')
+        }
+      } catch (error) {
+        console.error('❌ Errore nel parsing del pagamento di sessione:', error)
+        sessionStorage.removeItem('menuchat_payment_session')
+      }
+    }
+  }, [])
+
+  // 🔧 NUOVO: Pulisci il pagamento di sessione quando la campagna viene completata con successo
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Non rimuovere il pagamento quando l'utente semplicemente naviga via
+      // Lo rimuoveremo solo quando la campagna è completata con successo
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
+
+  // 🔧 NUOVO: Pulisci il pagamento di sessione quando la campagna viene creata con successo
+  useEffect(() => {
+    if (campaignCreated) {
+      sessionStorage.removeItem('menuchat_payment_session')
+      console.log('🧹 Pagamento di sessione rimosso dopo successo campagna')
+    }
+  }, [campaignCreated])
+
   const [paymentError, setPaymentError] = useState<string | null>(null)
   // Bulk delete state variables
   const [isDeletingContacts, setIsDeletingContacts] = useState(false)
@@ -743,11 +788,35 @@ export default function CreateCampaign() {
 
   // Update the handleSubmit function to use fetch directly
   const handleSubmit = async () => {
+    // 🔧 NUOVO: Verifica se il numero di contatti è cambiato dalla volta del pagamento
+    const currentContactCount = contacts.filter(c => c.selected).length
+    const sessionPaymentData = sessionStorage.getItem('menuchat_payment_session')
+    let needsNewPayment = !paymentIntentId || !isPaymentCompleted
+    
+    if (sessionPaymentData && paymentIntentId && isPaymentCompleted) {
+      try {
+        const paymentData = JSON.parse(sessionPaymentData)
+        if (paymentData.contactCount !== currentContactCount) {
+          console.log(`⚠️ Numero contatti cambiato: ${paymentData.contactCount} → ${currentContactCount}`)
+          needsNewPayment = true
+          // Rimuovi il pagamento obsoleto
+          sessionStorage.removeItem('menuchat_payment_session')
+          setIsPaymentCompleted(false)
+          setPaymentIntentId(null)
+        }
+      } catch (error) {
+        console.error('❌ Errore nella verifica del pagamento di sessione:', error)
+        needsNewPayment = true
+      }
+    }
+    
     // Verify payment first
-    if (!paymentIntentId || !isPaymentCompleted) {
+    if (needsNewPayment) {
       toast({
         title: "Pagamento richiesto",
-        description: "Completa il pagamento prima di procedere",
+        description: currentContactCount !== (JSON.parse(sessionPaymentData || '{}').contactCount || 0) 
+          ? "Il numero di contatti è cambiato, è necessario un nuovo pagamento"
+          : "Completa il pagamento prima di procedere",
         variant: "destructive",
       })
       return
@@ -1099,6 +1168,15 @@ export default function CreateCampaign() {
     setPaymentIntentId(paymentIntentId)
     setIsPaymentCompleted(true)
     setPaymentError(null)
+    
+    // 🔧 NUOVO: Salva il pagamento in sessionStorage per mantenerlo durante la sessione
+    const paymentData = {
+      paymentIntentId,
+      timestamp: Date.now(),
+      contactCount: contacts.filter(c => c.selected).length
+    }
+    sessionStorage.setItem('menuchat_payment_session', JSON.stringify(paymentData))
+    console.log('💾 Pagamento salvato in sessione:', paymentIntentId)
     
     toast({
       title: "Pagamento completato!",
