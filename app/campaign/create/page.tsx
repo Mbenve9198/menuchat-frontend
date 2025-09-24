@@ -883,14 +883,56 @@ export default function CreateCampaign() {
         if (!submitResponse.ok) {
           const submitErrorData = await submitResponse.json();
           console.error("Errore nell'invio del template a Twilio:", submitErrorData);
-          // Continuiamo comunque con lo scheduling
+          
+          // 🚨 CRITICO: Se il template submission fallisce per problemi di media, fermiamo tutto
+          const errorMessage = submitErrorData.error || '';
+          if (errorMessage.includes('Invalid file') || 
+              errorMessage.includes('Media non compatibile') ||
+              errorMessage.includes('supported-mime-types') ||
+              errorMessage.includes('Content-Type')) {
+            
+            setIsSubmitting(false);
+            setIsSubmittingTemplate(false);
+            
+            toast({
+              title: "Errore formato media",
+              description: `Il formato dell'immagine/video non è supportato da WhatsApp. ${errorMessage}`,
+              variant: "destructive",
+            });
+            
+            return; // Interrompe l'esecuzione
+          }
+          
+          // Per altri errori, loggiamo ma continuiamo
+          console.warn("Template submission fallito ma continuiamo con la schedulazione:", errorMessage);
         } else {
           const submitData = await submitResponse.json();
           console.log("Template inviato con successo a Twilio:", submitData);
         }
-      } catch (submitError) {
+      } catch (submitError: any) {
         console.error("Errore nell'invio del template a Twilio:", submitError);
-        // Continuiamo comunque con lo scheduling
+        
+        // Controlla se l'errore è relativo al formato media
+        const errorMessage = submitError.message || '';
+        if (errorMessage.includes('Invalid file') || 
+            errorMessage.includes('Media non compatibile') ||
+            errorMessage.includes('supported-mime-types') ||
+            errorMessage.includes('Content-Type')) {
+          
+          setIsSubmitting(false);
+          setIsSubmittingTemplate(false);
+          
+          toast({
+            title: "Errore formato media",
+            description: `Il formato dell'immagine/video non è supportato da WhatsApp. ${errorMessage}`,
+            variant: "destructive",
+          });
+          
+          return; // Interrompe l'esecuzione
+        }
+        
+        // Per altri errori, loggiamo ma continuiamo
+        console.warn("Template submission fallito ma continuiamo con la schedulazione:", errorMessage);
       }
       
       // 4. Programma l'invio della campagna
@@ -912,14 +954,36 @@ export default function CreateCampaign() {
         if (!scheduleResponse.ok) {
           const scheduleErrorData = await scheduleResponse.json();
           console.error("Errore nella programmazione della campagna:", scheduleErrorData);
-          // Mostriamo comunque un messaggio di successo per l'invio della campagna
+          
+          // 🚨 CRITICO: Se la programmazione fallisce, mostra errore e non continuare
+          setIsSubmitting(false);
+          setIsSubmittingTemplate(false);
+          
+          toast({
+            title: t("common.error"),
+            description: scheduleErrorData.error || t("campaignCreate.errors.failedToScheduleCampaign"),
+            variant: "destructive",
+          });
+          
+          return; // Interrompe l'esecuzione
         } else {
           const scheduleData = await scheduleResponse.json();
           console.log("Campagna programmata con successo:", scheduleData);
         }
       } catch (scheduleError) {
         console.error("Errore nella programmazione della campagna:", scheduleError);
-        // Mostriamo comunque un messaggio di successo per l'invio della campagna
+        
+        // 🚨 CRITICO: Se la programmazione fallisce, mostra errore e non continuare
+        setIsSubmitting(false);
+        setIsSubmittingTemplate(false);
+        
+        toast({
+          title: t("common.error"),
+          description: t("campaignCreate.errors.failedToScheduleCampaign"),
+          variant: "destructive",
+        });
+        
+        return; // Interrompe l'esecuzione
       }
       
       // Mostra il messaggio di successo
