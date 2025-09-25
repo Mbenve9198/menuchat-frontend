@@ -56,6 +56,9 @@ export async function POST(
 
     // URL dell'API backend
     const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+    console.log('🌐 [VERCEL] Backend URL:', backendUrl)
+    console.log('📤 [VERCEL] Chiamata schedule:', `${backendUrl}/api/campaign/${campaignId}/schedule`)
+    console.log('📦 [VERCEL] Payload:', { scheduledDate })
     
     // Invia la richiesta di programmazione al backend
     const response = await fetch(`${backendUrl}/api/campaign/${campaignId}/schedule`, {
@@ -65,6 +68,12 @@ export async function POST(
         'Authorization': `Bearer ${session.accessToken}`
       },
       body: JSON.stringify({ scheduledDate })
+    })
+    
+    console.log('📡 [VERCEL] Risposta ricevuta:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
     })
 
     if (!response.ok) {
