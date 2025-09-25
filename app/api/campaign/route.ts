@@ -165,6 +165,11 @@ export async function POST(request: NextRequest) {
             index: 1,
             name: "customerName",
             example: "Cliente"
+          },
+          {
+            index: 2,
+            name: "unsubscribe_url",
+            example: "api/campaign/unsubscribe/ID/TOKEN"
           }
         ]
       };
