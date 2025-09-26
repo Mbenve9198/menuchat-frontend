@@ -686,17 +686,25 @@ export default function CampaignsPage() {
           </div>
         )}
 
-        {/* Fixed Create Campaign Button */}
+        {/* Fixed Action Buttons */}
         {!isLoading && !error && (
-        <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
-          <CustomButton
-            className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
-            onClick={() => router.push("/campaign/create")}
-          >
+          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center gap-3 px-4">
+            <CustomButton
+              className="py-3 px-4 shadow-lg flex items-center justify-center"
+              onClick={() => router.push("/contacts")}
+              variant="outline"
+            >
+              <Users className="w-5 h-5 mr-2" /> Rubrica
+            </CustomButton>
+            
+            <CustomButton
+              className="py-3 px-6 shadow-lg flex items-center justify-center flex-1 max-w-xs"
+              onClick={() => router.push("/campaign/create")}
+            >
               <Plus className="w-5 h-5 mr-2" /> {t("campaigns.createNewCampaign")}
-          </CustomButton>
-        </div>
-                  )}
+            </CustomButton>
+          </div>
+        )}
         </div>
 
         {/* 🆕 Dialog per la cancellazione delle campagne */}
