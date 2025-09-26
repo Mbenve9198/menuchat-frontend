@@ -68,7 +68,7 @@ export default function ContactsPage() {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch('/api/campaign/contacts', {
+      const response = await fetch('/api/campaign/contacts?includeOptOut=true', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

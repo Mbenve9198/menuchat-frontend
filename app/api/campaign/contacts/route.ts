@@ -25,8 +25,12 @@ export async function GET(request: NextRequest) {
     // URL dell'API backend
     const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
     
+    // 🔧 NUOVO: Supporta parametro includeOptOut per la rubrica
+    const includeOptOut = request.nextUrl.searchParams.get('includeOptOut') === 'true'
+    const queryString = includeOptOut ? '?includeOptOut=true' : ''
+    
     // Richiedi i contatti dal backend
-    const response = await fetch(`${backendUrl}/api/campaign/contacts`, {
+    const response = await fetch(`${backendUrl}/api/campaign/contacts${queryString}`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
