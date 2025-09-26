@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ChevronLeft, Search, Plus, Filter, ArrowUpDown, MessageSquare, XCircle, Loader2, ChevronRight } from "lucide-react"
+import { ChevronLeft, Search, Plus, Filter, ArrowUpDown, MessageSquare, XCircle, Loader2, ChevronRight, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Input } from "@/components/ui/input"
