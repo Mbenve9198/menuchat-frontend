@@ -1527,6 +1527,7 @@ const SortableCategory = ({
   onDishDuplicate,
   onDishDelete,
   onDishReorder,
+  onCategoryAI,
 }: {
   category: Category
   onUpdateCategory: (updatedCategory: Category) => void
@@ -1541,6 +1542,7 @@ const SortableCategory = ({
   onDishDuplicate: (categoryId: string, dish: Dish) => void
   onDishDelete: (categoryId: string, dishId: string) => void
   onDishReorder: (categoryId: string, dishes: Dish[]) => void
+  onCategoryAI?: (category: Category) => void
 }) => {
   const {
     attributes,
@@ -1573,6 +1575,7 @@ const SortableCategory = ({
         onDishDuplicate={onDishDuplicate}
         onDishDelete={onDishDelete}
         onDishReorder={onDishReorder}
+        onCategoryAI={onCategoryAI}
         dragAttributes={attributes}
         dragListeners={listeners}
         isDragging={isDragging}
@@ -1596,6 +1599,7 @@ const CategoryAccordion = ({
   onDishDuplicate,
   onDishDelete,
   onDishReorder,
+  onCategoryAI,
   dragAttributes,
   dragListeners,
   isDragging = false,
@@ -1613,6 +1617,7 @@ const CategoryAccordion = ({
   onDishDuplicate: (categoryId: string, dish: Dish) => void
   onDishDelete: (categoryId: string, dishId: string) => void
   onDishReorder?: (categoryId: string, dishes: Dish[]) => void
+  onCategoryAI?: (category: Category) => void
   dragAttributes?: any
   dragListeners?: any
   isDragging?: boolean
@@ -1832,9 +1837,7 @@ const CategoryAccordion = ({
                   className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
                   onClick={(e) => {
                     e.stopPropagation()
-                    setSelectedCategoryForAI(category)
-                    setSelectedDishesForAI([])
-                    setShowCategoryAIDialog(true)
+                    onCategoryAI?.(category)
                   }}
                   title="Genera immagini AI per tutti i piatti della categoria"
                 >
@@ -2828,6 +2831,13 @@ export default function MenuAdminPage() {
     setShowCategoryAIDialog(false)
     setSelectedCategoryForAI(null)
     setSelectedDishesForAI([])
+  }
+
+  // Handler per aprire il dialog AI categoria
+  const handleOpenCategoryAI = (category: Category) => {
+    setSelectedCategoryForAI(category)
+    setSelectedDishesForAI([])
+    setShowCategoryAIDialog(true)
   }
 
   // Predefined languages available for translation
@@ -3908,6 +3918,7 @@ export default function MenuAdminPage() {
                   onDishDuplicate={handleDishDuplicate}
                   onDishDelete={handleDishDelete}
                   onDishReorder={handleDishReorder}
+                  onCategoryAI={handleOpenCategoryAI}
                 />
               ))}
             </Accordion>
