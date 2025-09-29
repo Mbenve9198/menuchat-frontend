@@ -1234,7 +1234,7 @@ const DishAccordionItem = ({
                 disabled={isUpdatingImage || isGeneratingImage}
               >
                 <Wand2 className="mr-2 h-5 w-5" />
-                Crea con Imagen 4 Ultra
+                Genera Immagine AI
               </CustomButton>
               
               <p className="text-xs text-purple-600 mt-3 bg-purple-50 p-3 rounded-lg">
@@ -1297,7 +1297,7 @@ const DishAccordionItem = ({
               Genera Immagine con AI
             </DialogTitle>
             <DialogDescription className="text-gray-600">
-              Crea un'immagine professionale per <strong>{dish.name}</strong> usando Google Imagen 4 Ultra
+              Crea un'immagine professionale per <strong>{dish.name}</strong> usando l'intelligenza artificiale
             </DialogDescription>
           </DialogHeader>
           
@@ -1307,7 +1307,7 @@ const DishAccordionItem = ({
               <AsyncTaskProgress
                 taskId={imageGenerationTaskId}
                 title="Generazione Immagine con AI"
-                description={`Stiamo creando un'immagine professionale per "${dish.name}" usando Imagen 4 Ultra...`}
+                description={`Stiamo creando un'immagine professionale per "${dish.name}" usando l'intelligenza artificiale...`}
                 onComplete={handleImageGenerationComplete}
                 onError={handleImageGenerationError}
                 onCancel={() => {
@@ -1418,7 +1418,7 @@ const DishAccordionItem = ({
                           maxLength={480}
                         />
                         <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Limite caratteri Imagen</span>
+                          <span className="text-xs text-gray-500">Limite caratteri prompt</span>
                           <span className={`text-xs font-medium ${customPrompt.length > 400 ? 'text-orange-600' : 'text-gray-500'}`}>
                             {customPrompt.length}/480
                           </span>
@@ -1428,35 +1428,35 @@ const DishAccordionItem = ({
                   )}
                 </div>
 
-                {/* Info Imagen 4 Ultra */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
-                  <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" />
-                    Imagen 4 Ultra
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-blue-800">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span>Qualità iper-realistica</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-blue-800">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span>Formato 800x800px</span>
-                      </div>
+                              {/* Info Generazione AI */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-6">
+                <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Generazione AI
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-blue-800">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span>Qualità professionale</span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-blue-800">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span>Ottimizzato per cibo</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-blue-800">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        <span>⏱️ 10-30 secondi</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-blue-800">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span>Formato ottimizzato</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-blue-800">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span>Specializzato per cibo</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-800">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span>⏱️ 15-60 secondi</span>
                     </div>
                   </div>
                 </div>
+              </div>
               </>
             )}
           </div>
@@ -1828,6 +1828,18 @@ const CategoryAccordion = ({
                 onClick={(e) => e.stopPropagation()}
               />
               <div className="flex items-center gap-1 ml-2">
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-purple-500 hover:text-purple-700 hover:bg-purple-50 transition-colors duration-150"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedCategoryForAI(category)
+                    setSelectedDishesForAI([])
+                    setShowCategoryAIDialog(true)
+                  }}
+                  title="Genera immagini AI per tutti i piatti della categoria"
+                >
+                  <Wand2 className="h-5 w-5" />
+                </button>
                 {dragListeners && (
                   <button
                     className="h-8 w-8 flex items-center justify-center rounded-md bg-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150 cursor-grab active:cursor-grabbing"
@@ -2085,6 +2097,13 @@ export default function MenuAdminPage() {
   const [isAnalyzingDishes, setIsAnalyzingDishes] = React.useState(false)
   const [dishAnalysisTaskId, setDishAnalysisTaskId] = React.useState<string | null>(null)
   const [replaceExistingTags, setReplaceExistingTags] = React.useState(true)
+
+  // Stati per generazione AI categoria
+  const [showCategoryAIDialog, setShowCategoryAIDialog] = React.useState(false)
+  const [selectedCategoryForAI, setSelectedCategoryForAI] = React.useState<Category | null>(null)
+  const [selectedDishesForAI, setSelectedDishesForAI] = React.useState<string[]>([])
+  const [isCategoryAIGenerating, setIsCategoryAIGenerating] = React.useState(false)
+  const [categoryAITaskId, setCategoryAITaskId] = React.useState<string | null>(null)
 
   // Stati per l'AI
   const [showAIDialog, setShowAIDialog] = React.useState(false)
@@ -2694,6 +2713,121 @@ export default function MenuAdminPage() {
     alert(errorMessage)
     setDishAnalysisTaskId(null)
     setIsAnalyzingDishes(false)
+  }
+
+  // Handler per generazione AI categoria
+  const handleCategoryAIToggleDish = (dishId: string) => {
+    setSelectedDishesForAI(prev => 
+      prev.includes(dishId) 
+        ? prev.filter(id => id !== dishId)
+        : [...prev, dishId]
+    )
+  }
+
+  const handleCategoryAISelectAll = () => {
+    if (!selectedCategoryForAI) return
+    const allDishIds = selectedCategoryForAI.dishes.map(dish => dish.id)
+    setSelectedDishesForAI(allDishIds)
+  }
+
+  const handleCategoryAIDeselectAll = () => {
+    setSelectedDishesForAI([])
+  }
+
+  const handleStartCategoryAI = async () => {
+    if (!selectedCategoryForAI || selectedDishesForAI.length === 0) return
+
+    setIsCategoryAIGenerating(true)
+    setCategoryAITaskId(null)
+
+    try {
+      const response = await fetch(`/api/menu/category/${selectedCategoryForAI.id}/generate-images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dishIds: selectedDishesForAI,
+          useAutoPrompt: true
+        })
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.success && result.taskId) {
+        setCategoryAITaskId(result.taskId)
+        console.log(`🎨 [CATEGORY AI] Task avviato: ${result.taskId} per categoria "${selectedCategoryForAI.name}"`)
+      } else {
+        alert(`❌ Errore nell'avvio della generazione: ${result.error}`)
+        setIsCategoryAIGenerating(false)
+      }
+    } catch (err) {
+      console.error('Error starting category AI generation:', err)
+      alert('❌ Errore nell\'avvio della generazione AI')
+      setIsCategoryAIGenerating(false)
+    }
+  }
+
+  const handleCategoryAIComplete = async (result: any) => {
+    try {
+      console.log('✅ Generazione categoria AI completata:', result)
+      
+      // Reset stati
+      setCategoryAITaskId(null)
+      setIsCategoryAIGenerating(false)
+      setShowCategoryAIDialog(false)
+      setSelectedCategoryForAI(null)
+      setSelectedDishesForAI([])
+      
+      // Mostra messaggio di successo
+      if (result.stats) {
+        toast({
+          title: `🎉 Generazione categoria completata!`,
+          description: `${result.stats.successCount}/${result.stats.totalDishes} immagini create per "${result.stats.categoryName}".`,
+          duration: 6000,
+        })
+      } else {
+        toast({
+          title: "✅ Immagini generate con successo!",
+          description: "Le immagini AI sono state create per i piatti selezionati.",
+          duration: 4000,
+        })
+      }
+      
+      // Ricarica i dati del menu
+      await loadMenuData()
+      
+    } catch (error) {
+      console.error('❌ Errore nel gestire completamento categoria AI:', error)
+      
+      // Fallback reset
+      setCategoryAITaskId(null)
+      setIsCategoryAIGenerating(false)
+      setShowCategoryAIDialog(false)
+      setSelectedCategoryForAI(null)
+      setSelectedDishesForAI([])
+      
+      toast({
+        title: "⚠️ Problema di aggiornamento",
+        description: "Le immagini sono state generate ma c'è stato un problema. Aggiorna la pagina per vedere i risultati.",
+        variant: "destructive",
+        duration: 8000,
+      })
+    }
+  }
+
+  const handleCategoryAIError = (error: any) => {
+    console.error('❌ Generazione categoria AI fallita:', error)
+    let errorMessage = '❌ Errore nella generazione delle immagini'
+    
+    if (error?.message) {
+      errorMessage = '❌ ' + error.message
+    }
+    
+    alert(errorMessage)
+    setCategoryAITaskId(null)
+    setIsCategoryAIGenerating(false)
+    setShowCategoryAIDialog(false)
+    setSelectedCategoryForAI(null)
+    setSelectedDishesForAI([])
   }
 
   // Predefined languages available for translation
@@ -5373,6 +5507,230 @@ export default function MenuAdminPage() {
                 onClick={() => setShowAIDialog(false)}
               >
                 ✅ Fatto
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Category AI Generation Dialog - Mobile Optimized */}
+        <Dialog open={showCategoryAIDialog} onOpenChange={setShowCategoryAIDialog}>
+          <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <Wand2 className="h-6 w-6 text-purple-500" />
+                Genera Immagini AI - Categoria
+              </DialogTitle>
+              <DialogDescription className="text-gray-600">
+                {selectedCategoryForAI?.name && (
+                  <>Crea immagini professionali per i piatti di <strong>{selectedCategoryForAI.name}</strong></>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+              {categoryAITaskId ? (
+                // Mostra progresso generazione categoria
+                <AsyncTaskProgress
+                  taskId={categoryAITaskId}
+                  title="Generazione Immagini Categoria"
+                  description={`Stiamo creando immagini AI per i piatti di "${selectedCategoryForAI?.name}"...`}
+                  onComplete={handleCategoryAIComplete}
+                  onError={handleCategoryAIError}
+                  onCancel={() => {
+                    setCategoryAITaskId(null)
+                    setIsCategoryAIGenerating(false)
+                  }}
+                  pollingInterval={3000}
+                  className="my-4"
+                />
+              ) : (
+                // Mostra selezione piatti
+                <>
+                  {/* Statistiche */}
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-purple-900 flex items-center gap-2">
+                        📊 Selezione Piatti
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                          {selectedDishesForAI.length}/{selectedCategoryForAI?.dishes.length || 0} selezionati
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">
+                          {selectedCategoryForAI?.dishes.filter(dish => !dish.photoUrl).length || 0}
+                        </div>
+                        <div className="text-purple-700">Senza immagine</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {selectedCategoryForAI?.dishes.filter(dish => dish.photoUrl).length || 0}
+                        </div>
+                        <div className="text-blue-700">Con immagine</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Controlli rapidi */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      ⚡ Selezione Rapida
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <CustomButton
+                        onClick={handleCategoryAISelectAll}
+                        variant="outline"
+                        className="h-12 text-sm font-medium"
+                        disabled={isCategoryAIGenerating}
+                      >
+                        ✅ Seleziona Tutti
+                      </CustomButton>
+                      <CustomButton
+                        onClick={handleCategoryAIDeselectAll}
+                        variant="outline"
+                        className="h-12 text-sm font-medium"
+                        disabled={isCategoryAIGenerating}
+                      >
+                        🗑️ Deseleziona Tutti
+                      </CustomButton>
+                    </div>
+                    
+                    <CustomButton
+                      onClick={() => {
+                        // Seleziona solo piatti senza immagine
+                        const dishesWithoutImage = selectedCategoryForAI?.dishes
+                          .filter(dish => !dish.photoUrl)
+                          .map(dish => dish.id) || []
+                        setSelectedDishesForAI(dishesWithoutImage)
+                      }}
+                      variant="outline"
+                      className="w-full h-12 text-sm font-medium mt-3 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                      disabled={isCategoryAIGenerating}
+                    >
+                      🖼️ Solo Piatti Senza Immagine
+                    </CustomButton>
+                  </div>
+
+                  {/* Lista piatti con checkbox - Mobile Optimized */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                    <div className="p-4 border-b border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        🍽️ Piatti della Categoria
+                      </h3>
+                    </div>
+                    
+                    <div className="max-h-80 overflow-y-auto">
+                      {selectedCategoryForAI?.dishes.map((dish) => (
+                        <div key={dish.id} className="flex items-center gap-4 p-4 border-b border-gray-100 last:border-b-0">
+                          <div className="flex-shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={selectedDishesForAI.includes(dish.id)}
+                              onChange={() => handleCategoryAIToggleDish(dish.id)}
+                              className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                              disabled={isCategoryAIGenerating}
+                            />
+                          </div>
+                          
+                          <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200">
+                            {dish.photoUrl ? (
+                              <img
+                                src={dish.photoUrl}
+                                alt={dish.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Camera className="w-5 h-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900 text-sm truncate">
+                              {dish.name}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm font-semibold text-green-600">
+                                €{dish.price.toFixed(2)}
+                              </span>
+                              {!dish.photoUrl && (
+                                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                                  Senza foto
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Info e suggerimenti */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+                    <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                      💡 Come Funziona
+                    </h4>
+                    <ul className="text-sm text-blue-800 space-y-2">
+                      <li>• Le immagini vengono generate <strong>una alla volta</strong> per qualità ottimale</li>
+                      <li>• Ogni piatto utilizza nome, descrizione e ingredienti per creare l'immagine</li>
+                      <li>• Il processo può richiedere <strong>1-2 minuti per piatto</strong></li>
+                      <li>• Puoi chiudere questa finestra: la generazione continuerà in background</li>
+                      <li>• Sistema automatico di fallback per massima affidabilità</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200 space-y-3">
+              {!categoryAITaskId && (
+                <CustomButton
+                  className="w-full h-14 text-base font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                  onClick={handleStartCategoryAI}
+                  disabled={isCategoryAIGenerating || selectedDishesForAI.length === 0}
+                >
+                  {isCategoryAIGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Avvio Generazione...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-5 w-5" />
+                      🎨 Genera {selectedDishesForAI.length} Immagini
+                    </>
+                  )}
+                </CustomButton>
+              )}
+              
+              <CustomButton
+                className="w-full h-12 text-base font-medium"
+                variant="outline"
+                onClick={() => {
+                  if (categoryAITaskId) {
+                    // Se c'è un task in corso, chiedi conferma
+                    if (confirm('🚧 C\'è una generazione in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.')) {
+                      setShowCategoryAIDialog(false)
+                    }
+                  } else {
+                    setShowCategoryAIDialog(false)
+                  }
+                }}
+              >
+                {categoryAITaskId ? (
+                  <>
+                    <span className="mr-2">🚧</span>
+                    Chiudi (Generazione in corso)
+                  </>
+                ) : (
+                  'Annulla'
+                )}
               </CustomButton>
             </div>
           </DialogContent>
