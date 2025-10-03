@@ -88,6 +88,9 @@ export default function CampaignDetailPage({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
+  // 🆕 Stati per la sincronizzazione
+  const [isSyncing, setIsSyncing] = useState(false);
+
   // 🆕 Stati per attribution tracking
   const [attributionData, setAttributionData] = useState<{
     totalReturns: number;
@@ -302,6 +305,70 @@ export default function CampaignDetailPage({
     return campaign.status === "scheduled";
   };
 
+  // 🆕 Funzione per sincronizzare gli stati della campagna da Twilio
+  const handleSyncCampaign = async () => {
+    if (!campaign) return;
+    
+    try {
+      setIsSyncing(true);
+      
+      const response = await fetch(`/api/campaign/${campaign.id}/sync-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Errore ${response.status}`);
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Errore nella sincronizzazione');
+      }
+
+      // Mostra messaggio di successo con le statistiche dettagliate
+      const stats = data.data.statistics;
+      toast({
+        title: "✅ Sincronizzazione completata",
+        description: `${data.data.updatedMessages} messaggi aggiornati.\n📤 Consegnati: ${stats.delivered} | 👀 Letti: ${stats.read} | ❌ Falliti: ${stats.failed}`,
+        duration: 6000,
+      });
+
+      console.log('🔄 Sincronizzazione completata, ricarico campagna...');
+      console.log('📊 Statistiche:', stats);
+      
+      // Ricarica i dettagli della campagna
+      await fetchCampaignDetails();
+      
+      // Ricarica anche attribution se disponibile
+      if (campaign.status === "completed" || campaign.status === "sent") {
+        await fetchAttributionData();
+      }
+      
+      console.log('✅ Campagna ricaricata con successo');
+
+    } catch (error: any) {
+      console.error('Errore nella sincronizzazione:', error);
+      
+      toast({
+        title: "❌ Errore nella sincronizzazione",
+        description: error.message || "Impossibile sincronizzare gli stati. Riprova.",
+        variant: "destructive",
+        duration: 6000,
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // 🆕 Funzione per verificare se la campagna può essere sincronizzata
+  const canSyncCampaign = (campaign: Campaign): boolean => {
+    return ['scheduled', 'completed', 'sent', 'in_progress'].includes(campaign.status);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "sent":
@@ -468,95 +535,143 @@ export default function CampaignDetailPage({
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Users className="w-4 h-4 text-gray-500" />
+              {/* Quick Stats - Mobile Optimized */}
+              <div className="space-y-2 mb-4">
+                {/* Riga 1: Consegnati e Letti */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-base">📤</span>
+                      <span className="text-xs text-green-700 font-medium">Consegnati</span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg font-bold text-green-600">
+                        {campaign.statistics?.deliveredCount || 0}
+                      </span>
+                      <span className="text-xs text-green-600">
+                        / {campaign.recipients}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">Destinatari</p>
-                  <p className="text-sm font-bold text-gray-800">
-                    {campaign.recipients}
-                  </p>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-base">👀</span>
+                      <span className="text-xs text-blue-700 font-medium">Letti</span>
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {campaign.statistics?.readCount || 0}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <span className="text-xl">🎯</span>
+                {/* Riga 2: Falliti e Tornati */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-base">❌</span>
+                      <span className="text-xs text-red-700 font-medium">Falliti</span>
+                    </div>
+                    <div className="text-lg font-bold text-red-600">
+                      {campaign.statistics?.failedCount || 0}
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">Tornati</p>
-                  <p className="text-sm font-bold text-green-600">
-                    {isLoadingAttribution ? (
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                    ) : (
-                      attributionData?.totalReturns || 0
-                    )}
-                  </p>
-                  {attributionData?.returnRate !== undefined && (
-                    <p className="text-xs text-green-600 font-medium">
-                      {attributionData.returnRate}%
-                    </p>
-                  )}
-                </div>
 
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <span className="text-xl">🔗</span>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 border border-purple-200">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-base">🎯</span>
+                      <span className="text-xs text-purple-700 font-medium">Tornati</span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg font-bold text-purple-600">
+                        {isLoadingAttribution ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          attributionData?.totalReturns || 0
+                        )}
+                      </span>
+                      {attributionData?.returnRate !== undefined && attributionData.returnRate > 0 && (
+                        <span className="text-xs text-purple-600 font-medium">
+                          ({attributionData.returnRate}%)
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">Click Rate</p>
-                  <p className="text-sm font-bold text-[#1B9AAA]">
-                    {campaign.clickRate || 0}%
-                  </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
-                {/* Pulsante Duplica */}
-                <CustomButton
-                  className="flex-1 py-2 flex items-center justify-center text-xs"
-                  onClick={() =>
-                    router.push(`/campaign/create?duplicate=${campaign.id}`)
-                  }
-                >
-                  <Edit3 className="w-4 h-4 mr-1" /> Duplica
-                </CustomButton>
-
-                {/* 🆕 Pulsante Cancella (solo per campagne scheduled) */}
-                {canCancelCampaign(campaign) && (
+              <div className="space-y-2">
+                {/* Prima riga: Sincronizza */}
+                {canSyncCampaign(campaign) && (
                   <CustomButton
-                    variant="destructive"
-                    className="flex-1 py-2 flex items-center justify-center text-xs"
-                    onClick={() => setShowCancelDialog(true)}
-                    disabled={isCanceling}
+                    variant="outline"
+                    className="w-full py-3 flex items-center justify-center text-sm border-2 border-blue-300 text-blue-600 hover:bg-blue-50"
+                    onClick={handleSyncCampaign}
+                    disabled={isSyncing}
                   >
-                    {isCanceling ? (
+                    {isSyncing ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Cancellando...
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sincronizzando da Twilio...
                       </>
                     ) : (
                       <>
-                        <XCircle className="w-4 h-4 mr-1" />
-                        Cancella
+                        <span className="text-base mr-2">🔄</span>
+                        Sincronizza Stati da Twilio
                       </>
                     )}
                   </CustomButton>
                 )}
 
-                {/* Pulsante Condividi (solo se non è una campagna scheduled che può essere cancellata) */}
-                {!canCancelCampaign(campaign) && (
+                {/* Seconda riga: Duplica e Cancella/Condividi */}
+                <div className="flex gap-2">
+                  {/* Pulsante Duplica */}
                   <CustomButton
-                    variant="outline"
                     className="flex-1 py-2 flex items-center justify-center text-xs"
-                    onClick={() => {
-                      // TODO: Implementare condivisione
-                      console.log("Condividi campagna");
-                    }}
+                    onClick={() =>
+                      router.push(`/campaign/create?duplicate=${campaign.id}`)
+                    }
                   >
-                    <Share2 className="w-4 h-4 mr-1" /> Condividi
+                    <Edit3 className="w-4 h-4 mr-1" /> Duplica
                   </CustomButton>
-                )}
+
+                  {/* 🆕 Pulsante Cancella (solo per campagne scheduled) */}
+                  {canCancelCampaign(campaign) && (
+                    <CustomButton
+                      variant="destructive"
+                      className="flex-1 py-2 flex items-center justify-center text-xs"
+                      onClick={() => setShowCancelDialog(true)}
+                      disabled={isCanceling}
+                    >
+                      {isCanceling ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          Cancellando...
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-4 h-4 mr-1" />
+                          Cancella
+                        </>
+                      )}
+                    </CustomButton>
+                  )}
+
+                  {/* Pulsante Condividi (solo se non è una campagna scheduled che può essere cancellata) */}
+                  {!canCancelCampaign(campaign) && (
+                    <CustomButton
+                      variant="outline"
+                      className="flex-1 py-2 flex items-center justify-center text-xs"
+                      onClick={() => {
+                        // TODO: Implementare condivisione
+                        console.log("Condividi campagna");
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-1" /> Condividi
+                    </CustomButton>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -983,76 +1098,191 @@ export default function CampaignDetailPage({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-              {/* Statistiche Invio */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  📤 Statistiche Invio
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+              {/* 📊 Statistiche Invio Complete */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <span>📤</span> Statistiche Invio
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-xl">
-                    <div className="text-xl font-bold text-blue-600">
+                
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+                    <div className="text-xs text-blue-700 font-medium mb-1">Destinatari</div>
+                    <div className="text-2xl font-bold text-blue-600">
                       {campaign?.recipients || 0}
                     </div>
-                    <div className="text-xs text-blue-700">Destinatari</div>
                   </div>
-                  <div className="text-center p-3 bg-green-50 rounded-xl">
-                    <div className="text-xl font-bold text-green-600">
+                  
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+                    <div className="text-xs text-green-700 font-medium mb-1">Consegnati</div>
+                    <div className="text-2xl font-bold text-green-600">
                       {campaign?.statistics?.deliveredCount || 0}
                     </div>
-                    <div className="text-xs text-green-700">Consegnati</div>
+                    <div className="text-xs text-green-600 mt-1">
+                      {campaign?.recipients > 0 
+                        ? `${Math.round((campaign?.statistics?.deliveredCount || 0) / campaign.recipients * 100)}%`
+                        : '0%'}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+                    <div className="text-xs text-blue-700 font-medium mb-1">Letti (2✓)</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {campaign?.statistics?.readCount || 0}
+                    </div>
+                    <div className="text-xs text-blue-600 mt-1">
+                      {campaign?.statistics?.deliveredCount > 0 
+                        ? `${Math.round((campaign?.statistics?.readCount || 0) / campaign.statistics.deliveredCount * 100)}%`
+                        : '0%'}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+                    <div className="text-xs text-red-700 font-medium mb-1">Falliti</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {campaign?.statistics?.failedCount || 0}
+                    </div>
                   </div>
                 </div>
+
+                {/* 🔗 Click Rate (se disponibile) */}
+                {campaign?.statistics?.clickedCount !== undefined && campaign?.statistics?.clickedCount > 0 && (
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 border border-indigo-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🔗</span>
+                        <div>
+                          <div className="text-sm text-indigo-700 font-medium">Click sui Link</div>
+                          <div className="text-xs text-indigo-600">
+                            {campaign.statistics.clickedCount} click totali
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-indigo-600">
+                          {campaign.statistics.clickRate || 0}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ⚠️ Dettagli Fallimenti */}
+                {campaign?.statistics?.failureDetails && campaign.statistics.failureDetails.length > 0 && (
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-base">⚠️</span>
+                      <h4 className="text-sm font-semibold text-red-700">
+                        Dettagli Fallimenti ({campaign.statistics.failureDetails.length})
+                      </h4>
+                    </div>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {campaign.statistics.failureDetails.slice(0, 5).map((failure: any, index: number) => (
+                        <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-2">
+                          <div className="text-xs font-medium text-red-800">
+                            📱 {failure.phoneNumber}
+                          </div>
+                          <div className="text-xs text-red-600 mt-1">
+                            {failure.error}
+                          </div>
+                        </div>
+                      ))}
+                      {campaign.statistics.failureDetails.length > 5 && (
+                        <div className="text-center text-xs text-gray-500 py-1">
+                          ... e altri {campaign.statistics.failureDetails.length - 5}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Attribution Dettagliata */}
-              {attributionData && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">
-                    🎯 Ritorni Dettagliati
+              {/* 🎯 Attribution Dettagliata */}
+              {isLoadingAttribution ? (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm text-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Caricamento attribution...</p>
+                </div>
+              ) : attributionData ? (
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>🎯</span> Clienti Tornati
                   </h3>
 
-                  {attributionData.returns &&
-                  attributionData.returns.length > 0 ? (
-                    <div className="space-y-3">
+                  {/* Metriche principali */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="text-center p-3 bg-purple-50 rounded-xl border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {attributionData.totalReturns}
+                      </div>
+                      <div className="text-xs text-purple-700 font-medium">
+                        Clienti tornati
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-xl border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {attributionData.returnRate}%
+                      </div>
+                      <div className="text-xs text-purple-700 font-medium">
+                        Tasso di ritorno
+                      </div>
+                    </div>
+                  </div>
+
+                  {attributionData.averageDaysToReturn > 0 && (
+                    <div className="mb-3 p-3 bg-purple-50 rounded-xl border border-purple-200 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Clock className="w-4 h-4 text-purple-600" />
+                        <span className="text-lg font-bold text-purple-600">
+                          {attributionData.averageDaysToReturn} giorni
+                        </span>
+                      </div>
+                      <div className="text-xs text-purple-700 font-medium mt-1">
+                        Tempo medio di ritorno
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lista ritorni */}
+                  {attributionData.returns && attributionData.returns.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
                       {attributionData.returns.map((returnVisit, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200 rounded-lg"
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">📱</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">📱</span>
                             <div>
                               <div className="text-sm font-medium text-gray-800">
                                 {returnVisit.phoneNumber.replace(
-                                  /(\+\d{2})(\d{3})(\d{3})(\d{4})/,
-                                  "$1 $2 ***$4",
+                                  /(\+\d{2})(\d{3})(\d{3})(\d+)/,
+                                  "$1 $2 ***",
                                 )}
                               </div>
                               <div className="text-xs text-gray-500">
-                                Tornato{" "}
                                 {returnVisit.daysAfterCampaign === 0
-                                  ? "oggi"
+                                  ? "Oggi"
                                   : returnVisit.daysAfterCampaign === 1
-                                    ? "ieri"
-                                    : `${returnVisit.daysAfterCampaign} giorni fa`}
+                                    ? "Ieri"
+                                    : `${returnVisit.daysAfterCampaign}g fa`}
                               </div>
                             </div>
                           </div>
-                          <div className="text-green-600">✅</div>
+                          <div className="text-purple-600 text-lg">✅</div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <span className="text-4xl mb-3 block">🎯</span>
+                    <div className="text-center py-6 bg-gray-50 rounded-lg">
+                      <span className="text-3xl mb-2 block">🎯</span>
                       <p className="text-gray-500 text-sm">
                         Nessun cliente tornato ancora
                       </p>
                     </div>
                   )}
                 </div>
-              )}
+              ) : null}
             </div>
 
             <div className="flex-shrink-0 px-4 py-6 border-t border-gray-200">

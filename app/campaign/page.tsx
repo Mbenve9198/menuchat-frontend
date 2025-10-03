@@ -651,62 +651,64 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 mb-3 text-xs">
-                  {/* Inviati/Consegnati */}
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-lg">📤</span>
+                {/* Metriche Principali - Mobile Optimized */}
+                <div className="space-y-2 mb-3">
+                  {/* Riga 1: Consegnati e Letti */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">📤</span>
+                        <span className="text-xs text-green-700 font-medium">Consegnati</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-green-600">
+                          {campaign.statistics?.deliveredCount || 0}
+                        </span>
+                        <span className="text-xs text-green-600">
+                          / {campaign.recipients}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500">Consegnati</p>
-                    <p className="text-sm font-bold text-green-600">
-                      {campaign.statistics?.deliveredCount || 0}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      / {campaign.recipients}
-                    </p>
+
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">👀</span>
+                        <span className="text-xs text-blue-700 font-medium">Letti</span>
+                      </div>
+                      <div className="text-xl font-bold text-blue-600">
+                        {campaign.statistics?.readCount || 0}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Falliti */}
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-lg">❌</span>
+                  {/* Riga 2: Falliti e Tornati */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">❌</span>
+                        <span className="text-xs text-red-700 font-medium">Falliti</span>
+                      </div>
+                      <div className="text-xl font-bold text-red-600">
+                        {campaign.statistics?.failedCount || 0}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500">Falliti</p>
-                    <p className="text-sm font-bold text-red-600">
-                      {campaign.statistics?.failedCount || 0}
-                    </p>
-                  </div>
 
-                  {/* Click Rate */}
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-lg">🔗</span>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 border border-purple-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">🎯</span>
+                        <span className="text-xs text-purple-700 font-medium">Tornati</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-purple-600">
+                          {campaign.returnVisits || 0}
+                        </span>
+                        {campaign.returnRate && campaign.returnRate > 0 && (
+                          <span className="text-xs text-purple-600 font-medium">
+                            ({campaign.returnRate}%)
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500">Click</p>
-                    <p className="text-sm font-bold text-blue-600">
-                      {campaign.statistics?.clickedCount || 0}
-                    </p>
-                    {campaign.statistics?.clickRate ? (
-                      <p className="text-xs text-blue-600">
-                        {campaign.statistics.clickRate}%
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {/* Tornati */}
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-lg">🎯</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Tornati</p>
-                    <p className="text-sm font-bold text-green-600">
-                      {campaign.returnVisits || 0}
-                    </p>
-                    {campaign.returnRate && campaign.returnRate > 0 ? (
-                      <p className="text-xs text-green-600">
-                        {campaign.returnRate}%
-                      </p>
-                    ) : null}
                   </div>
                 </div>
 
