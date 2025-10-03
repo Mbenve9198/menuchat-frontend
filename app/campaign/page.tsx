@@ -431,15 +431,21 @@ export default function CampaignsPage() {
         throw new Error(data.message || 'Errore nella sincronizzazione')
       }
 
-      // Mostra messaggio di successo con le statistiche
+      // Mostra messaggio di successo con le statistiche dettagliate
+      const stats = data.data.statistics
       toast({
         title: "✅ Sincronizzazione completata",
-        description: `${data.data.updatedMessages} messaggi aggiornati. Consegnati: ${data.data.statistics.delivered}, Falliti: ${data.data.statistics.failed}`,
-        duration: 5000,
+        description: `${data.data.updatedMessages} messaggi aggiornati.\n📤 Consegnati: ${stats.delivered} | 👀 Letti: ${stats.read} | ❌ Falliti: ${stats.failed}${stats.undelivered > 0 ? ` (${stats.undelivered} non consegnati)` : ''}`,
+        duration: 6000,
       })
 
+      console.log('🔄 Sincronizzazione completata, ricarico campagne...')
+      console.log('📊 Statistiche:', stats)
+      
       // Ricarica la lista delle campagne per mostrare i dati aggiornati
       await fetchCampaigns()
+      
+      console.log('✅ Campagne ricaricate con successo')
 
     } catch (error: any) {
       console.error('Errore nella sincronizzazione:', error)
