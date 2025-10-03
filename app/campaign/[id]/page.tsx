@@ -804,7 +804,7 @@ export default function CampaignDetailPage({
 
               {/* Action Buttons */}
               <div className="space-y-2">
-                {/* Prima riga: Sincronizza */}
+                {/* Pulsante Sincronizza */}
                 {canSyncCampaign(campaign) && (
                   <CustomButton
                     variant="outline"
@@ -826,54 +826,27 @@ export default function CampaignDetailPage({
                   </CustomButton>
                 )}
 
-                {/* Seconda riga: Duplica e Cancella/Condividi */}
-                <div className="flex gap-2">
-                  {/* Pulsante Duplica */}
+                {/* Pulsante Cancella (solo per campagne scheduled) */}
+                {canCancelCampaign(campaign) && (
                   <CustomButton
-                    className="flex-1 py-2 flex items-center justify-center text-xs"
-                    onClick={() =>
-                      router.push(`/campaign/create?duplicate=${campaign.id}`)
-                    }
+                    variant="destructive"
+                    className="w-full py-3 flex items-center justify-center text-sm"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={isCanceling}
                   >
-                    <Edit3 className="w-4 h-4 mr-1" /> Duplica
+                    {isCanceling ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Cancellando...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Cancella Campagna
+                      </>
+                    )}
                   </CustomButton>
-
-                  {/* 🆕 Pulsante Cancella (solo per campagne scheduled) */}
-                  {canCancelCampaign(campaign) && (
-                    <CustomButton
-                      variant="destructive"
-                      className="flex-1 py-2 flex items-center justify-center text-xs"
-                      onClick={() => setShowCancelDialog(true)}
-                      disabled={isCanceling}
-                    >
-                      {isCanceling ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                          Cancellando...
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Cancella
-                        </>
-                      )}
-                    </CustomButton>
-                  )}
-
-                  {/* Pulsante Condividi (solo se non è una campagna scheduled che può essere cancellata) */}
-                  {!canCancelCampaign(campaign) && (
-                    <CustomButton
-                      variant="outline"
-                      className="flex-1 py-2 flex items-center justify-center text-xs"
-                      onClick={() => {
-                        // TODO: Implementare condivisione
-                        console.log("Condividi campagna");
-                      }}
-                    >
-                      <Share2 className="w-4 h-4 mr-1" /> Condividi
-                    </CustomButton>
-                  )}
-                </div>
+                )}
               </div>
             </div>
 
