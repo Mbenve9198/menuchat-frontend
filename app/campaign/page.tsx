@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ChevronLeft, Search, Plus, Filter, ArrowUpDown, MessageSquare, XCircle, Loader2, ChevronRight, Users } from "lucide-react"
+import { ChevronLeft, Search, Plus, Filter, ArrowUpDown, MessageSquare, XCircle, Loader2, ChevronRight, Users, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Input } from "@/components/ui/input"
@@ -37,12 +37,15 @@ interface Campaign {
   // 🆕 Attribution tracking
   returnVisits?: number
   returnRate?: number
-  // 🆕 Gestione fallimenti
+  // 🆕 Gestione fallimenti + metriche complete
   statistics?: {
     sentCount?: number
     deliveredCount?: number
     readCount?: number
     failedCount?: number
+    clickedCount?: number
+    clickRate?: number
+    optOutCount?: number
     failureDetails?: Array<{
       phoneNumber: string
       error: string
@@ -102,6 +105,9 @@ export default function CampaignsPage() {
   const [campaignToCancel, setCampaignToCancel] = useState<Campaign | null>(null)
   const [isCanceling, setIsCanceling] = useState(false)
 
+  // 🆕 Stati per la sincronizzazione
+  const [isSyncing, setIsSyncing] = useState<string | null>(null) // ID della campagna in sync
+
   // Fetch campaigns from API
   const fetchCampaigns = async () => {
     try {
@@ -145,12 +151,15 @@ export default function CampaignsPage() {
         // 🆕 Attribution tracking
         returnVisits: campaign.statistics?.returnVisits || 0,
         returnRate: campaign.statistics?.returnRate || 0,
-        // 🆕 Statistiche fallimenti
+        // 🆕 Statistiche complete
         statistics: {
           sentCount: campaign.statistics?.sentCount || 0,
           deliveredCount: campaign.statistics?.deliveredCount || 0,
           readCount: campaign.statistics?.readCount || 0,
           failedCount: campaign.statistics?.failedCount || 0,
+          clickedCount: campaign.statistics?.clickedCount || 0,
+          clickRate: campaign.statistics?.clickRate || 0,
+          optOutCount: campaign.statistics?.optOutCount || 0,
           failureDetails: campaign.statistics?.failureDetails || []
         },
       }))
@@ -398,6 +407,59 @@ export default function CampaignsPage() {
     setShowCancelDialog(true)
   }
 
+  // 🆕 Funzione per sincronizzare gli stati della campagna da Twilio
+  const handleSyncCampaign = async (campaign: Campaign, event: React.MouseEvent) => {
+    event.stopPropagation() // Previene la navigazione al dettaglio
+    
+    try {
+      setIsSyncing(campaign.id)
+      
+      const response = await fetch(`/api/campaign/${campaign.id}/sync-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `Errore ${response.status}`)
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Errore nella sincronizzazione')
+      }
+
+      // Mostra messaggio di successo con le statistiche
+      toast({
+        title: "✅ Sincronizzazione completata",
+        description: `${data.data.updatedMessages} messaggi aggiornati. Consegnati: ${data.data.statistics.delivered}, Falliti: ${data.data.statistics.failed}`,
+        duration: 5000,
+      })
+
+      // Ricarica la lista delle campagne per mostrare i dati aggiornati
+      await fetchCampaigns()
+
+    } catch (error: any) {
+      console.error('Errore nella sincronizzazione:', error)
+      
+      toast({
+        title: "❌ Errore nella sincronizzazione",
+        description: error.message || "Impossibile sincronizzare gli stati. Riprova.",
+        variant: "destructive",
+        duration: 6000,
+      })
+    } finally {
+      setIsSyncing(null)
+    }
+  }
+
+  // 🆕 Funzione per verificare se la campagna può essere sincronizzata
+  const canSyncCampaign = (campaign: Campaign): boolean => {
+    return ['scheduled', 'completed', 'sent', 'in_progress'].includes(campaign.status)
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
       <BubbleBackground />
@@ -543,6 +605,24 @@ export default function CampaignsPage() {
                     </div>
                   
                   <div className="flex items-center gap-2">
+                    {/* 🆕 Pulsante Sincronizza (per campagne scheduled/completed/sent) */}
+                    {canSyncCampaign(campaign) && (
+                      <CustomButton
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={(e) => handleSyncCampaign(campaign, e)}
+                        disabled={isSyncing === campaign.id}
+                        title="Sincronizza stati da Twilio"
+                      >
+                        {isSyncing === campaign.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                      </CustomButton>
+                    )}
+                    
                     {/* 🆕 Pulsante Cancella (solo per campagne scheduled) */}
                     {canCancelCampaign(campaign) && (
                       <CustomButton
@@ -565,39 +645,62 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="grid grid-cols-4 gap-2 mb-3 text-xs">
+                  {/* Inviati/Consegnati */}
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">👥</span>
+                      <span className="text-lg">📤</span>
                     </div>
-                      <p className="text-xs text-gray-500">{t("common.recipients")}</p>
-                    <p className="text-sm font-bold text-gray-800">{campaign.recipients}</p>
+                    <p className="text-xs text-gray-500">Consegnati</p>
+                    <p className="text-sm font-bold text-green-600">
+                      {campaign.statistics?.deliveredCount || 0}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      / {campaign.recipients}
+                    </p>
                   </div>
 
-                  {/* 🆕 Clienti Tornati invece di Open Rate */}
+                  {/* Falliti */}
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">🎯</span>
+                      <span className="text-lg">❌</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Falliti</p>
+                    <p className="text-sm font-bold text-red-600">
+                      {campaign.statistics?.failedCount || 0}
+                    </p>
+                  </div>
+
+                  {/* Click Rate */}
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <span className="text-lg">🔗</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Click</p>
+                    <p className="text-sm font-bold text-blue-600">
+                      {campaign.statistics?.clickedCount || 0}
+                    </p>
+                    {campaign.statistics?.clickRate ? (
+                      <p className="text-xs text-blue-600">
+                        {campaign.statistics.clickRate}%
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {/* Tornati */}
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      <span className="text-lg">🎯</span>
                     </div>
                     <p className="text-xs text-gray-500">Tornati</p>
                     <p className="text-sm font-bold text-green-600">
                       {campaign.returnVisits || 0}
                     </p>
-                    {campaign.returnRate > 0 && (
+                    {campaign.returnRate && campaign.returnRate > 0 ? (
                       <p className="text-xs text-green-600">
                         {campaign.returnRate}%
                       </p>
-                    )}
-                  </div>
-
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
-                      <span className="text-xl">🔗</span>
-                    </div>
-                      <p className="text-xs text-gray-500">Click Rate</p>
-                    <p className="text-sm font-bold text-gray-800">
-                        {campaign.clickRate !== null && campaign.clickRate !== undefined ? `${campaign.clickRate}%` : "—"}
-                    </p>
+                    ) : null}
                   </div>
                 </div>
 
