@@ -20,6 +20,7 @@ import {
   FileText,
   XCircle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -108,6 +109,14 @@ export default function CampaignDetailPage({
   const [showRecipientsDialog, setShowRecipientsDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false);
+
+  // 🆕 Stati per breakdown contatti
+  const [showContactsBreakdownDialog, setShowContactsBreakdownDialog] = useState(false);
+  const [breakdownStatus, setBreakdownStatus] = useState<string | null>(null);
+  const [breakdownContacts, setBreakdownContacts] = useState<any[]>([]);
+  const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [isOptingOut, setIsOptingOut] = useState(false);
 
   // Fetch campaign details from API
   const fetchCampaignDetails = async () => {
@@ -305,7 +314,7 @@ export default function CampaignDetailPage({
     return campaign.status === "scheduled";
   };
 
-  // 🆕 Funzione per sincronizzare gli stati della campagna da Twilio
+  // 🆕 Funzione per sincronizzare gli stati della campagna
   const handleSyncCampaign = async () => {
     if (!campaign) return;
     
@@ -367,6 +376,147 @@ export default function CampaignDetailPage({
   // 🆕 Funzione per verificare se la campagna può essere sincronizzata
   const canSyncCampaign = (campaign: Campaign): boolean => {
     return ['scheduled', 'completed', 'sent', 'in_progress'].includes(campaign.status);
+  };
+
+  // 🆕 Funzione per aprire il breakdown dei contatti per uno specifico stato
+  const openContactsBreakdown = async (status: string) => {
+    if (!campaign) return;
+    
+    try {
+      setIsLoadingBreakdown(true);
+      setBreakdownStatus(status);
+      setShowContactsBreakdownDialog(true);
+      setSelectedContactIds([]);
+      
+      // Per "failed", carichiamo sia failed che undelivered
+      if (status === 'failed') {
+        // Carica entrambi gli stati
+        const [failedRes, undeliveredRes] = await Promise.all([
+          fetch(`/api/campaign/${campaign.id}/contacts-breakdown?status=failed`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          }),
+          fetch(`/api/campaign/${campaign.id}/contacts-breakdown?status=undelivered`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          })
+        ]);
+
+        const failedData = await failedRes.json();
+        const undeliveredData = await undeliveredRes.json();
+
+        if (failedRes.ok && undeliveredRes.ok) {
+          // Combina i due array
+          const combinedContacts = [
+            ...(failedData.data?.contacts || []),
+            ...(undeliveredData.data?.contacts || [])
+          ];
+          setBreakdownContacts(combinedContacts);
+          console.log(`📊 Breakdown failed+undelivered: ${combinedContacts.length} contatti`);
+        } else {
+          throw new Error('Errore nel caricamento contatti falliti');
+        }
+      } else {
+        // Altri stati: carica normalmente
+        const response = await fetch(`/api/campaign/${campaign.id}/contacts-breakdown?status=${status}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setBreakdownContacts(data.data.contacts || []);
+          console.log(`📊 Breakdown ${status}: ${data.data.contacts?.length || 0} contatti`);
+        } else {
+          throw new Error(data.error || 'Errore nel caricamento contatti');
+        }
+      }
+    } catch (error: any) {
+      console.error('Errore nel caricamento breakdown:', error);
+      toast({
+        title: "❌ Errore",
+        description: "Impossibile caricare i contatti. Riprova.",
+        variant: "destructive",
+      });
+      setShowContactsBreakdownDialog(false);
+    } finally {
+      setIsLoadingBreakdown(false);
+    }
+  };
+
+  // 🆕 Funzione per gestire selezione/deselezione di un contatto
+  const toggleContactSelection = (contactId: string) => {
+    setSelectedContactIds(prev => 
+      prev.includes(contactId)
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
+    );
+  };
+
+  // 🆕 Funzione per selezionare/deselezionare tutti
+  const toggleSelectAll = () => {
+    if (selectedContactIds.length === breakdownContacts.length) {
+      setSelectedContactIds([]);
+    } else {
+      setSelectedContactIds(breakdownContacts.map(c => c.contactId));
+    }
+  };
+
+  // 🆕 Funzione per mettere opt-out i contatti selezionati
+  const handleOptOutSelected = async () => {
+    if (selectedContactIds.length === 0) return;
+    
+    try {
+      setIsOptingOut(true);
+      
+      const response = await fetch('/api/campaign/contacts/opt-out-bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contactIds: selectedContactIds,
+          reason: `campaign_${breakdownStatus}_bulk`
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Errore ${response.status}`);
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Errore nell\'opt-out');
+      }
+
+      toast({
+        title: "✅ Opt-out applicato",
+        description: `${data.data.optOutCount} contatti non riceveranno più messaggi promozionali.`,
+        duration: 5000,
+      });
+
+      // Chiudi dialog e resetta selezioni
+      setShowContactsBreakdownDialog(false);
+      setSelectedContactIds([]);
+      setBreakdownContacts([]);
+      
+      // Ricarica campagna
+      await fetchCampaignDetails();
+
+    } catch (error: any) {
+      console.error('Errore opt-out:', error);
+      toast({
+        title: "❌ Errore",
+        description: error.message || "Impossibile applicare opt-out. Riprova.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsOptingOut(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -535,11 +685,20 @@ export default function CampaignDetailPage({
                 </div>
               </div>
 
-              {/* Quick Stats - Mobile Optimized */}
+              {/* Quick Stats - Mobile Optimized - CLICKABILI */}
               <div className="space-y-2 mb-4">
                 {/* Riga 1: Consegnati e Letti */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+                  <div 
+                    className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200 cursor-pointer hover:shadow-md transition-shadow active:scale-95"
+                    onClick={() => {
+                      // Consegnati = delivered + read + sent, mostriamo breakdown combinato
+                      toast({
+                        title: "💡 Info",
+                        description: "I consegnati includono: inviati, consegnati e letti. Clicca su 'Analytics' per il dettaglio completo.",
+                      });
+                    }}
+                  >
                     <div className="flex items-center gap-1 mb-1">
                       <span className="text-base">📤</span>
                       <span className="text-xs text-green-700 font-medium">Consegnati</span>
@@ -554,10 +713,13 @@ export default function CampaignDetailPage({
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+                  <div 
+                    className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200 cursor-pointer hover:shadow-md transition-shadow active:scale-95"
+                    onClick={() => openContactsBreakdown('read')}
+                  >
                     <div className="flex items-center gap-1 mb-1">
                       <span className="text-base">👀</span>
-                      <span className="text-xs text-blue-700 font-medium">Letti</span>
+                      <span className="text-xs text-blue-700 font-medium">Letti (2✓)</span>
                     </div>
                     <div className="text-lg font-bold text-blue-600">
                       {campaign.statistics?.readCount || 0}
@@ -567,7 +729,17 @@ export default function CampaignDetailPage({
 
                 {/* Riga 2: Falliti e Tornati */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+                  <div 
+                    className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200 cursor-pointer hover:shadow-md transition-shadow active:scale-95"
+                    onClick={() => {
+                      // Per falliti, mostriamo breakdown combinato failed + undelivered
+                      const totalFailed = (campaign.statistics?.failedCount || 0);
+                      if (totalFailed > 0) {
+                        // Apriamo un dialog speciale che mostra failed + undelivered combinati
+                        openContactsBreakdown('failed');
+                      }
+                    }}
+                  >
                     <div className="flex items-center gap-1 mb-1">
                       <span className="text-base">❌</span>
                       <span className="text-xs text-red-700 font-medium">Falliti</span>
@@ -575,6 +747,11 @@ export default function CampaignDetailPage({
                     <div className="text-lg font-bold text-red-600">
                       {campaign.statistics?.failedCount || 0}
                     </div>
+                    {campaign.statistics?.failedCount > 0 && (
+                      <div className="text-xs text-red-600 mt-1">
+                        Tap per dettagli
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 border border-purple-200">
@@ -613,12 +790,12 @@ export default function CampaignDetailPage({
                     {isSyncing ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Sincronizzando da Twilio...
+                        Aggiornamento in corso...
                       </>
                     ) : (
                       <>
                         <span className="text-base mr-2">🔄</span>
-                        Sincronizza Stati da Twilio
+                        Aggiorna Stati Messaggi
                       </>
                     )}
                   </CustomButton>
@@ -715,30 +892,30 @@ export default function CampaignDetailPage({
                     </span>
                   </div>
                 )}
-                {/* 🆕 Informazioni aggiuntive per campagne Twilio */}
+                {/* 🆕 Informazioni aggiuntive per campagne programmate */}
                 {campaign.twilioScheduledMessages &&
                   campaign.twilioScheduledMessages.length > 0 && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-blue-600">🚀</span>
                         <span className="text-sm font-medium text-blue-800">
-                          Schedulata su Twilio
+                          Campagna Programmata
                         </span>
                       </div>
                       <div className="text-xs text-blue-700 space-y-1">
                         <div>
                           📤{" "}
                           {campaign.schedulingStats?.successfulSchedules || 0}{" "}
-                          messaggi programmati
+                          messaggi programmati con successo
                         </div>
                         {campaign.schedulingStats?.failedSchedules &&
                           campaign.schedulingStats.failedSchedules > 0 && (
                             <div>
                               ❌ {campaign.schedulingStats.failedSchedules}{" "}
-                              errori di schedulazione
+                              errori di programmazione
                             </div>
                           )}
-                        <div>🕒 Invio gestito direttamente da Twilio</div>
+                        <div>🕒 Invio automatico alla data programmata</div>
                       </div>
                     </div>
                   )}
@@ -817,10 +994,7 @@ export default function CampaignDetailPage({
                               <div className="flex items-center gap-2">
                                 <span className="text-sm">📱</span>
                                 <span className="text-sm font-medium text-gray-800">
-                                  {returnVisit.phoneNumber.replace(
-                                    /(\+\d{2})(\d{3})(\d{3})(\d{4})/,
-                                    "$1 $2 ***$4",
-                                  )}
+                                  {returnVisit.phoneNumber}
                                 </span>
                               </div>
                               <div className="text-xs text-gray-500">
@@ -1255,10 +1429,7 @@ export default function CampaignDetailPage({
                             <span className="text-base">📱</span>
                             <div>
                               <div className="text-sm font-medium text-gray-800">
-                                {returnVisit.phoneNumber.replace(
-                                  /(\+\d{2})(\d{3})(\d{3})(\d+)/,
-                                  "$1 $2 ***",
-                                )}
+                                {returnVisit.phoneNumber}
                               </div>
                               <div className="text-xs text-gray-500">
                                 {returnVisit.daysAfterCampaign === 0
@@ -1296,6 +1467,184 @@ export default function CampaignDetailPage({
           </DialogContent>
         </Dialog>
 
+        {/* 🆕 Dialog Breakdown Contatti per Stato */}
+        <Dialog open={showContactsBreakdownDialog} onOpenChange={setShowContactsBreakdownDialog}>
+          <DialogContent className="w-full max-w-md h-full max-h-[100vh] m-0 rounded-none sm:rounded-lg sm:max-h-[90vh] sm:m-4 flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-6 border-b border-gray-200">
+              <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                {breakdownStatus === 'failed' || breakdownStatus === 'undelivered' ? (
+                  <><span className="text-2xl">❌</span> Messaggi Falliti</>
+                ) : breakdownStatus === 'read' ? (
+                  <><span className="text-2xl">👀</span> Messaggi Letti</>
+                ) : breakdownStatus === 'delivered' ? (
+                  <><span className="text-2xl">✅</span> Messaggi Consegnati</>
+                ) : (
+                  <><span className="text-2xl">📊</span> Dettaglio Contatti</>
+                )}
+              </DialogTitle>
+              <DialogDescription className="text-gray-600">
+                {breakdownContacts.length} contatti in questo stato
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {isLoadingBreakdown ? (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">Caricamento contatti...</p>
+                </div>
+              ) : breakdownContacts.length > 0 ? (
+                <div className="space-y-2">
+                  {/* Select All (solo per failed/undelivered) */}
+                  {(breakdownStatus === 'failed' || breakdownStatus === 'undelivered') && (
+                    <div className="sticky top-0 bg-white pb-2 border-b border-gray-200 mb-2">
+                      <div 
+                        className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100"
+                        onClick={toggleSelectAll}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          selectedContactIds.length === breakdownContacts.length
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-300 bg-white'
+                        }`}>
+                          {selectedContactIds.length === breakdownContacts.length && (
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-gray-800">
+                          {selectedContactIds.length === breakdownContacts.length ? 'Deseleziona tutti' : 'Seleziona tutti'}
+                        </span>
+                        {selectedContactIds.length > 0 && (
+                          <span className="ml-auto text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                            {selectedContactIds.length}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lista contatti */}
+                  {breakdownContacts.map((contact, index) => (
+                    <div 
+                      key={index}
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                        (breakdownStatus === 'failed' || breakdownStatus === 'undelivered')
+                          ? 'cursor-pointer hover:shadow-md active:scale-98'
+                          : ''
+                      } ${
+                        selectedContactIds.includes(contact.contactId)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                      onClick={() => {
+                        if (breakdownStatus === 'failed' || breakdownStatus === 'undelivered') {
+                          toggleContactSelection(contact.contactId);
+                        }
+                      }}
+                    >
+                      {/* Checkbox (solo per failed/undelivered) */}
+                      {(breakdownStatus === 'failed' || breakdownStatus === 'undelivered') && (
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                          selectedContactIds.includes(contact.contactId)
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-300 bg-white'
+                        }`}>
+                          {selectedContactIds.includes(contact.contactId) && (
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-gray-800">
+                            {contact.name}
+                          </span>
+                          {!contact.isOptedIn && (
+                            <Badge className="text-xs bg-gray-200 text-gray-700">
+                              Opt-out
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          📱 {contact.phoneNumber}
+                        </div>
+                        {contact.error && (
+                          <div className="text-xs text-red-600 mt-1 bg-red-50 p-1 rounded">
+                            ⚠️ {contact.error}
+                          </div>
+                        )}
+                      </div>
+
+                      {breakdownStatus === 'read' && (
+                        <span className="text-lg">✅✅</span>
+                      )}
+                      {breakdownStatus === 'delivered' && (
+                        <span className="text-lg">✅</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <span className="text-4xl mb-3 block">📭</span>
+                  <p className="text-gray-500 text-sm">Nessun contatto in questo stato</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-shrink-0 px-4 py-4 border-t border-gray-200 space-y-2">
+              {/* Warning Box (solo per failed/undelivered con selezioni) */}
+              {(breakdownStatus === 'failed' || breakdownStatus === 'undelivered') && selectedContactIds.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-yellow-600 text-sm">💡</span>
+                    <div className="text-xs text-yellow-800 leading-relaxed">
+                      <strong>Opt-out = Risparmio!</strong>
+                      <br />
+                      Questi numeri non riceveranno più messaggi promozionali, risparmiando costi per messaggi falliti nelle prossime campagne.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Pulsante Opt-Out (solo per failed/undelivered) */}
+              {(breakdownStatus === 'failed' || breakdownStatus === 'undelivered') && selectedContactIds.length > 0 && (
+                <CustomButton
+                  variant="destructive"
+                  className="w-full h-12 text-base font-semibold"
+                  onClick={handleOptOutSelected}
+                  disabled={isOptingOut}
+                >
+                  {isOptingOut ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Applicando opt-out...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">🚫</span>
+                      Metti Opt-Out ({selectedContactIds.length})
+                    </>
+                  )}
+                </CustomButton>
+              )}
+
+              <CustomButton
+                variant={selectedContactIds.length > 0 ? "outline" : "default"}
+                className="w-full h-12 text-base font-semibold"
+                onClick={() => {
+                  setShowContactsBreakdownDialog(false);
+                  setSelectedContactIds([]);
+                  setBreakdownContacts([]);
+                }}
+              >
+                ✅ Chiudi
+              </CustomButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* 🆕 Dialog per la cancellazione */}
         <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
           <DialogContent className="w-full max-w-md">
@@ -1316,8 +1665,8 @@ export default function CampaignDetailPage({
                         <span className="text-red-600">⚠️</span>
                         <div className="text-red-800">
                           <strong>Attenzione:</strong> Questa azione cancellerà
-                          tutti i {campaign.recipients} messaggi programmati su
-                          Twilio. L'operazione è irreversibile.
+                          tutti i {campaign.recipients} messaggi programmati.
+                          L'operazione è irreversibile.
                           {campaign.scheduledDate && (
                             <>
                               <br />
@@ -1346,7 +1695,7 @@ export default function CampaignDetailPage({
                 {isCanceling ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Cancellando su Twilio...
+                    Cancellando...
                   </>
                 ) : (
                   <>

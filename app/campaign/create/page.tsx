@@ -942,7 +942,7 @@ export default function CreateCampaign() {
       let templateSubmissionSuccessful = false;
       
       try {
-        console.log("Invio template a Twilio per approvazione...");
+        console.log("Invio template per approvazione...");
         const submitResponse = await fetch(`/api/campaign/${campaignResult.data._id}/submit-template`, {
           method: 'POST',
           headers: {
@@ -953,7 +953,7 @@ export default function CreateCampaign() {
         
         if (!submitResponse.ok) {
           const submitErrorData = await submitResponse.json();
-          console.error("Errore nell'invio del template a Twilio:", submitErrorData);
+          console.error("Errore nell'invio del template:", submitErrorData);
           
           // 🚨 CRITICO: Se il template submission fallisce per problemi di media, fermiamo tutto
           const errorMessage = submitErrorData.error || '';
@@ -989,11 +989,11 @@ export default function CreateCampaign() {
           return; // Interrompe l'esecuzione
         } else {
           const submitData = await submitResponse.json();
-          console.log("Template inviato con successo a Twilio:", submitData);
+          console.log("Template inviato con successo:", submitData);
           templateSubmissionSuccessful = true;
         }
       } catch (submitError: any) {
-        console.error("Errore nell'invio del template a Twilio:", submitError);
+        console.error("Errore nell'invio del template:", submitError);
         
         // Per qualsiasi errore durante il template submission, fermiamo tutto
         setIsSubmitting(false);

@@ -407,7 +407,7 @@ export default function CampaignsPage() {
     setShowCancelDialog(true)
   }
 
-  // 🆕 Funzione per sincronizzare gli stati della campagna da Twilio
+  // 🆕 Funzione per sincronizzare gli stati della campagna
   const handleSyncCampaign = async (campaign: Campaign, event: React.MouseEvent) => {
     event.stopPropagation() // Previene la navigazione al dettaglio
     
@@ -619,7 +619,7 @@ export default function CampaignsPage() {
                         className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                         onClick={(e) => handleSyncCampaign(campaign, e)}
                         disabled={isSyncing === campaign.id}
-                        title="Sincronizza stati da Twilio"
+                        title="Aggiorna stati messaggi"
                       >
                         {isSyncing === campaign.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -835,7 +835,7 @@ export default function CampaignsPage() {
                       <div className="flex items-start gap-2">
                         <span className="text-red-600">⚠️</span>
                         <div className="text-red-800">
-                          <strong>Attenzione:</strong> Questa azione cancellerà tutti i {campaignToCancel.recipients} messaggi programmati su Twilio. L'operazione è irreversibile.
+                          <strong>Attenzione:</strong> Questa azione cancellerà tutti i {campaignToCancel.recipients} messaggi programmati. L'operazione è irreversibile.
                         </div>
                       </div>
                     </div>
@@ -854,7 +854,7 @@ export default function CampaignsPage() {
                 {isCanceling ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Cancellando su Twilio...
+                    Cancellando...
                   </>
                 ) : (
                   <>
