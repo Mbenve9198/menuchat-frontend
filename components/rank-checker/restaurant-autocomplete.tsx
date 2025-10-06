@@ -45,8 +45,9 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
       setIsLoading(true)
 
       try {
+        // Chiama la route API di Next.js (non il backend)
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/restaurants/search?query=${encodeURIComponent(debouncedSearchQuery)}`
+          `/api/restaurants/search?query=${encodeURIComponent(debouncedSearchQuery)}`
         )
         
         if (!response.ok) {
@@ -76,7 +77,7 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
     try {
       // Carica i dettagli completi del ristorante
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/restaurants/search?placeId=${restaurant.id}`
+        `/api/restaurants/search?placeId=${restaurant.id}`
       )
       
       if (!response.ok) throw new Error('Errore caricamento dettagli ristorante')
@@ -96,16 +97,16 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
   }
 
   return (
-    <div className="space-y-3 relative">
+    <div className="space-y-2 relative">
       <div className="relative">
-        <Input
+        <input
           type="text"
-          placeholder="Cerca il tuo ristorante su Google Maps..."
+          placeholder="Cerca il tuo ristorante..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value)
             if (selectedRestaurant && e.target.value !== selectedRestaurant.name) {
-              onSelect(null as any) // Reset selection if user changes input
+              onSelect(null as any)
             }
           }}
           onFocus={() => {
@@ -113,11 +114,11 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
               setShowResults(true)
             }
           }}
-          className="h-12 text-base rounded-xl border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+          className="w-full h-12 px-4 pr-10 border-2 border-gray-200 rounded-xl text-sm focus:border-[#1B9AAA] focus:ring-2 focus:ring-[#1B9AAA]/20 outline-none transition"
         />
         {isLoading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
+            <Loader2 className="h-5 w-5 animate-spin text-[#1B9AAA]" />
           </div>
         )}
       </div>
@@ -129,21 +130,21 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-50 w-full mt-2 bg-white rounded-xl border border-gray-200 shadow-xl max-h-[400px] overflow-y-auto"
+            className="absolute z-50 w-full mt-2 bg-white rounded-2xl border-2 border-[#1B9AAA]/20 shadow-2xl max-h-[400px] overflow-y-auto"
           >
             <div className="p-2">
-              <p className="text-xs text-gray-500 font-medium px-3 py-2">
-                Risultati della ricerca ({searchResults.length})
+              <p className="text-xs text-gray-500 font-bold px-3 py-2 uppercase tracking-wide">
+                {searchResults.length} Risultati
               </p>
               {searchResults.map((restaurant, index) => (
                 <button
                   key={restaurant.id}
                   onClick={() => handleSelectRestaurant(restaurant)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-purple-50 transition-colors border border-transparent hover:border-purple-200"
+                  className="w-full text-left p-3 rounded-xl hover:bg-gradient-to-r hover:from-[#1B9AAA]/5 hover:to-[#06D6A0]/5 transition-all border border-transparent hover:border-[#1B9AAA]/20"
                 >
                   <div className="flex items-start gap-3">
                     {restaurant.photo && (
-                      <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0 bg-gray-100">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 shadow-sm">
                         <img 
                           src={restaurant.photo} 
                           alt={restaurant.name} 
@@ -152,18 +153,21 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">
+                      <h3 className="font-bold text-sm text-gray-900 truncate">
                         {restaurant.name}
                       </h3>
-                      <div className="flex items-center text-gray-600 text-sm mt-1">
+                      <div className="flex items-center text-gray-600 text-xs mt-1">
                         <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                         <span className="line-clamp-1">{restaurant.address}</span>
                       </div>
                       {restaurant.rating && (
-                        <div className="flex items-center mt-1">
+                        <div className="flex items-center mt-1.5 bg-gray-50 px-2 py-0.5 rounded-full w-fit">
                           <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 mr-1" />
-                          <span className="text-xs text-gray-700">
-                            {restaurant.rating} ({restaurant.ratingsTotal} recensioni)
+                          <span className="text-xs font-bold text-gray-900">
+                            {restaurant.rating}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({restaurant.ratingsTotal})
                           </span>
                         </div>
                       )}
@@ -185,19 +189,19 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200">
+            <div className="p-4 bg-gradient-to-r from-[#1B9AAA]/10 to-[#06D6A0]/10 rounded-2xl border-2 border-[#1B9AAA]/30">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#1B9AAA] to-[#06D6A0] flex items-center justify-center shadow-lg">
                   <Check className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-semibold text-purple-800 uppercase tracking-wide mb-1">
-                    Ristorante Selezionato
+                  <p className="text-xs font-bold text-[#1B9AAA] uppercase tracking-wide mb-1">
+                    ✓ Selezionato
                   </p>
-                  <h3 className="font-bold text-gray-900 text-lg">
+                  <h3 className="font-extrabold text-gray-900 text-base">
                     {selectedRestaurant.name}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     {selectedRestaurant.address}
                   </p>
