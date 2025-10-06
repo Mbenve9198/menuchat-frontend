@@ -763,40 +763,6 @@ export default function CampaignsPage() {
         </div>
         )}
 
-        {/* Campaign Stats Summary - SOLO CLICK RATE */}
-        {!isLoading && !error && filteredCampaigns.length > 0 && (
-          <div className="w-full max-w-md bg-white rounded-3xl p-5 shadow-xl mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">{t("campaigns.performanceCampaigns")}</h3>
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-xs text-gray-500">{t("campaigns.avgClickRate")}</p>
-                <p className="text-3xl font-extrabold text-[#1B9AAA]">
-                  {campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).length > 0 ? (
-                    Math.round(
-                      campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).reduce((sum, c) => sum + (c.clickRate || 0), 0) /
-                        campaigns.filter((c) => c.clickRate !== null && c.clickRate !== undefined).length,
-                    )
-                  ) : 0}
-                  %
-                </p>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <span className="text-xl">💡</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{t("campaigns.tip")}</p>
-                  <p className="text-xs text-gray-600">
-                    {t("campaigns.tipDescription")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Fixed Action Buttons */}
         {!isLoading && !error && (
           <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center gap-3 px-4">
