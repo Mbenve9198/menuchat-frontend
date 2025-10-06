@@ -173,15 +173,15 @@ export default function RankCheckerPage() {
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
 
-      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
+      <div className="relative z-10 flex flex-col items-center min-h-screen w-full max-w-full px-3 sm:px-4 py-6 pb-24 overflow-x-hidden">
         {/* Header con mascotte */}
         <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex-1">
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA] mb-1">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA] mb-1">
                 🗺️ Rank Checker
               </h1>
-              <p className="text-lg text-gray-700">
+              <p className="text-base sm:text-lg text-gray-700 leading-tight">
                 I tuoi clienti ti trovano su Google?
               </p>
             </div>
@@ -190,7 +190,7 @@ export default function RankCheckerPage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8 }}
-              className="relative w-24 h-24"
+              className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0"
             >
               <Image
                 src="/mascottes/mascotte_rock.png"
@@ -212,9 +212,9 @@ export default function RankCheckerPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="bg-white rounded-3xl p-5 shadow-xl mb-6">
-                <div className="space-y-2 mb-6">
-                  <h2 className="text-xl font-extrabold text-gray-800">
+              <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl mb-6">
+                <div className="space-y-2 mb-5">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">
                     Scopri la tua posizione
                   </h2>
                   <p className="text-sm text-gray-600">
@@ -222,7 +222,7 @@ export default function RankCheckerPage() {
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Campo Autocomplete Ristorante */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
@@ -250,13 +250,13 @@ export default function RankCheckerPage() {
                     />
                     
                     {/* Tag suggerimenti */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {KEYWORD_SUGGESTIONS.map((suggestion) => (
                         <button
                           key={suggestion.text}
                           type="button"
                           onClick={() => setKeyword(suggestion.text)}
-                          className="px-3 py-1.5 text-xs font-medium rounded-full bg-gradient-to-r from-[#1B9AAA]/10 to-[#06D6A0]/10 text-gray-700 hover:from-[#1B9AAA]/20 hover:to-[#06D6A0]/20 border border-[#1B9AAA]/20 transition-all"
+                          className="px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-full bg-gradient-to-r from-[#1B9AAA]/10 to-[#06D6A0]/10 text-gray-700 hover:from-[#1B9AAA]/20 hover:to-[#06D6A0]/20 border border-[#1B9AAA]/20 transition-all whitespace-nowrap"
                         >
                           {suggestion.emoji} {suggestion.text}
                         </button>
@@ -268,7 +268,7 @@ export default function RankCheckerPage() {
                   <CustomButton
                     type="submit"
                     disabled={!isFormValid || isLoading}
-                    className="w-full h-14 text-base font-extrabold"
+                    className="w-full h-12 sm:h-14 text-sm sm:text-base font-extrabold"
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">

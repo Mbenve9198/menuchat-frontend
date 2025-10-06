@@ -63,28 +63,28 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
   return (
     <div className="w-full max-w-md">
       <motion.div
-        className="bg-white rounded-3xl p-6 shadow-2xl"
+        className="bg-white rounded-3xl p-4 sm:p-6 shadow-2xl"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
         {/* Header con mascotte */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-1">
+        <div className="flex items-center justify-between gap-3 mb-5 sm:mb-6">
+          <div className="flex-1 min-w-0">
             <motion.div
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#1B9AAA]/10 to-[#06D6A0]/10 px-3 py-1.5 rounded-full mb-3"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#1B9AAA]/10 to-[#06D6A0]/10 px-2.5 sm:px-3 py-1.5 rounded-full mb-2 sm:mb-3"
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <Sparkles className="w-4 h-4 text-[#1B9AAA]" />
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-[#1B9AAA]" />
               <span className="text-xs font-bold text-[#1B9AAA] uppercase tracking-wide">
                 Quasi fatto!
               </span>
             </motion.div>
-            <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-800 mb-2 leading-tight">
               Sblocca il Report Completo
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
               Inserisci i tuoi dati per vedere l'analisi dettagliata di <span className="font-bold">{restaurantName}</span>
             </p>
           </div>
@@ -94,7 +94,7 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
               scale: [1, 1.1, 1]
             }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="text-4xl ml-4"
+            className="text-3xl sm:text-4xl flex-shrink-0"
           >
             🎁
           </motion.div>
@@ -135,9 +135,9 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
           </div>
 
           {/* Privacy Notice */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 flex items-start gap-2">
-            <Lock className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-600">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-2.5 sm:p-3 flex items-start gap-2">
+            <Lock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-gray-600 leading-relaxed">
               I tuoi dati sono al sicuro. Non li condivideremo mai con terze parti.
             </p>
           </div>
@@ -146,7 +146,7 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
           <CustomButton
             type="submit"
             disabled={!isFormValid || isSubmitting}
-            className="w-full h-14 text-base font-extrabold"
+            className="w-full h-12 sm:h-14 text-sm sm:text-base font-extrabold"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
@@ -168,33 +168,33 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
         </form>
 
         {/* Benefici */}
-        <div className="mt-6 space-y-2">
-          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">
+        <div className="mt-5 sm:mt-6 space-y-2">
+          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2 sm:mb-3">
             Cosa riceverai:
           </p>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
               <span className="text-green-600 font-bold text-xs">✓</span>
             </div>
-            <p className="text-sm text-gray-600">Ranking completo su Google Maps</p>
+            <p className="text-xs sm:text-sm text-gray-600">Ranking completo su Google Maps</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
               <span className="text-green-600 font-bold text-xs">✓</span>
             </div>
-            <p className="text-sm text-gray-600">Mappa interattiva con competitor</p>
+            <p className="text-xs sm:text-sm text-gray-600">Mappa interattiva con competitor</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
               <span className="text-green-600 font-bold text-xs">✓</span>
             </div>
-            <p className="text-sm text-gray-600">Analisi dettagliata coperti persi</p>
+            <p className="text-xs sm:text-sm text-gray-600">Analisi dettagliata coperti persi</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
               <span className="text-green-600 font-bold text-xs">✓</span>
             </div>
-            <p className="text-sm text-gray-600">Consigli per migliorare il ranking</p>
+            <p className="text-xs sm:text-sm text-gray-600">Consigli per migliorare il ranking</p>
           </div>
         </div>
       </motion.div>

@@ -255,32 +255,32 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
   }
 
   return (
-    <div className="relative w-full h-[500px] rounded-xl overflow-hidden border border-gray-200">
+    <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] rounded-xl overflow-hidden border border-gray-200">
       {isLoading && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
           <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-2" />
-            <p className="text-gray-600 text-sm">Caricamento mappa...</p>
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-purple-600 mx-auto mb-2" />
+            <p className="text-gray-600 text-xs sm:text-sm">Caricamento mappa...</p>
           </div>
         </div>
       )}
       <div ref={mapRef} className="w-full h-full" />
       
       {/* Legenda */}
-      <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-        <h4 className="font-bold text-sm mb-3 text-gray-900">Legenda</h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+      <div className="absolute bottom-2 left-2 sm:bottom-4 sm:left-4 bg-white rounded-lg shadow-lg p-2.5 sm:p-4 max-w-[160px] sm:max-w-xs">
+        <h4 className="font-bold text-xs sm:text-sm mb-2 sm:mb-3 text-gray-900">Legenda</h4>
+        <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               {typeof userRestaurant.rank === 'number' ? userRestaurant.rank : '?'}
             </div>
-            <span className="text-gray-700">Il tuo locale</span>
+            <span className="text-gray-700 text-xs sm:text-sm truncate">Il tuo locale</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               #
             </div>
-            <span className="text-gray-700">Competitor</span>
+            <span className="text-gray-700 text-xs sm:text-sm truncate">Competitor</span>
           </div>
         </div>
       </div>
