@@ -7,7 +7,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // Rimosso 'output: export' perché abbiamo API routes che richiedono un server
   eslint: {
     ignoreDuringBuilds: true,
   },
