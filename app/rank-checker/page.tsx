@@ -8,6 +8,7 @@ import BubbleBackground from "@/components/bubble-background"
 import { useToast } from "@/hooks/use-toast"
 import { RestaurantAutocomplete } from "@/components/rank-checker/restaurant-autocomplete"
 import { RankingResults } from "@/components/rank-checker/ranking-results"
+import { LeadCaptureForm } from "@/components/rank-checker/lead-capture-form"
 import Image from "next/image"
 
 interface Restaurant {
@@ -68,6 +69,10 @@ export default function RankCheckerPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const [rankingData, setRankingData] = useState<RankingData | null>(null)
+  const [pendingRankingData, setPendingRankingData] = useState<RankingData | null>(null)
+  const [showLeadForm, setShowLeadForm] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const [userPhone, setUserPhone] = useState("")
   const { toast } = useToast()
 
   const isFormValid = selectedRestaurant && keyword.trim().length > 0
@@ -118,11 +123,13 @@ export default function RankCheckerPage() {
       }
 
       if (data.success) {
-        setRankingData(data)
+        // Salva i dati in attesa e mostra il form per la lead
+        setPendingRankingData(data)
+        setShowLeadForm(true)
         
-        // Scroll smooth alla sezione risultati dopo un breve delay
+        // Scroll smooth al form dopo un breve delay
         setTimeout(() => {
-          document.getElementById('results-section')?.scrollIntoView({ 
+          document.getElementById('lead-form-section')?.scrollIntoView({ 
             behavior: 'smooth',
             block: 'start'
           })
@@ -142,6 +149,24 @@ export default function RankCheckerPage() {
       clearInterval(messageInterval)
       setIsLoading(false)
     }
+  }
+
+  const handleLeadSubmit = (email: string, phone: string) => {
+    // Salva email e telefono
+    setUserEmail(email)
+    setUserPhone(phone)
+    
+    // Trasferisci i dati pending ai risultati finali
+    setRankingData(pendingRankingData)
+    setShowLeadForm(false)
+    
+    // Scroll ai risultati
+    setTimeout(() => {
+      document.getElementById('results-section')?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, 100)
   }
 
   return (
@@ -296,23 +321,37 @@ export default function RankCheckerPage() {
           )}
         </AnimatePresence>
 
-        {/* Sezione Risultati */}
-        {rankingData && (
+        {/* Form Lead Capture (appare dopo l'analisi, prima dei risultati) */}
+        {showLeadForm && pendingRankingData && selectedRestaurant && (
+          <div id="lead-form-section" className="w-full max-w-md">
+            <LeadCaptureForm
+              onSubmit={handleLeadSubmit}
+              restaurantName={selectedRestaurant.name}
+            />
+          </div>
+        )}
+
+        {/* Sezione Risultati (appare dopo aver compilato il form lead) */}
+        {rankingData && !showLeadForm && (
           <div id="results-section">
             <RankingResults 
               data={rankingData}
               keyword={keyword}
               onNewSearch={() => {
                 setRankingData(null)
+                setPendingRankingData(null)
+                setShowLeadForm(false)
                 setSelectedRestaurant(null)
                 setKeyword("")
+                setUserEmail("")
+                setUserPhone("")
               }}
             />
           </div>
         )}
 
-        {/* Benefici (visibili solo quando non ci sono risultati) */}
-        {!rankingData && !isLoading && (
+        {/* Benefici (visibili solo quando non ci sono risultati e non c'è il form lead) */}
+        {!rankingData && !isLoading && !showLeadForm && (
           <div className="w-full max-w-md space-y-4">
             <motion.div
               className="bg-white rounded-3xl p-5 shadow-xl"
