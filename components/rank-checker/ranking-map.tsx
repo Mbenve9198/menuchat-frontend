@@ -37,11 +37,19 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
       if (!mapRef.current || !window.google) return
 
       try {
-        // Converti le coordinate in numeri per assicurarsi che Google Maps le accetti
-        const userCoords = {
-          lat: parseFloat(String(userRestaurant.coordinates.lat)),
-          lng: parseFloat(String(userRestaurant.coordinates.lng))
+        // Converti le coordinate in numeri e valida
+        const lat = parseFloat(String(userRestaurant.coordinates?.lat || '0'))
+        const lng = parseFloat(String(userRestaurant.coordinates?.lng || '0'))
+        
+        // Verifica che le coordinate siano numeri validi
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+          console.error('Coordinate non valide:', { lat, lng, original: userRestaurant.coordinates })
+          setError('Coordinate del ristorante non valide')
+          setIsLoading(false)
+          return
         }
+
+        const userCoords = { lat, lng }
 
         const map = new window.google.maps.Map(mapRef.current, {
           center: userCoords,
@@ -122,10 +130,16 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
         // Aggiungi marker per i competitor
         competitors.forEach((competitor, index) => {
           // Converti le coordinate del competitor in numeri
-          const competitorCoords = {
-            lat: parseFloat(String(competitor.coordinates.lat)),
-            lng: parseFloat(String(competitor.coordinates.lng))
+          const compLat = parseFloat(String(competitor.coordinates?.lat || '0'))
+          const compLng = parseFloat(String(competitor.coordinates?.lng || '0'))
+          
+          // Salta competitor con coordinate non valide
+          if (isNaN(compLat) || isNaN(compLng) || compLat === 0 || compLng === 0) {
+            console.warn('Coordinate competitor non valide, skip:', competitor.name)
+            return
           }
+
+          const competitorCoords = { lat: compLat, lng: compLng }
 
           // Colore basato sul rank
           let color = '#9333EA' // Purple per competitor

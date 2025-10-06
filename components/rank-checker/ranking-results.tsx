@@ -60,6 +60,23 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
 
   const rankInfo = getRankInfo(userRestaurant.rank)
 
+  // Verifica se le coordinate sono valide per mostrare la mappa
+  const hasValidCoordinates = userRestaurant.coordinates && 
+    typeof userRestaurant.coordinates.lat === 'number' && 
+    typeof userRestaurant.coordinates.lng === 'number' &&
+    !isNaN(userRestaurant.coordinates.lat) &&
+    !isNaN(userRestaurant.coordinates.lng)
+
+  // Log per debug
+  console.log('Coordinates check:', {
+    coordinates: userRestaurant.coordinates,
+    hasValidCoordinates,
+    lat: userRestaurant.coordinates?.lat,
+    lng: userRestaurant.coordinates?.lng,
+    latType: typeof userRestaurant.coordinates?.lat,
+    lngType: typeof userRestaurant.coordinates?.lng
+  })
+
   return (
     <div className="w-full max-w-md space-y-4">
       {/* Header con bottone nuova ricerca */}
@@ -165,24 +182,41 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
       </div>
 
       {/* La Mappa */}
-      <motion.div
-        className="bg-white rounded-3xl p-5 shadow-xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <div className="text-2xl">🗺️</div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Mappa Competitor</h3>
-            <p className="text-xs text-gray-600">Dove appari vs i tuoi concorrenti</p>
+      {hasValidCoordinates ? (
+        <motion.div
+          className="bg-white rounded-3xl p-5 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="text-2xl">🗺️</div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">Mappa Competitor</h3>
+              <p className="text-xs text-gray-600">Dove appari vs i tuoi concorrenti</p>
+            </div>
           </div>
-        </div>
-        <RankingMap
-          userRestaurant={userRestaurant}
-          competitors={competitors}
-        />
-      </motion.div>
+          <RankingMap
+            userRestaurant={userRestaurant}
+            competitors={competitors}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          className="bg-white rounded-3xl p-5 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="text-2xl">⚠️</div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800">Mappa non disponibile</h3>
+              <p className="text-xs text-gray-600">Le coordinate del ristorante non sono valide</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Lista Competitor */}
       {competitors.length > 0 && (

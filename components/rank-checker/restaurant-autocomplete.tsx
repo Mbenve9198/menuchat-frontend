@@ -36,6 +36,11 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
   // Fetch search results when debouncedSearchQuery changes
   useEffect(() => {
     const fetchRestaurants = async () => {
+      // Non fare ricerca se c'è già un ristorante selezionato
+      if (selectedRestaurant) {
+        return
+      }
+
       if (!debouncedSearchQuery || debouncedSearchQuery.length < 3) {
         setSearchResults([])
         setShowResults(false)
@@ -71,7 +76,7 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
     }
 
     fetchRestaurants()
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, selectedRestaurant])
 
   const handleSelectRestaurant = async (restaurant: Restaurant) => {
     try {
@@ -85,6 +90,7 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
       const data = await response.json()
       onSelect(data.restaurant)
       setShowResults(false)
+      setSearchResults([]) // Svuota i risultati per evitare che si riapra la lista
       setSearchQuery(data.restaurant.name)
     } catch (error) {
       console.error('Errore:', error)
@@ -107,10 +113,12 @@ export function RestaurantAutocomplete({ onSelect, selectedRestaurant }: Restaur
             setSearchQuery(e.target.value)
             if (selectedRestaurant && e.target.value !== selectedRestaurant.name) {
               onSelect(null as any)
+              setSearchResults([]) // Reset dei risultati quando l'utente cancella
             }
           }}
           onFocus={() => {
-            if (searchResults.length > 0) {
+            // Mostra i risultati solo se non c'è un ristorante già selezionato
+            if (searchResults.length > 0 && !selectedRestaurant) {
               setShowResults(true)
             }
           }}
