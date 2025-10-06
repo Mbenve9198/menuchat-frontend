@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     // Se viene fornito un placeId, ottieni i dettagli specifici di quel ristorante
     if (placeId) {
       const detailsResponse = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,website,opening_hours,types,price_level,rating,user_ratings_total,photos,reviews,url&key=${GOOGLE_PLACES_API_KEY}`
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,website,opening_hours,types,price_level,rating,user_ratings_total,photos,reviews,url,geometry&key=${GOOGLE_PLACES_API_KEY}`
       );
       
       if (!detailsResponse.ok) {
@@ -41,6 +41,16 @@ export async function GET(request: Request) {
         .filter((type: string) => type.includes('cuisine') || type === 'restaurant')
         .map((type: string) => type.replace('_cuisine', '').replace('_', ' '));
 
+      // Assicurati che la location abbia lat e lng come numeri
+      const location = details.geometry?.location ? {
+        lat: typeof details.geometry.location.lat === 'function' 
+          ? details.geometry.location.lat() 
+          : details.geometry.location.lat,
+        lng: typeof details.geometry.location.lng === 'function' 
+          ? details.geometry.location.lng() 
+          : details.geometry.location.lng
+      } : null;
+
       return NextResponse.json({
         restaurant: {
           id: placeId,
@@ -50,7 +60,7 @@ export async function GET(request: Request) {
           website: details.website,
           openingHours: details.opening_hours?.weekday_text,
           cuisineTypes,
-          location: details.geometry?.location,
+          location: location,
           rating: details.rating,
           ratingsTotal: details.user_ratings_total,
           priceLevel: details.price_level,

@@ -77,6 +77,16 @@ export default function RankCheckerPage() {
     
     if (!isFormValid || !selectedRestaurant) return
 
+    // Validazione delle coordinate
+    if (!selectedRestaurant.location || !selectedRestaurant.location.lat || !selectedRestaurant.location.lng) {
+      toast({
+        title: "Errore",
+        description: "Il ristorante selezionato non ha coordinate valide. Riprova con un altro.",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsLoading(true)
     setLoadingMessageIndex(0)
     setRankingData(null)
