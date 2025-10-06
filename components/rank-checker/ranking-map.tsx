@@ -37,8 +37,14 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
       if (!mapRef.current || !window.google) return
 
       try {
+        // Converti le coordinate in numeri per assicurarsi che Google Maps le accetti
+        const userCoords = {
+          lat: parseFloat(String(userRestaurant.coordinates.lat)),
+          lng: parseFloat(String(userRestaurant.coordinates.lng))
+        }
+
         const map = new window.google.maps.Map(mapRef.current, {
-          center: userRestaurant.coordinates,
+          center: userCoords,
           zoom: 14,
           mapTypeControl: false,
           streetViewControl: false,
@@ -60,7 +66,7 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
 
         // Aggiungi marker per il ristorante dell'utente (Stella Blu)
         const userMarker = new window.google.maps.Marker({
-          position: userRestaurant.coordinates,
+          position: userCoords,
           map: map,
           title: userRestaurant.name,
           icon: {
@@ -111,15 +117,21 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
           userInfoWindow.open(map, userMarker)
         })
 
-        bounds.extend(userRestaurant.coordinates)
+        bounds.extend(userCoords)
 
         // Aggiungi marker per i competitor
         competitors.forEach((competitor, index) => {
+          // Converti le coordinate del competitor in numeri
+          const competitorCoords = {
+            lat: parseFloat(String(competitor.coordinates.lat)),
+            lng: parseFloat(String(competitor.coordinates.lng))
+          }
+
           // Colore basato sul rank
           let color = '#9333EA' // Purple per competitor
           
           const competitorMarker = new window.google.maps.Marker({
-            position: competitor.coordinates,
+            position: competitorCoords,
             map: map,
             title: competitor.name,
             icon: {
@@ -168,7 +180,7 @@ export function RankingMap({ userRestaurant, competitors }: RankingMapProps) {
             competitorInfoWindow.open(map, competitorMarker)
           })
 
-          bounds.extend(competitor.coordinates)
+          bounds.extend(competitorCoords)
         })
 
         // Fit map to bounds
