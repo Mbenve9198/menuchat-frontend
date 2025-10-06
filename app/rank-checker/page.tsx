@@ -366,7 +366,7 @@ export default function RankCheckerPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 
