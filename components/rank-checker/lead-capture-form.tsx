@@ -29,24 +29,9 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
     setIsSubmitting(true)
 
     try {
-      // Qui potresti salvare i dati nel backend se vuoi
-      // Per ora li salviamo solo in localStorage
-      const leadData = {
-        email,
-        phone,
-        restaurantName,
-        timestamp: new Date().toISOString()
-      }
-      
-      // Salva in localStorage
-      const existingLeads = JSON.parse(localStorage.getItem('rank_checker_leads') || '[]')
-      existingLeads.push(leadData)
-      localStorage.setItem('rank_checker_leads', JSON.stringify(existingLeads))
-
-      // Simula un piccolo delay per UX migliore
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
+      // Chiama onSubmit per procedere (passa i dati al parent)
       onSubmit(email, phone)
+      
     } catch (error) {
       console.error('Errore:', error)
       toast({

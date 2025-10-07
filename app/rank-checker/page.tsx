@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, MapPin, TrendingDown, Zap, Sparkles, Loader2, ArrowRight, RefreshCw } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -69,6 +70,7 @@ const BENEFITS = [
 ]
 
 export default function RankCheckerPage() {
+  const searchParams = useSearchParams()
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [keyword, setKeyword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -79,9 +81,20 @@ export default function RankCheckerPage() {
   const [userEmail, setUserEmail] = useState("")
   const [userPhone, setUserPhone] = useState("")
   const [currentBenefitIndex, setCurrentBenefitIndex] = useState(0)
+  const [showEmailRecovery, setShowEmailRecovery] = useState(false)
+  const [recoveryEmail, setRecoveryEmail] = useState("")
+  const [isRecovering, setIsRecovering] = useState(false)
   const { toast } = useToast()
 
   const isFormValid = selectedRestaurant && keyword.trim().length > 0
+
+  // Recupera risultati automaticamente se c'è un token nell'URL
+  useEffect(() => {
+    const token = searchParams?.get('token')
+    if (token) {
+      recoverResultsFromToken(token)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,10 +170,42 @@ export default function RankCheckerPage() {
     }
   }
 
-  const handleLeadSubmit = (email: string, phone: string) => {
+  const handleLeadSubmit = async (email: string, phone: string) => {
     // Salva email e telefono
     setUserEmail(email)
     setUserPhone(phone)
+    
+    try {
+      // Salva il lead nel backend
+      if (pendingRankingData && selectedRestaurant) {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            phone,
+            restaurantName: selectedRestaurant.name,
+            placeId: selectedRestaurant.id,
+            keyword,
+            mainRank: pendingRankingData.mainResult?.rank || pendingRankingData.userRestaurant.rank
+          })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Salva il token in localStorage per recuperare i risultati
+          if (data.accessToken) {
+            localStorage.setItem('rank_checker_token', data.accessToken)
+            console.log('✅ Lead salvato, token:', data.accessToken)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('⚠️ Errore salvataggio lead (non bloccante):', error)
+      // Non bloccare il flusso anche se il salvataggio fallisce
+    }
     
     // Trasferisci i dati pending ai risultati finali
     setRankingData(pendingRankingData)
@@ -186,6 +231,106 @@ export default function RankCheckerPage() {
       return () => clearInterval(interval)
     }
   }, [rankingData, isLoading, showLeadForm])
+
+  // Recupera risultati usando un token
+  const recoverResultsFromToken = async (token: string) => {
+    setIsLoading(true)
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads/results/${token}`
+      )
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        // Ricostruisci lo stato con i dati salvati
+        const leadData = data.data
+        
+        // Crea un oggetto restaurant minimale
+        const restaurant: Restaurant = {
+          id: leadData.placeId,
+          name: leadData.restaurantName,
+          address: '',
+          location: { lat: 0, lng: 0 }
+        }
+        
+        setSelectedRestaurant(restaurant)
+        setKeyword(leadData.keyword)
+        setUserEmail(leadData.email)
+        setUserPhone(leadData.phone)
+        
+        // Rifai l'analisi per avere dati fresh
+        // Per ora mostriamo un messaggio
+        toast({
+          title: "Risultati recuperati!",
+          description: `Benvenuto! Stai rivedendo l'analisi di ${leadData.restaurantName}`,
+        })
+        
+        // TODO: Opzionalmente, rifai l'analisi o mostra dati cached
+      } else {
+        toast({
+          title: "Token non valido",
+          description: "Il link è scaduto o non valido.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Errore:', error)
+      toast({
+        title: "Errore",
+        description: "Impossibile recuperare i risultati.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Funzione per recuperare risultati usando email
+  const handleEmailRecovery = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!recoveryEmail.includes('@')) {
+      toast({
+        title: "Errore",
+        description: "Inserisci un'email valida",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsRecovering(true)
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads/check/${encodeURIComponent(recoveryEmail)}`
+      )
+
+      const data = await response.json()
+
+      if (data.found && data.accessToken) {
+        // Salva il token e ricarica la pagina con il token
+        localStorage.setItem('rank_checker_token', data.accessToken)
+        window.location.href = `/rank-checker?token=${data.accessToken}`
+      } else {
+        toast({
+          title: "Nessun risultato trovato",
+          description: "Non abbiamo trovato analisi recenti per questa email.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Errore:', error)
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore. Riprova.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsRecovering(false)
+    }
+  }
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
@@ -287,6 +432,54 @@ export default function RankCheckerPage() {
                     )}
                   </CustomButton>
                 </form>
+
+                {/* Link recupero risultati */}
+                {!isLoading && (
+                  <div className="mt-5 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailRecovery(!showEmailRecovery)}
+                      className="w-full text-center text-sm font-medium text-[#1B9AAA] hover:text-[#06D6A0] transition-colors"
+                    >
+                      {showEmailRecovery ? '← Torna alla ricerca' : '🔍 Hai già fatto l\'analisi? Recupera i tuoi risultati'}
+                    </button>
+
+                    <AnimatePresence>
+                      {showEmailRecovery && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden mt-4"
+                        >
+                          <form onSubmit={handleEmailRecovery} className="space-y-3">
+                            <input
+                              type="email"
+                              placeholder="Inserisci la tua email..."
+                              value={recoveryEmail}
+                              onChange={(e) => setRecoveryEmail(e.target.value)}
+                              className="w-full h-10 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-[#1B9AAA] focus:ring-2 focus:ring-[#1B9AAA]/20 outline-none transition"
+                            />
+                            <CustomButton
+                              type="submit"
+                              disabled={isRecovering || !recoveryEmail.includes('@')}
+                              className="w-full h-10 text-sm font-bold"
+                            >
+                              {isRecovering ? (
+                                <span className="flex items-center gap-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Ricerca...
+                                </span>
+                              ) : (
+                                'Recupera Risultati'
+                              )}
+                            </CustomButton>
+                          </form>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
 
                 {/* Stato di caricamento animato */}
                 <AnimatePresence>
