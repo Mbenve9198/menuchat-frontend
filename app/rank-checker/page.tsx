@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, MapPin, TrendingDown, Zap, Sparkles, Loader2, ArrowRight, RefreshCw } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -70,7 +69,6 @@ const BENEFITS = [
 ]
 
 export default function RankCheckerPage() {
-  const searchParams = useSearchParams()
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [keyword, setKeyword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -88,13 +86,17 @@ export default function RankCheckerPage() {
 
   const isFormValid = selectedRestaurant && keyword.trim().length > 0
 
-  // Recupera risultati automaticamente se c'è un token nell'URL
+  // Recupera risultati automaticamente se c'è un token nell'URL (solo client-side)
   useEffect(() => {
-    const token = searchParams?.get('token')
-    if (token) {
-      recoverResultsFromToken(token)
+    // Usa window.location solo sul client
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const token = urlParams.get('token')
+      if (token) {
+        recoverResultsFromToken(token)
+      }
     }
-  }, [searchParams])
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
