@@ -95,5 +95,15 @@
       transform: translateX(-50%);
     }
   }
+
+  /* Nascondi scrollbar mantenendo la funzionalità di scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
 }
 

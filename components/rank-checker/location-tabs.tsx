@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 
 interface LocationTab {
@@ -16,14 +17,76 @@ interface LocationTabsProps {
 }
 
 export function LocationTabs({ tabs, activeTab, onTabChange }: LocationTabsProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || tabs.length <= 2) return // Non animare se ci sono pochi tabs
+
+    let scrollDirection = 1 // 1 = destra, -1 = sinistra
+    let animationFrame: number
+    let scrollSpeed = 0.5 // Velocità lenta e smooth
+
+    const autoScroll = () => {
+      if (!container) return
+
+      // Auto-scroll lento
+      container.scrollLeft += scrollSpeed * scrollDirection
+
+      // Inverti direzione ai limiti
+      if (container.scrollLeft >= container.scrollWidth - container.clientWidth - 5) {
+        scrollDirection = -1
+      } else if (container.scrollLeft <= 5) {
+        scrollDirection = 1
+      }
+
+      animationFrame = requestAnimationFrame(autoScroll)
+    }
+
+    // Avvia l'animazione dopo un breve delay
+    const startTimeout = setTimeout(() => {
+      animationFrame = requestAnimationFrame(autoScroll)
+    }, 1000)
+
+    // Pausa l'animazione quando l'utente interagisce
+    const handleTouchStart = () => {
+      cancelAnimationFrame(animationFrame)
+    }
+
+    const handleTouchEnd = () => {
+      // Riprendi l'animazione dopo 2 secondi di inattività
+      setTimeout(() => {
+        animationFrame = requestAnimationFrame(autoScroll)
+      }, 2000)
+    }
+
+    container.addEventListener('touchstart', handleTouchStart)
+    container.addEventListener('touchend', handleTouchEnd)
+    container.addEventListener('mousedown', handleTouchStart)
+    container.addEventListener('mouseup', handleTouchEnd)
+
+    return () => {
+      clearTimeout(startTimeout)
+      cancelAnimationFrame(animationFrame)
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchend', handleTouchEnd)
+      container.removeEventListener('mousedown', handleTouchStart)
+      container.removeEventListener('mouseup', handleTouchEnd)
+    }
+  }, [tabs.length])
+
   return (
     <div className="w-full">
       <p className="text-xs sm:text-sm font-bold text-gray-600 uppercase tracking-wide text-center mb-3">
         Come ti vedono i clienti da:
       </p>
       
-      {/* Tabs con scroll orizzontale su mobile */}
-      <div className="overflow-x-auto pb-2 -mx-1 px-1">
+      {/* Tabs con scroll orizzontale animato */}
+      <div 
+        ref={scrollContainerRef}
+        className="overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
+        style={{ scrollBehavior: 'smooth' }}
+      >
         <div className="flex gap-2 min-w-min">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id
@@ -76,11 +139,22 @@ export function LocationTabs({ tabs, activeTab, onTabChange }: LocationTabsProps
         </div>
       </div>
       
-      {/* Scroll hint su mobile */}
+      {/* Scroll hint su mobile con animazione */}
       {tabs.length > 3 && (
-        <p className="text-xs text-gray-400 text-center mt-2">
+        <motion.p 
+          className="text-xs text-gray-400 text-center mt-2"
+          animate={{ 
+            opacity: [0.5, 1, 0.5],
+            x: [-2, 2, -2]
+          }}
+          transition={{ 
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
           ← Scorri per vedere altri punti →
-        </p>
+        </motion.p>
       )}
     </div>
   )
