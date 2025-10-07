@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { 
   TrendingDown, 
@@ -16,9 +17,20 @@ import {
 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { RankingMap } from "./ranking-map"
+import { LocationTabs } from "./location-tabs"
+
+interface SearchResult {
+  searchPointName: string
+  searchPointIcon?: string
+  searchPointCategory?: string
+  rank: number | string
+  coordinates: { lat: number; lng: number }
+}
 
 interface RankingResultsProps {
   data: {
+    mainResult?: SearchResult
+    strategicResults?: SearchResult[]
     userRestaurant: {
       name: string
       rank: number | string
@@ -48,8 +60,47 @@ interface RankingResultsProps {
 }
 
 export function RankingResults({ data, keyword, onNewSearch }: RankingResultsProps) {
-  const { userRestaurant, competitors, analysis } = data
-  const rank = typeof userRestaurant.rank === 'number' ? userRestaurant.rank : 21
+  const { userRestaurant, competitors, analysis, mainResult, strategicResults = [] } = data
+  
+  // Stato per il tab selezionato
+  const [selectedLocationId, setSelectedLocationId] = useState('main')
+  
+  // Costruisci la lista dei tabs
+  const allTabs = [
+    {
+      id: 'main',
+      name: mainResult?.searchPointName || 'Tuo Locale',
+      icon: '🏪',
+      rank: mainResult?.rank || userRestaurant.rank
+    },
+    ...strategicResults.map((result, index) => ({
+      id: `strategic-${index}`,
+      name: result.searchPointName,
+      icon: result.searchPointIcon || '📍',
+      rank: result.rank
+    }))
+  ]
+
+  // Ottieni i dati del tab corrente
+  const getCurrentData = () => {
+    if (selectedLocationId === 'main') {
+      return {
+        rank: mainResult?.rank || userRestaurant.rank,
+        searchPointName: mainResult?.searchPointName || 'Dal tuo locale'
+      }
+    }
+    
+    const index = parseInt(selectedLocationId.replace('strategic-', ''))
+    const strategicResult = strategicResults[index]
+    
+    return {
+      rank: strategicResult?.rank || 'N/D',
+      searchPointName: strategicResult?.searchPointName || 'N/D'
+    }
+  }
+
+  const currentData = getCurrentData()
+  const rank = typeof currentData.rank === 'number' ? currentData.rank : 21
 
   // Determina il colore e l'emoji in base al rank
   const getRankInfo = (rank: number | string) => {
@@ -59,7 +110,38 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
     return { color: 'from-orange-500 to-red-500', emoji: '😟', textColor: 'text-red-600' }
   }
 
-  const rankInfo = getRankInfo(userRestaurant.rank)
+  const rankInfo = getRankInfo(currentData.rank)
+
+  // Calcola le metriche in base al rank corrente
+  const competitorsAhead = typeof currentData.rank === 'number' ? currentData.rank - 1 : 20
+  const estimatedLostCustomers = typeof currentData.rank === 'number' 
+    ? currentData.rank >= 4 && currentData.rank <= 7
+      ? (currentData.rank - 3) * 8
+      : currentData.rank >= 8
+      ? (currentData.rank - 3) * 10
+      : 0
+    : 0
+
+  // Messaggio dinamico
+  const getMessage = () => {
+    if (typeof currentData.rank !== 'number') {
+      return 'Non appari nei primi 20 risultati da questo punto!'
+    }
+    if (currentData.rank === 1) return 'Eccellente! Prima posizione! 🎉'
+    if (currentData.rank <= 3) return 'Ottimo posizionamento nella top 3.'
+    if (currentData.rank <= 7) return 'Buona visibilità, ma c\'è margine di miglioramento.'
+    if (currentData.rank <= 10) return 'Posizionamento medio. Molti competitor ti precedono.'
+    return 'Attenzione: scarsa visibilità da questo punto.'
+  }
+
+  // Determina il testo del CTA in base al ranking (usa il rank principale)
+  const getCtaText = () => {
+    const mainRank = mainResult?.rank || userRestaurant.rank
+    if (typeof mainRank === 'number' && mainRank <= 3) {
+      return "CONSOLIDA IL TUO POSIZIONAMENTO"
+    }
+    return "MIGLIORA IL TUO POSIZIONAMENTO"
+  }
 
   // Verifica se le coordinate sono valide per mostrare la mappa
   const hasValidCoordinates = userRestaurant.coordinates && 
@@ -96,59 +178,107 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
         </button>
         
         <motion.div
+          key={`emoji-${selectedLocationId}`}
           className="text-6xl sm:text-7xl md:text-8xl mb-4"
+          initial={{ scale: 0.8, rotate: -10 }}
           animate={{ 
             scale: [1, 1.1, 1],
             rotate: [0, 5, -5, 0]
           }}
-          transition={{ duration: 0.6, repeat: 2 }}
+          transition={{ duration: 0.6 }}
         >
           {rankInfo.emoji}
         </motion.div>
         
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-3 leading-tight">
-          {typeof userRestaurant.rank === 'number' ? `#${userRestaurant.rank}` : userRestaurant.rank}
-        </h1>
+        <motion.h1 
+          key={`rank-${selectedLocationId}`}
+          className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-3 leading-tight"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {typeof currentData.rank === 'number' ? `#${currentData.rank}` : currentData.rank}
+        </motion.h1>
         
-        <div className={`inline-block px-6 py-3 rounded-2xl ${
-          typeof userRestaurant.rank === 'number' && userRestaurant.rank <= 3
-            ? 'bg-green-100'
-            : typeof userRestaurant.rank === 'number' && userRestaurant.rank <= 7
-            ? 'bg-yellow-100'
-            : 'bg-red-100'
-        } mb-4`}>
+        <motion.div 
+          key={`message-${selectedLocationId}`}
+          className={`inline-block px-6 py-3 rounded-2xl ${
+            typeof currentData.rank === 'number' && currentData.rank <= 3
+              ? 'bg-green-100'
+              : typeof currentData.rank === 'number' && currentData.rank <= 7
+              ? 'bg-yellow-100'
+              : 'bg-red-100'
+          } mb-4`}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+        >
           <p className={`text-base sm:text-lg font-black ${rankInfo.textColor}`}>
-            {analysis.message}
+            {getMessage()}
           </p>
-        </div>
+        </motion.div>
         
         <p className="text-sm sm:text-base text-gray-600 mb-2">
           Ricerca: "<span className="font-bold">{keyword}</span>"
         </p>
         
-        {userRestaurant.address && (
-          <p className="text-xs sm:text-sm text-gray-500 flex items-center justify-center gap-1">
-            <MapPin className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate max-w-[300px]">{userRestaurant.address}</span>
-          </p>
-        )}
+        <p className="text-xs sm:text-sm text-gray-500">
+          📍 {currentData.searchPointName}
+        </p>
       </motion.div>
 
-      {/* Statistiche Impatto */}
+      {/* Tabs per cambiare punto di vista (solo se ci sono risultati strategici) */}
+      {strategicResults.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="space-y-3"
+        >
+          {/* Messaggio esplicativo */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 border border-blue-200">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl flex-shrink-0">🎯</div>
+              <div className="flex-1">
+                <h4 className="font-bold text-sm text-gray-900 mb-1">
+                  Abbiamo analizzato la tua visibilità da {strategicResults.length + 1} punti strategici!
+                </h4>
+                <p className="text-xs text-gray-600">
+                  Tocca i pulsanti sotto per vedere come appari dalle zone chiave della tua città
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <LocationTabs
+            tabs={allTabs}
+            activeTab={selectedLocationId}
+            onTabChange={setSelectedLocationId}
+          />
+        </motion.div>
+      )}
+
+      {/* Statistiche Impatto - Dati dinamici basati sul tab */}
       <motion.div 
+        key={`stats-${selectedLocationId}`}
         className="grid grid-cols-2 gap-2 sm:gap-3"
         initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
       >
         {/* Competitor davanti */}
         <div className="bg-white rounded-3xl p-3 sm:p-4 shadow-xl">
           <div className="text-center">
             <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
-            <p className="text-2xl sm:text-3xl font-black text-[#EF476F] mb-1">
-              {analysis.competitorsAhead}
-            </p>
+            <motion.p 
+              key={`comp-${competitorsAhead}`}
+              className="text-2xl sm:text-3xl font-black text-[#EF476F] mb-1"
+              initial={{ scale: 1.3 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {competitorsAhead}
+            </motion.p>
             <p className="text-xs text-gray-600 font-medium leading-tight">
               Competitor davanti
             </p>
@@ -159,9 +289,15 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
         <div className="bg-white rounded-3xl p-3 sm:p-4 shadow-xl">
           <div className="text-center">
             <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📉</div>
-            <p className="text-2xl sm:text-3xl font-black text-[#EF476F] mb-1">
-              ~{analysis.estimatedLostCustomers}
-            </p>
+            <motion.p 
+              key={`lost-${estimatedLostCustomers}`}
+              className="text-2xl sm:text-3xl font-black text-[#EF476F] mb-1"
+              initial={{ scale: 1.3 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              ~{estimatedLostCustomers}
+            </motion.p>
             <p className="text-xs text-gray-600 font-medium leading-tight">
               Coperti persi/sett.
             </p>
@@ -208,6 +344,52 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
         </motion.div>
       )}
 
+      {/* Riepilogo Multi-Punto (solo se ci sono risultati strategici) */}
+      {strategicResults.length > 0 && (
+        <motion.div
+          className="bg-gradient-to-br from-orange-50 to-red-50 rounded-3xl p-4 sm:p-5 shadow-xl border-2 border-orange-200"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="text-center">
+            <div className="text-3xl mb-3">⚡</div>
+            <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-3">
+              Il Verdetto Completo
+            </h3>
+            <p className="text-sm text-gray-700 mb-4">
+              Abbiamo analizzato la tua visibilità da <span className="font-black">{strategicResults.length + 1} punti strategici</span> della città. 
+              Ecco cosa abbiamo scoperto:
+            </p>
+            
+            <div className="space-y-2">
+              {allTabs.map((tab) => {
+                const tabRank = typeof tab.rank === 'number' ? tab.rank : 21
+                return (
+                  <div 
+                    key={tab.id} 
+                    className="flex items-center justify-between p-3 bg-white rounded-xl"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-lg">{tab.icon}</span>
+                      <span className="text-sm font-medium text-gray-700 truncate">{tab.name}</span>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full font-black text-sm ${
+                      tabRank <= 3 ? 'bg-green-100 text-green-700' :
+                      tabRank <= 7 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {typeof tab.rank === 'number' ? `#${tab.rank}` : tab.rank}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Lista Competitor */}
       {competitors.length > 0 && (
         <motion.div
@@ -221,7 +403,7 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
             <div className="text-xl sm:text-2xl flex-shrink-0">⚠️</div>
             <div className="flex-1 min-w-0">
               <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">Principali Competitor</h3>
-              <p className="text-xs text-gray-600">Chi appare prima di te</p>
+              <p className="text-xs text-gray-600">Chi appare prima di te (dal tuo locale)</p>
             </div>
           </div>
           
@@ -265,16 +447,16 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
             onClick={() => {
               window.location.href = '/auth/login'
             }}
-            className="w-full h-12 sm:h-14 text-sm sm:text-base font-black shadow-xl"
+            className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
           >
             <span className="flex items-center justify-center gap-2">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              ATTIVA PROVA GRATUITA
+              {getCtaText()}
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
           </CustomButton>
           <p className="text-xs text-center text-gray-500 mt-2">
-            Nessuna carta di credito • Setup in 5 minuti
+            Prova gratuita • Nessuna carta richiesta
           </p>
         </div>
       </div>
