@@ -11,7 +11,8 @@ import {
   RefreshCw,
   Zap,
   Target,
-  Trophy
+  Trophy,
+  Sparkles
 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { RankingMap } from "./ranking-map"
@@ -78,79 +79,71 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
   })
 
   return (
-    <div className="w-full max-w-md space-y-4">
-      {/* Header con bottone nuova ricerca */}
-      <div className="flex justify-between items-start gap-3 mb-2">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg sm:text-xl font-extrabold text-[#1B9AAA]">I tuoi risultati</h2>
-          <p className="text-xs sm:text-sm text-gray-600 truncate">Ricerca: "{keyword}"</p>
-        </div>
+    <div className="w-full space-y-6 pb-24">
+      {/* Hero dei Risultati - Centrato e Impattante */}
+      <motion.div 
+        className="text-center mb-6"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, type: "spring", damping: 20 }}
+      >
         <button
           onClick={onNewSearch}
-          className="p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow flex-shrink-0"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all mb-4 text-sm font-medium text-gray-700"
         >
-          <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 text-[#1B9AAA]" />
+          <RefreshCw className="w-4 h-4 text-[#1B9AAA]" />
+          Nuova Ricerca
         </button>
-      </div>
-
-      {/* Il Verdetto - Card Principale */}
-      <motion.div
-        className={`bg-gradient-to-br ${rankInfo.color} rounded-3xl p-5 sm:p-6 shadow-2xl text-white`}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", damping: 15 }}
-      >
-        <div className="text-center">
-          <motion.div
-            className="text-5xl sm:text-6xl mb-2 sm:mb-3"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 0.5, repeat: 2 }}
-          >
-            {rankInfo.emoji}
-          </motion.div>
-          <p className="text-xs sm:text-sm font-bold uppercase tracking-wide opacity-90 mb-1 sm:mb-2">
-            La tua posizione
+        
+        <motion.div
+          className="text-6xl sm:text-7xl md:text-8xl mb-4"
+          animate={{ 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{ duration: 0.6, repeat: 2 }}
+        >
+          {rankInfo.emoji}
+        </motion.div>
+        
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-3 leading-tight">
+          {typeof userRestaurant.rank === 'number' ? `#${userRestaurant.rank}` : userRestaurant.rank}
+        </h1>
+        
+        <div className={`inline-block px-6 py-3 rounded-2xl ${
+          typeof userRestaurant.rank === 'number' && userRestaurant.rank <= 3
+            ? 'bg-green-100'
+            : typeof userRestaurant.rank === 'number' && userRestaurant.rank <= 7
+            ? 'bg-yellow-100'
+            : 'bg-red-100'
+        } mb-4`}>
+          <p className={`text-base sm:text-lg font-black ${rankInfo.textColor}`}>
+            {analysis.message}
           </p>
-          <h3 className="text-4xl sm:text-5xl font-black mb-2 sm:mb-3">
-            {typeof userRestaurant.rank === 'number' ? `#${userRestaurant.rank}` : userRestaurant.rank}
-          </h3>
-          <p className="text-white/90 text-sm sm:text-base mb-1 sm:mb-2">
-            per "{keyword}"
+        </div>
+        
+        <p className="text-sm sm:text-base text-gray-600 mb-2">
+          Ricerca: "<span className="font-bold">{keyword}</span>"
+        </p>
+        
+        {userRestaurant.address && (
+          <p className="text-xs sm:text-sm text-gray-500 flex items-center justify-center gap-1">
+            <MapPin className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate max-w-[300px]">{userRestaurant.address}</span>
           </p>
-          {userRestaurant.address && (
-            <p className="text-white/80 text-xs flex items-center justify-center gap-1 mt-2 px-2">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{userRestaurant.address}</span>
-            </p>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Messaggio di analisi */}
-      <motion.div
-        className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <div className="flex items-start gap-3">
-          <div className="text-xl sm:text-2xl flex-shrink-0">💡</div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-1">Cosa significa?</h4>
-            <p className="text-xs sm:text-sm text-gray-600">{analysis.message}</p>
-          </div>
-        </div>
+        )}
       </motion.div>
 
       {/* Statistiche Impatto */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+      <motion.div 
+        className="grid grid-cols-2 gap-2 sm:gap-3"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.5 }}
+      >
         {/* Competitor davanti */}
-        <motion.div
-          className="bg-white rounded-3xl p-3 sm:p-4 shadow-xl"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <div className="bg-white rounded-3xl p-3 sm:p-4 shadow-xl">
           <div className="text-center">
             <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
             <p className="text-2xl sm:text-3xl font-black text-[#EF476F] mb-1">
@@ -160,15 +153,10 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
               Competitor davanti
             </p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Clienti persi */}
-        <motion.div
-          className="bg-white rounded-3xl p-3 sm:p-4 shadow-xl"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.25 }}
-        >
+        <div className="bg-white rounded-3xl p-3 sm:p-4 shadow-xl">
           <div className="text-center">
             <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📉</div>
             <p className="text-2xl sm:text-3xl font-black text-[#EF476F] mb-1">
@@ -178,16 +166,17 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
               Coperti persi/sett.
             </p>
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       {/* La Mappa */}
       {hasValidCoordinates ? (
         <motion.div
           className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <div className="text-xl sm:text-2xl flex-shrink-0">🗺️</div>
@@ -204,9 +193,10 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
       ) : (
         <motion.div
           className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-2 mb-4">
             <div className="text-xl sm:text-2xl flex-shrink-0">⚠️</div>
@@ -222,9 +212,10 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
       {competitors.length > 0 && (
         <motion.div
           className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <div className="text-xl sm:text-2xl flex-shrink-0">⚠️</div>
@@ -267,77 +258,26 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
         </motion.div>
       )}
 
-      {/* CTA Finale - La Soluzione */}
-      <motion.div
-        className="bg-gradient-to-br from-[#1B9AAA] via-[#06D6A0] to-[#1B9AAA] rounded-3xl p-5 sm:p-6 shadow-2xl text-white relative overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        {/* Decorazioni di sfondo */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-2xl -translate-y-16 translate-x-16" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full blur-2xl translate-y-16 -translate-x-16" />
-        </div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold mb-3 sm:mb-4 w-fit mx-auto">
-            <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
-            La Soluzione
-          </div>
-          
-          <h2 className="text-xl sm:text-2xl font-black text-center mb-2 sm:mb-3 leading-tight">
-            Scala la Classifica.<br/>In Automatico.
-          </h2>
-          
-          <p className="text-xs sm:text-sm text-white/90 text-center mb-4 sm:mb-5 leading-relaxed px-2">
-            Il nostro software automatizza la raccolta di recensioni positive, 
-            aiutandoti a migliorare il ranking e ad attirare più clienti.
-          </p>
-
-          {/* Benefici chiave */}
-          <div className="space-y-2 mb-4 sm:mb-5">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3">
-              <div className="text-lg sm:text-xl flex-shrink-0">⭐</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold">Più Recensioni</p>
-                <p className="text-xs opacity-80 truncate">Sistema automatico via WhatsApp</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3">
-              <div className="text-lg sm:text-xl flex-shrink-0">📈</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold">Ranking Migliore</p>
-                <p className="text-xs opacity-80 truncate">Scala le posizioni su Google</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl p-2.5 sm:p-3">
-              <div className="text-lg sm:text-xl flex-shrink-0">💰</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold">Più Clienti</p>
-                <p className="text-xs opacity-80 truncate">Aumenta la tua visibilità</p>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA Button */}
+      {/* CTA Fixato in Basso - Sempre Visibile */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
+        <div className="max-w-md mx-auto">
           <CustomButton
             onClick={() => {
               window.location.href = '/auth/login'
             }}
-            className="w-full h-12 sm:h-14 text-sm sm:text-base font-black bg-white text-[#1B9AAA] hover:bg-gray-50 shadow-xl"
+            className="w-full h-12 sm:h-14 text-sm sm:text-base font-black shadow-xl"
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               ATTIVA PROVA GRATUITA
               <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
           </CustomButton>
-          
-          <p className="text-xs text-white/70 text-center mt-2 sm:mt-3">
+          <p className="text-xs text-center text-gray-500 mt-2">
             Nessuna carta di credito • Setup in 5 minuti
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -337,7 +337,7 @@ export default function RankCheckerPage() {
 
         {/* Sezione Risultati (appare dopo aver compilato il form lead) */}
         {rankingData && !showLeadForm && (
-          <div id="results-section">
+          <div id="results-section" className="w-full max-w-md">
             <RankingResults 
               data={rankingData}
               keyword={keyword}
