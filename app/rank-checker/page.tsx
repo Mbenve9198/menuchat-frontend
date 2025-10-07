@@ -336,11 +336,12 @@ export default function RankCheckerPage() {
         )}
 
         {/* Sezione Risultati (appare dopo aver compilato il form lead) */}
-        {rankingData && !showLeadForm && (
+        {rankingData && !showLeadForm && selectedRestaurant && (
           <div id="results-section" className="w-full max-w-md">
             <RankingResults 
               data={rankingData}
               keyword={keyword}
+              placeId={selectedRestaurant.id}
               onNewSearch={() => {
                 setRankingData(null)
                 setPendingRankingData(null)

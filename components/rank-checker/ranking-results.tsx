@@ -18,6 +18,7 @@ import {
 import { CustomButton } from "@/components/ui/custom-button"
 import { RankingMap } from "./ranking-map"
 import { LocationTabs } from "./location-tabs"
+import { ReviewAnalysisSection } from "./review-analysis-section"
 
 interface SearchResult {
   searchPointName: string
@@ -57,9 +58,10 @@ interface RankingResultsProps {
   }
   keyword: string
   onNewSearch: () => void
+  placeId?: string
 }
 
-export function RankingResults({ data, keyword, onNewSearch }: RankingResultsProps) {
+export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingResultsProps) {
   const { userRestaurant, competitors, analysis, mainResult, strategicResults = [] } = data
   
   // Stato per il tab selezionato
@@ -438,6 +440,14 @@ export function RankingResults({ data, keyword, onNewSearch }: RankingResultsPro
             ))}
           </div>
         </motion.div>
+      )}
+
+      {/* Analisi Recensioni Approfondita */}
+      {placeId && (
+        <ReviewAnalysisSection
+          placeId={placeId}
+          restaurantName={userRestaurant.name}
+        />
       )}
 
       {/* CTA Fixato in Basso - Sempre Visibile */}
