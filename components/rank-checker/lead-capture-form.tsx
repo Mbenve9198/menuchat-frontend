@@ -5,7 +5,6 @@ import { motion } from "framer-motion"
 import { Mail, Phone, Sparkles, Lock } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
 
 interface LeadCaptureFormProps {
   onSubmit: (email: string, phone: string) => void

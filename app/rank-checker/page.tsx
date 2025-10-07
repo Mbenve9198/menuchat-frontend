@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, MapPin, TrendingDown, Zap, Sparkles, Loader2, ArrowRight, RefreshCw } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast"
 import { RestaurantAutocomplete } from "@/components/rank-checker/restaurant-autocomplete"
 import { RankingResults } from "@/components/rank-checker/ranking-results"
 import { LeadCaptureForm } from "@/components/rank-checker/lead-capture-form"
-import Image from "next/image"
 
 interface Restaurant {
   id: string
@@ -63,6 +62,12 @@ const LOADING_MESSAGES = [
   { text: "Analizzando i risultati...", emoji: "⚡" }
 ]
 
+const BENEFITS = [
+  { emoji: "⚡", title: "Analisi Istantanea", description: "Scopri dove appari nelle ricerche Google Maps" },
+  { emoji: "👥", title: "Confronto Competitor", description: "Vedi chi ti precede e quanti clienti perdi" },
+  { emoji: "🚀", title: "Soluzione Pratica", description: "Ricevi consigli per scalare la classifica" }
+]
+
 export default function RankCheckerPage() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [keyword, setKeyword] = useState("")
@@ -73,6 +78,7 @@ export default function RankCheckerPage() {
   const [showLeadForm, setShowLeadForm] = useState(false)
   const [userEmail, setUserEmail] = useState("")
   const [userPhone, setUserPhone] = useState("")
+  const [currentBenefitIndex, setCurrentBenefitIndex] = useState(0)
   const { toast } = useToast()
 
   const isFormValid = selectedRestaurant && keyword.trim().length > 0
@@ -169,43 +175,49 @@ export default function RankCheckerPage() {
     }, 100)
   }
 
+  // Animazione automatica delle card benefici
+  useEffect(() => {
+    // Alterna le card solo quando non ci sono risultati e non è in loading
+    if (!rankingData && !isLoading && !showLeadForm) {
+      const interval = setInterval(() => {
+        setCurrentBenefitIndex((prev) => (prev + 1) % BENEFITS.length)
+      }, 3000) // Cambia ogni 3 secondi
+
+      return () => clearInterval(interval)
+    }
+  }, [rankingData, isLoading, showLeadForm])
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
 
-      <div className="relative z-10 flex flex-col items-center min-h-screen w-full max-w-full px-3 sm:px-4 py-6 pb-24 overflow-x-hidden">
-        {/* Header con mascotte */}
-        <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA] mb-1">
-                🗺️ Rank Checker
-              </h1>
-              <p className="text-base sm:text-lg text-gray-700 leading-tight">
-                I tuoi clienti ti trovano su Google?
-              </p>
-            </div>
-
+      <div className="relative z-10 flex flex-col items-center min-h-screen w-full max-w-full px-3 sm:px-4 py-8 pb-32 overflow-x-hidden">
+        {/* Hero Header Centrato */}
+        {!rankingData && !showLeadForm && (
+          <div className="w-full max-w-2xl mb-8 text-center">
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.8 }}
-              className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mb-4"
             >
-              <Image
-                src="/mascottes/mascotte_rock.png"
-                alt="Mascot"
-                width={96}
-                height={96}
-                className="drop-shadow-2xl object-contain"
-              />
+              <div className="text-4xl sm:text-5xl mb-4">🗺️</div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 mb-3 sm:mb-4 leading-tight">
+                I tuoi clienti ti trovano su Google?
+              </h1>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 mb-4 sm:mb-6 leading-tight">
+                O trovano i tuoi <span className="text-[#EF476F]">concorrenti</span>?
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-xl mx-auto">
+                Scoprilo in <span className="font-bold text-[#1B9AAA]">30 secondi</span> con il nostro tool <span className="font-bold">100% gratuito</span>
+              </p>
             </motion.div>
           </div>
-        </div>
+        )}
 
         {/* Sezione Input */}
         <AnimatePresence mode="wait">
-          {!rankingData && (
+          {!rankingData && !showLeadForm && (
             <motion.div
               className="w-full max-w-md"
               initial={{ opacity: 0, y: 20 }}
@@ -213,14 +225,6 @@ export default function RankCheckerPage() {
               exit={{ opacity: 0, y: -20 }}
             >
               <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl mb-6">
-                <div className="space-y-2 mb-5">
-                  <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">
-                    Scopri la tua posizione
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    Analisi gratuita in 30 secondi ⚡
-                  </p>
-                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Campo Autocomplete Ristorante */}
@@ -350,68 +354,53 @@ export default function RankCheckerPage() {
           </div>
         )}
 
-        {/* Benefici (visibili solo quando non ci sono risultati e non c'è il form lead) */}
+        {/* Card Benefici Animata Fixata in Basso (visibile solo nella landing page) */}
         {!rankingData && !isLoading && !showLeadForm && (
-          <div className="w-full max-w-md space-y-4">
-            <motion.div
-              className="bg-white rounded-3xl p-5 shadow-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ y: -5 }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="text-3xl">⚡</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">
-                    Analisi Istantanea
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Scopri in pochi secondi dove appari nelle ricerche Google Maps
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="bg-white rounded-3xl p-5 shadow-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              whileHover={{ y: -5 }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="text-3xl">👥</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">
-                    Confronto Competitor
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Vedi chi ti precede e quanti clienti potenziali stai perdendo
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="bg-white rounded-3xl p-5 shadow-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              whileHover={{ y: -5 }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="text-3xl">🚀</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">
-                    Soluzione Pratica
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Ricevi consigli concreti per scalare la classifica
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+          <div className="fixed bottom-0 left-0 right-0 z-30 pb-4 px-3 sm:px-4">
+            <div className="max-w-md mx-auto">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentBenefitIndex}
+                  initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -50, scale: 0.9 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="bg-white rounded-3xl p-5 shadow-2xl border-2 border-[#1B9AAA]/20"
+                >
+                  <div className="flex items-center gap-4">
+                    <motion.div 
+                      className="text-4xl sm:text-5xl flex-shrink-0"
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      {BENEFITS[currentBenefitIndex].emoji}
+                    </motion.div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:text-xl font-black text-gray-900 mb-1">
+                        {BENEFITS[currentBenefitIndex].title}
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-600 leading-snug">
+                        {BENEFITS[currentBenefitIndex].description}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Indicatori */}
+                  <div className="flex justify-center gap-2 mt-4">
+                    {BENEFITS.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          index === currentBenefitIndex 
+                            ? 'w-8 bg-[#1B9AAA]' 
+                            : 'w-1.5 bg-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         )}
       </div>
