@@ -178,7 +178,7 @@ export default function RankCheckerPage() {
     setUserPhone(phone)
     
     try {
-      // Salva il lead nel backend
+      // Salva il lead con TUTTI i risultati nel backend
       if (pendingRankingData && selectedRestaurant) {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads`, {
           method: 'POST',
@@ -191,7 +191,7 @@ export default function RankCheckerPage() {
             restaurantName: selectedRestaurant.name,
             placeId: selectedRestaurant.id,
             keyword,
-            mainRank: pendingRankingData.mainResult?.rank || pendingRankingData.userRestaurant.rank
+            rankingResults: pendingRankingData  // Salva TUTTI i dati!
           })
         })
 
@@ -200,7 +200,8 @@ export default function RankCheckerPage() {
           // Salva il token in localStorage per recuperare i risultati
           if (data.accessToken) {
             localStorage.setItem('rank_checker_token', data.accessToken)
-            console.log('✅ Lead salvato, token:', data.accessToken)
+            localStorage.setItem('rank_checker_last_email', email)
+            console.log('✅ Lead e risultati completi salvati, token:', data.accessToken)
           }
         }
       }
@@ -246,30 +247,42 @@ export default function RankCheckerPage() {
       const data = await response.json()
 
       if (data.success && data.data) {
-        // Ricostruisci lo stato con i dati salvati
         const leadData = data.data
         
-        // Crea un oggetto restaurant minimale
+        // Crea un oggetto restaurant dal placeId salvato
         const restaurant: Restaurant = {
           id: leadData.placeId,
           name: leadData.restaurantName,
-          address: '',
-          location: { lat: 0, lng: 0 }
+          address: leadData.rankingResults?.userRestaurant?.address || '',
+          location: {
+            lat: leadData.rankingResults?.userRestaurant?.coordinates?.lat || 0,
+            lng: leadData.rankingResults?.userRestaurant?.coordinates?.lng || 0
+          }
         }
         
+        // Ripristina tutto lo stato
         setSelectedRestaurant(restaurant)
         setKeyword(leadData.keyword)
         setUserEmail(leadData.email)
         setUserPhone(leadData.phone)
         
-        // Rifai l'analisi per avere dati fresh
-        // Per ora mostriamo un messaggio
+        // MOSTRA DIRETTAMENTE I RISULTATI SALVATI (no rianalisi!)
+        setRankingData(leadData.rankingResults)
+        setShowLeadForm(false)
+        
         toast({
-          title: "Risultati recuperati!",
-          description: `Benvenuto! Stai rivedendo l'analisi di ${leadData.restaurantName}`,
+          title: "Bentornato! 👋",
+          description: `Ecco i risultati di ${leadData.restaurantName}`,
         })
         
-        // TODO: Opzionalmente, rifai l'analisi o mostra dati cached
+        // Scroll ai risultati dopo un attimo
+        setTimeout(() => {
+          document.getElementById('results-section')?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }, 500)
+        
       } else {
         toast({
           title: "Token non valido",
