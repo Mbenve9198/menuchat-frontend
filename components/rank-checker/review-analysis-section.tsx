@@ -46,20 +46,38 @@ export function ReviewAnalysisSection({ placeId, restaurantName }: ReviewAnalysi
     try {
       setStatus('loading')
 
+      console.log(`🔍 Fetching review analysis for placeId: ${placeId}`)
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/review-analysis/${placeId}`
       )
+
+      console.log(`📡 Review analysis response status: ${response.status}`)
 
       if (!response.ok) {
         throw new Error('Errore nel recupero dell\'analisi')
       }
 
       const result = await response.json()
+      console.log(`📊 Review analysis result:`, {
+        found: result.found,
+        status: result.status,
+        hasData: !!result.data,
+        dataKeys: result.data ? Object.keys(result.data) : []
+      })
 
       if (result.status === 'completed' && result.found) {
+        console.log('✅ Analisi recensioni trovata e completata!', {
+          totalReviews: result.data?.totalReviews,
+          averageRating: result.data?.averageRating,
+          reviewVelocity: result.data?.reviewVelocity,
+          hasStrengths: result.data?.aiAnalysis?.strengths?.length > 0,
+          hasWeaknesses: result.data?.aiAnalysis?.weaknesses?.length > 0
+        })
         setData(result.data)
         setStatus('available')
       } else if (result.status === 'processing') {
+        console.log(`⏳ Analisi in processing, retry ${retryCount + 1}/12...`)
         setStatus('processing')
         
         // Retry dopo 5 secondi (max 12 tentativi = 1 minuto)
@@ -70,11 +88,12 @@ export function ReviewAnalysisSection({ placeId, restaurantName }: ReviewAnalysi
           }, 5000)
         }
       } else {
+        console.log('ℹ️ Analisi non disponibile:', result)
         setStatus('not_available')
       }
 
     } catch (error) {
-      console.error('Errore caricamento analisi recensioni:', error)
+      console.error('❌ Errore caricamento analisi recensioni:', error)
       setStatus('error')
     }
   }
