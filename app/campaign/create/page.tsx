@@ -662,9 +662,11 @@ export default function CreateCampaign() {
   }
 
   const handleFileUploaded = (fileUrl: string, fileType: "image" | "video" | "pdf") => {
+    console.log('📸 handleFileUploaded chiamato con:', { fileUrl, fileType })
     setUploadedFileUrl(fileUrl)
     setUseGeneratedImage(true)
     setUploadedFileType(fileType)
+    console.log('📸 uploadedFileUrl aggiornato a:', fileUrl)
   }
 
   // Update the handleNext function

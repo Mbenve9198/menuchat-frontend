@@ -190,6 +190,13 @@ export function MediaUpload({
       const data = await response.json()
       
       if (data.success && data.file && data.file.url) {
+        console.log('📥 Upload completato - dati ricevuti:', {
+          url: data.file.url,
+          originalUrl: data.file.originalUrl,
+          fileName: data.file.fileName,
+          fullData: data.file
+        })
+        
         // 100% progress completed
         setUploadingProgress(100)
         
@@ -205,6 +212,8 @@ export function MediaUpload({
           
           // Per i video, usiamo direttamente l'URL senza trasformazioni
           let fileUrl = data.file.url
+          
+          console.log('📤 Passando URL al parent:', fileUrl)
           
           onFileSelect(fileUrl, fileType)
         }, 500)
