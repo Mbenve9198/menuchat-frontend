@@ -530,6 +530,12 @@ export default function CampaignDetailPage({
             <span>✅</span> {t("campaigns.status.sent")}
           </Badge>
         );
+      case "processing":
+        return (
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 flex items-center gap-1">
+            <Loader2 className="w-3 h-3 animate-spin" /> Schedulazione...
+          </Badge>
+        );
       case "scheduled":
         return (
           <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1">

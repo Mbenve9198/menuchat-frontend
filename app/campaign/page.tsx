@@ -59,6 +59,7 @@ interface Campaign {
 const statusOptions = [
   { value: "all", label: "campaigns.allCampaigns" },
   { value: "sent", label: "campaigns.sent" },
+  { value: "processing", label: "Schedulazione..." },
   { value: "scheduled", label: "campaigns.scheduled" },
   { value: "completed", label: "campaigns.status.completed" },
   { value: "in_progress", label: "campaigns.status.inProgress" },
@@ -250,6 +251,12 @@ export default function CampaignsPage() {
         return (
           <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1">
             <span>✅</span> {t("campaigns.status.sent")}
+          </Badge>
+        )
+      case "processing":
+        return (
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 flex items-center gap-1">
+            <Loader2 className="w-3 h-3 animate-spin" /> Schedulazione...
           </Badge>
         )
       case "scheduled":

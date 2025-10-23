@@ -1060,6 +1060,28 @@ export default function CreateCampaign() {
         } else {
           const scheduleData = await scheduleResponse.json();
           console.log("Campagna programmata con successo:", scheduleData);
+          
+          // 🔧 NUOVO: Gestione stato "processing" per schedulazione in background
+          if (scheduleData.data?.status === 'processing') {
+            console.log('📦 Schedulazione avviata in background');
+            
+            // Mostra messaggio di successo ma con info sul processing
+            setIsSubmitting(false);
+            setIsSubmittingTemplate(false);
+            setIsApproved(true);
+            
+            toast({
+              title: "Schedulazione avviata!",
+              description: `La campagna verrà inviata a ${selectedCount} contatti. Il processo è in corso in background e potrai vedere lo stato aggiornato nella dashboard.`,
+            });
+            
+            // Redirect alla dashboard dopo un breve ritardo
+            setTimeout(() => {
+              router.push("/dashboard");
+            }, 3000);
+            
+            return; // Esce dalla funzione
+          }
         }
       } catch (scheduleError) {
         console.error("Errore nella programmazione della campagna:", scheduleError);
@@ -1077,7 +1099,7 @@ export default function CreateCampaign() {
         return; // Interrompe l'esecuzione
       }
       
-      // Mostra il messaggio di successo
+      // Mostra il messaggio di successo (per schedulazione immediata/completata)
       setIsSubmitting(false);
       setIsSubmittingTemplate(false);
       setIsApproved(true);
@@ -2442,12 +2464,21 @@ export default function CreateCampaign() {
         )}
 
         {/* Fixed Continue Button for Step 4 (Payment) */}
-        {currentStep === 3 && !isPaymentCompleted && (
+        {currentStep === 3 && (
           <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center">
-            <div className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%] bg-gray-100 rounded-xl">
-              <CreditCard className="w-5 h-5 mr-2 text-gray-500" />
-              <span className="text-gray-600">Completa il pagamento per continuare</span>
-            </div>
+            {!isPaymentCompleted ? (
+              <div className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%] bg-gray-100 rounded-xl">
+                <CreditCard className="w-5 h-5 mr-2 text-gray-500" />
+                <span className="text-gray-600">Completa il pagamento per continuare</span>
+              </div>
+            ) : (
+              <CustomButton
+                className="py-3 px-6 shadow-lg flex items-center justify-center max-w-md w-[90%]"
+                onClick={handleNext}
+              >
+                {t("common.continue")} <ArrowRight className="ml-2 w-5 h-5" />
+              </CustomButton>
+            )}
           </div>
         )}
 
