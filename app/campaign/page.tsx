@@ -438,7 +438,26 @@ export default function CampaignsPage() {
         throw new Error(data.message || 'Errore nella sincronizzazione')
       }
 
-      // Mostra messaggio di successo con le statistiche dettagliate
+      // 🔧 NUOVO: Gestisci risposta "syncing" per sincronizzazione in background
+      if (data.data?.status === 'syncing') {
+        console.log('📦 Sincronizzazione avviata in background');
+        
+        toast({
+          title: "🔄 Sincronizzazione avviata",
+          description: data.data.message || "La sincronizzazione è in corso in background. I risultati appariranno tra qualche istante.",
+          duration: 5000,
+        });
+        
+        // Ricarica dopo 10 secondi per mostrare i risultati aggiornati
+        setTimeout(async () => {
+          console.log('🔄 Ricarico campagne dopo sync background...');
+          await fetchCampaigns();
+        }, 10000);
+        
+        return; // Esce dalla funzione
+      }
+
+      // Mostra messaggio di successo con le statistiche dettagliate (per sync immediate)
       const stats = data.data.statistics
       toast({
         title: "✅ Sincronizzazione completata",
@@ -470,6 +489,10 @@ export default function CampaignsPage() {
 
   // 🆕 Funzione per verificare se la campagna può essere sincronizzata
   const canSyncCampaign = (campaign: Campaign): boolean => {
+    // Non permettere sync per campagne in processing o già in sync
+    if (campaign.status === 'processing' || isSyncing === campaign.id) {
+      return false;
+    }
     return ['scheduled', 'completed', 'sent', 'in_progress'].includes(campaign.status)
   }
 
