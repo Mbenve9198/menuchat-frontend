@@ -19,7 +19,6 @@ import { CustomButton } from "@/components/ui/custom-button"
 import { RankingMap } from "./ranking-map"
 import { LocationTabs } from "./location-tabs"
 import { ReviewAnalysisSection } from "./review-analysis-section"
-import { OnboardingQualificationModal } from "./onboarding-qualification-modal"
 
 interface SearchResult {
   searchPointName: string
@@ -67,9 +66,6 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
   
   // Stato per il tab selezionato
   const [selectedLocationId, setSelectedLocationId] = useState('main')
-  
-  // Stato per la modal di qualificazione
-  const [showQualificationModal, setShowQualificationModal] = useState(false)
   
   // Costruisci la lista dei tabs
   const allTabs = [
@@ -161,8 +157,9 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       // TOP 3 → va direttamente all'onboarding (sono già bravi, no qualification)
       window.location.href = '/'
     } else {
-      // Fuori TOP 3 → mostra modal di qualificazione
-      setShowQualificationModal(true)
+      // Fuori TOP 3 → vai alla pagina di qualificazione
+      const restaurantParam = encodeURIComponent(userRestaurant.name)
+      window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
     }
   }
 
@@ -489,19 +486,6 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
           </p>
         </div>
       </div>
-
-      {/* Modal di Qualificazione */}
-      <OnboardingQualificationModal
-        isOpen={showQualificationModal}
-        onClose={() => setShowQualificationModal(false)}
-        onComplete={() => {
-          // Chiude la modal e va all'onboarding
-          setShowQualificationModal(false)
-          window.location.href = '/'
-        }}
-        restaurantName={userRestaurant.name}
-        accessToken={typeof window !== 'undefined' ? localStorage.getItem('rank_checker_token') || '' : ''}
-      />
     </div>
   )
 }
