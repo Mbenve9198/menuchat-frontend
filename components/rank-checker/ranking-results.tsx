@@ -307,8 +307,8 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
         </div>
       </motion.div>
 
-      {/* La Mappa */}
-      {hasValidCoordinates ? (
+      {/* La Mappa - TEMPORANEAMENTE DISABILITATA */}
+      {/* {hasValidCoordinates ? (
         <motion.div
           className="bg-white rounded-3xl p-4 sm:p-5 shadow-xl"
           initial={{ opacity: 0, y: 30 }}
@@ -344,7 +344,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
             </div>
           </div>
         </motion.div>
-      )}
+      )} */}
 
       {/* Riepilogo Multi-Punto (solo se ci sono risultati strategici) */}
       {strategicResults.length > 0 && (
@@ -455,7 +455,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
         <div className="max-w-md mx-auto">
           <CustomButton
             onClick={() => {
-              window.location.href = '/auth/login'
+              window.location.href = '/'
             }}
             className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
           >
