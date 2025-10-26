@@ -153,14 +153,9 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
 
   // Gestisce il click sul CTA
   const handleCtaClick = () => {
-    if (isTopRanked()) {
-      // TOP 3 → va direttamente all'onboarding (sono già bravi, no qualification)
-      window.location.href = '/'
-    } else {
-      // Fuori TOP 3 → vai alla pagina di qualificazione
-      const restaurantParam = encodeURIComponent(userRestaurant.name)
-      window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
-    }
+    // TUTTI vanno alla pagina di qualificazione (sia TOP 3 che gli altri)
+    const restaurantParam = encodeURIComponent(userRestaurant.name)
+    window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
   }
 
   // Verifica se le coordinate sono valide per mostrare la mappa
