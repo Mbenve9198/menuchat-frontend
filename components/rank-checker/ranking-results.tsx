@@ -149,6 +149,23 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
     return "MIGLIORA IL TUO POSIZIONAMENTO"
   }
 
+  // Determina se il lead è già TOP 3 (consolida) o deve migliorare
+  const isTopRanked = () => {
+    const mainRank = mainResult?.rank || userRestaurant.rank
+    return typeof mainRank === 'number' && mainRank <= 3
+  }
+
+  // Gestisce il click sul CTA
+  const handleCtaClick = () => {
+    if (isTopRanked()) {
+      // TOP 3 → va direttamente all'onboarding (sono già bravi, no qualification)
+      window.location.href = '/'
+    } else {
+      // Fuori TOP 3 → mostra modal di qualificazione
+      setShowQualificationModal(true)
+    }
+  }
+
   // Verifica se le coordinate sono valide per mostrare la mappa
   const hasValidCoordinates = userRestaurant.coordinates && 
     typeof userRestaurant.coordinates.lat === 'number' && 
@@ -458,7 +475,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
         <div className="max-w-md mx-auto">
           <CustomButton
-            onClick={() => setShowQualificationModal(true)}
+            onClick={handleCtaClick}
             className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
           >
             <span className="flex items-center justify-center gap-2">
