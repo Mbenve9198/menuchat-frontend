@@ -19,6 +19,7 @@ import { CustomButton } from "@/components/ui/custom-button"
 import { RankingMap } from "./ranking-map"
 import { LocationTabs } from "./location-tabs"
 import { ReviewAnalysisSection } from "./review-analysis-section"
+import { OnboardingQualificationModal } from "./onboarding-qualification-modal"
 
 interface SearchResult {
   searchPointName: string
@@ -66,6 +67,9 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
   
   // Stato per il tab selezionato
   const [selectedLocationId, setSelectedLocationId] = useState('main')
+  
+  // Stato per la modal di qualificazione
+  const [showQualificationModal, setShowQualificationModal] = useState(false)
   
   // Costruisci la lista dei tabs
   const allTabs = [
@@ -454,9 +458,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
         <div className="max-w-md mx-auto">
           <CustomButton
-            onClick={() => {
-              window.location.href = '/'
-            }}
+            onClick={() => setShowQualificationModal(true)}
             className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
           >
             <span className="flex items-center justify-center gap-2">
@@ -470,6 +472,19 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
           </p>
         </div>
       </div>
+
+      {/* Modal di Qualificazione */}
+      <OnboardingQualificationModal
+        isOpen={showQualificationModal}
+        onClose={() => setShowQualificationModal(false)}
+        onComplete={() => {
+          // Chiude la modal e va all'onboarding
+          setShowQualificationModal(false)
+          window.location.href = '/'
+        }}
+        restaurantName={userRestaurant.name}
+        accessToken={typeof window !== 'undefined' ? localStorage.getItem('rank_checker_token') || '' : ''}
+      />
     </div>
   )
 }
