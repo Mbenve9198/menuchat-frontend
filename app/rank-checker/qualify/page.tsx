@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLeft } from "lucide-react"
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 
 type Step = 'has-menu' | 'willing-menu' | 'covers' | 'result'
 
-export default function QualifyPage() {
+function QualifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -490,3 +490,20 @@ export default function QualifyPage() {
   )
 }
 
+export default function QualifyPage() {
+  return (
+    <Suspense fallback={
+      <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+        <BubbleBackground />
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="text-6xl mb-4 animate-bounce">🎯</div>
+            <p className="text-lg font-bold text-gray-700">Caricamento...</p>
+          </div>
+        </div>
+      </main>
+    }>
+      <QualifyContent />
+    </Suspense>
+  )
+}
