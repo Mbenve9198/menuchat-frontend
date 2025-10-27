@@ -7,6 +7,7 @@ import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLe
 import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
 import { useToast } from "@/hooks/use-toast"
+import { MetaEvents } from "@/components/meta-pixel"
 
 type Step = 'has-menu' | 'willing-menu' | 'covers' | 'result'
 
@@ -105,6 +106,14 @@ function QualifyContent() {
 
       if (response.ok) {
         console.log('✅ Dati di qualificazione salvati con successo')
+        
+        // Track Meta Pixel: Qualificazione completata!
+        MetaEvents.completeQualification(
+          hasDigitalMenu || false,
+          parseInt(dailyCovers),
+          calculateMonthlyReviews()
+        )
+        
         toast({
           title: "Perfetto! 🎉",
           description: "Iniziamo la tua prova gratuita",

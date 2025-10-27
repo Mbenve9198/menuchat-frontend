@@ -10,6 +10,7 @@ import SetupWizard from "@/components/setup-wizard"
 import BubbleBackground from "@/components/bubble-background"
 import FloatingElements from "@/components/floating-elements"
 import { CustomButton } from "@/components/ui/custom-button"
+import { MetaEvents } from "@/components/meta-pixel"
 
 export default function Home() {
   const { toast } = useToast()
@@ -17,6 +18,10 @@ export default function Home() {
 
   const handleStartSetup = () => {
     setShowSetup(true)
+    
+    // Track Meta Pixel: Inizio onboarding
+    MetaEvents.startOnboarding()
+    
     toast({
       title: "🎉 Benvenuto!",
       description: "Inizia la configurazione del tuo menu bot!",

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Roboto, Poppins, Playfair_Display, Montserrat, Merriweather, Oswald, Dancing_Script } from 'next/font/google'
 import './globals.css'
 import { Providers } from "./providers"
+import { MetaPixel } from "@/components/meta-pixel"
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const roboto = Roboto({ subsets: ['latin'], weight: ['400', '500', '700'], variable: '--font-roboto' })
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} ${inter.variable} ${roboto.variable} ${poppins.variable} ${playfairDisplay.variable} ${montserrat.variable} ${merriweather.variable} ${oswald.variable} ${dancingScript.variable}`}>
+        <MetaPixel />
         <Providers>
           {children}
         </Providers>

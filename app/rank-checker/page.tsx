@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { RestaurantAutocomplete } from "@/components/rank-checker/restaurant-autocomplete"
 import { RankingResults } from "@/components/rank-checker/ranking-results"
 import { LeadCaptureForm } from "@/components/rank-checker/lead-capture-form"
+import { MetaEvents } from "@/components/meta-pixel"
 
 interface Restaurant {
   id: string
@@ -202,6 +203,10 @@ export default function RankCheckerPage() {
             localStorage.setItem('rank_checker_token', data.accessToken)
             localStorage.setItem('rank_checker_last_email', email)
             console.log('✅ Lead e risultati completi salvati, token:', data.accessToken)
+            
+            // Track Meta Pixel: Lead salvato!
+            const mainRank = pendingRankingData?.mainResult?.rank || pendingRankingData?.userRestaurant?.rank || 'N/A'
+            MetaEvents.submitLead(selectedRestaurant.name, mainRank)
           }
         }
       }
