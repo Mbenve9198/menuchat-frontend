@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { Inter, Roboto, Poppins, Playfair_Display, Montserrat, Merriweather, Oswald, Dancing_Script } from 'next/font/google'
 import './globals.css'
 import { Providers } from "./providers"
-import { MetaPixel } from "@/components/meta-pixel"
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const roboto = Roboto({ subsets: ['latin'], weight: ['400', '500', '700'], variable: '--font-roboto' })
@@ -25,8 +25,36 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Meta Pixel Code */}
+        <Script
+          id="meta-pixel"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              !function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '1105280034736187');
+              fbq('track', 'PageView');
+            `,
+          }}
+        />
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: 'none' }}
+            src="https://www.facebook.com/tr?id=1105280034736187&ev=PageView&noscript=1"
+          />
+        </noscript>
+      </head>
       <body className={`${inter.className} ${inter.variable} ${roboto.variable} ${poppins.variable} ${playfairDisplay.variable} ${montserrat.variable} ${merriweather.variable} ${oswald.variable} ${dancingScript.variable}`}>
-        <MetaPixel />
         <Providers>
           {children}
         </Providers>
