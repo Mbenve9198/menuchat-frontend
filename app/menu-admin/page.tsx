@@ -246,6 +246,10 @@ const DishAccordionItem = ({
   const [customPrompt, setCustomPrompt] = React.useState('')
   const [useAutoPrompt, setUseAutoPrompt] = React.useState(true)
   const [imageGenerationTaskId, setImageGenerationTaskId] = React.useState<string | null>(null)
+  
+  // Stati per miglioramento immagine AI
+  const [isEnhancingImage, setIsEnhancingImage] = React.useState(false)
+  const [imageEnhancementTaskId, setImageEnhancementTaskId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     setName(dish.name)
@@ -697,6 +701,154 @@ const DishAccordionItem = ({
     // Mostra errore con toast
     toast({
       title: "Errore nella generazione dell'immagine",
+      description: errorMessage.replace(/^[❌⚠️🔒]\s?/, ""),
+      variant: "destructive",
+      duration: 6000,
+    })
+  }
+
+  // Funzioni per miglioramento immagine AI
+  const handleEnhanceImage = async () => {
+    if (!dish.photoUrl) {
+      toast({
+        title: "❌ Nessuna immagine",
+        description: "Devi prima caricare un'immagine per poterla migliorare.",
+        variant: "destructive",
+        duration: 4000,
+      })
+      return
+    }
+
+    try {
+      setIsEnhancingImage(true)
+      setImageEnhancementTaskId(null)
+      
+      console.log('✨ Avvio miglioramento immagine AI...')
+      
+      const response = await fetch(`/api/menu/item/${dish.id}/enhance-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.taskId) {
+          console.log('✅ Task miglioramento immagine avviato:', result.taskId)
+          setImageEnhancementTaskId(result.taskId)
+        } else {
+          console.error('❌ Errore nella risposta:', result)
+          toast({
+            title: "❌ Errore",
+            description: "Errore nell'avvio del miglioramento immagine",
+            variant: "destructive",
+            duration: 4000,
+          })
+          setIsEnhancingImage(false)
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('❌ Errore HTTP:', response.status, errorData)
+        toast({
+          title: "❌ Errore",
+          description: errorData.error || "Errore nell'avvio del miglioramento",
+          variant: "destructive",
+          duration: 4000,
+        })
+        setIsEnhancingImage(false)
+      }
+    } catch (err) {
+      console.error('❌ Errore di rete:', err)
+      toast({
+        title: "❌ Errore di connessione",
+        description: "Impossibile migliorare l'immagine. Verifica la connessione internet.",
+        variant: "destructive",
+        duration: 4000,
+      })
+      setIsEnhancingImage(false)
+    }
+  }
+
+  const handleImageEnhancementComplete = (result: any) => {
+    try {
+      console.log('✅ Miglioramento immagine completato:', result)
+      
+      // Reset stati
+      setTimeout(() => {
+        setImageEnhancementTaskId(null)
+        setIsEnhancingImage(false)
+        setShowImageDialog(false)
+      }, 100)
+      
+      if (result.photoUrl) {
+        console.log('🖼️ Aggiornamento piatto con immagine migliorata:', result.photoUrl)
+        
+        const updatedDish = { ...dish, photoUrl: result.photoUrl }
+        onUpdateDish(updatedDish)
+        
+        // Toast di successo
+        toast({
+          title: "🎉 Immagine migliorata con successo!",
+          description: `L'immagine di "${dish.name}" è stata ottimizzata da un AI fotografo professionista.`,
+          duration: 4000,
+        })
+        
+        // Forza re-render per assicurarsi che l'immagine sia visibile
+        setTimeout(() => {
+          if (!dish.photoUrl || dish.photoUrl !== result.photoUrl) {
+            console.log('🔄 Immagine non visibile, ricarico menu...')
+            window.location.reload()
+          }
+        }, 3000)
+        
+      } else {
+        console.error('❌ Result non contiene photoUrl:', result)
+        toast({
+          title: "⚠️ Immagine migliorata ma URL non disponibile",
+          description: "L'immagine è stata migliorata ma non è possibile mostrarla. Prova a ricaricare la pagina.",
+          variant: "destructive",
+          duration: 6000,
+        })
+      }
+      
+    } catch (error) {
+      console.error('❌ Errore nel gestire completamento miglioramento immagine:', error)
+      
+      setTimeout(() => {
+        setImageEnhancementTaskId(null)
+        setIsEnhancingImage(false)
+      }, 100)
+      
+      toast({
+        title: "⚠️ Problema durante l'aggiornamento",
+        description: "L'immagine è stata migliorata ma c'è stato un problema. Ricarica la pagina.",
+        variant: "destructive",
+        duration: 8000,
+      })
+    }
+  }
+
+  const handleImageEnhancementError = (error: any) => {
+    console.error('❌ Miglioramento immagine fallito:', error)
+    
+    let errorMessage = '❌ Errore nel miglioramento dell\'immagine'
+    
+    if (error?.type === 'safety_error') {
+      errorMessage = '⚠️ ' + error.message
+    } else if (error?.type === 'quota_error') {
+      errorMessage = '🔒 ' + error.message
+    } else if (error?.message) {
+      errorMessage = '❌ ' + error.message
+    }
+    
+    // Reset stati
+    setTimeout(() => {
+      setImageEnhancementTaskId(null)
+      setIsEnhancingImage(false)
+    }, 100)
+    
+    // Mostra errore
+    toast({
+      title: "Errore nel miglioramento dell'immagine",
       description: errorMessage.replace(/^[❌⚠️🔒]\s?/, ""),
       variant: "destructive",
       duration: 6000,
@@ -1195,6 +1347,48 @@ const DishAccordionItem = ({
               </div>
             )}
             
+            {/* Migliora Immagine con AI - Solo se esiste già un'immagine */}
+            {dish.photoUrl && !imageEnhancementTaskId && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-orange-500" />
+                  Migliora Immagine con AI
+                </h3>
+                
+                <CustomButton
+                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold"
+                  onClick={handleEnhanceImage}
+                  disabled={isEnhancingImage || isUpdatingImage || isGeneratingImage}
+                >
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  ✨ Migliora Foto
+                </CustomButton>
+                
+                <p className="text-xs text-orange-600 mt-3 bg-orange-50 p-3 rounded-lg">
+                  📸 L'AI ottimizzerà l'immagine esistente come se fosse scattata da un fotografo professionista: migliorerà illuminazione, nitidezza, colori e presentazione mantenendo il piatto originale.
+                </p>
+              </div>
+            )}
+            
+            {/* Progress bar per miglioramento immagine */}
+            {imageEnhancementTaskId && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <AsyncTaskProgress
+                  taskId={imageEnhancementTaskId}
+                  title="Miglioramento Immagine in Corso"
+                  description={`Stiamo ottimizzando l'immagine di "${dish.name}" con l'AI...`}
+                  onComplete={handleImageEnhancementComplete}
+                  onError={handleImageEnhancementError}
+                  onCancel={() => {
+                    setImageEnhancementTaskId(null)
+                    setIsEnhancingImage(false)
+                  }}
+                  pollingInterval={2000}
+                  className="my-4"
+                />
+              </div>
+            )}
+            
             {/* Carica Nuova Immagine */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1279,10 +1473,26 @@ const DishAccordionItem = ({
             <CustomButton 
               className="w-full h-14 text-base font-semibold"
               variant="outline"
-              onClick={() => setShowImageDialog(false)}
+              onClick={() => {
+                if (imageEnhancementTaskId) {
+                  // Se c'è un miglioramento in corso, chiedi conferma
+                  if (confirm('🚧 C\'è un miglioramento immagine in corso. Sei sicuro di voler chiudere? Il processo continuerà in background.')) {
+                    setShowImageDialog(false)
+                  }
+                } else {
+                  setShowImageDialog(false)
+                }
+              }}
               disabled={isUpdatingImage}
             >
-              ✅ Chiudi
+              {imageEnhancementTaskId ? (
+                <>
+                  <span className="mr-2">🚧</span>
+                  Chiudi (Miglioramento in corso)
+                </>
+              ) : (
+                '✅ Chiudi'
+              )}
             </CustomButton>
           </div>
         </DialogContent>
