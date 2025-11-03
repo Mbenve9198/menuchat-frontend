@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast"
 import { RestaurantAutocomplete } from "@/components/rank-checker/restaurant-autocomplete"
 import { RankingResults } from "@/components/rank-checker/ranking-results"
 import { LeadCaptureForm } from "@/components/rank-checker/lead-capture-form"
-import { MetaEvents } from "@/components/meta-pixel"
 
 interface Restaurant {
   id: string
@@ -73,6 +72,7 @@ export default function RankCheckerPage() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [keyword, setKeyword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingLead, setIsLoadingLead] = useState(false) // Nuovo stato per salvataggio lead
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const [rankingData, setRankingData] = useState<RankingData | null>(null)
   const [pendingRankingData, setPendingRankingData] = useState<RankingData | null>(null)
@@ -177,10 +177,14 @@ export default function RankCheckerPage() {
     // Salva email e telefono
     setUserEmail(email)
     setUserPhone(phone)
+    setIsLoadingLead(true) // Inizia loading
     
     try {
       // Salva il lead con TUTTI i risultati nel backend
+      // NOTA: Questo include generazione e invio Email #1 SOAP OPERA (~3-5 secondi)
       if (pendingRankingData && selectedRestaurant) {
+        console.log('📧 Salvataggio lead e generazione Email #1...')
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads`, {
           method: 'POST',
           headers: {
@@ -202,17 +206,15 @@ export default function RankCheckerPage() {
           if (data.accessToken) {
             localStorage.setItem('rank_checker_token', data.accessToken)
             localStorage.setItem('rank_checker_last_email', email)
-            console.log('✅ Lead e risultati completi salvati, token:', data.accessToken)
-            
-            // Track Meta Pixel: Lead salvato!
-            const mainRank = pendingRankingData?.mainResult?.rank || pendingRankingData?.userRestaurant?.rank || 'N/A'
-            MetaEvents.submitLead(selectedRestaurant.name, mainRank)
+            console.log('✅ Lead salvato e Email #1 inviata, token:', data.accessToken)
           }
         }
       }
     } catch (error) {
       console.error('⚠️ Errore salvataggio lead (non bloccante):', error)
       // Non bloccare il flusso anche se il salvataggio fallisce
+    } finally {
+      setIsLoadingLead(false) // Fine loading
     }
     
     // Trasferisci i dati pending ai risultati finali
@@ -544,6 +546,7 @@ export default function RankCheckerPage() {
             <LeadCaptureForm
               onSubmit={handleLeadSubmit}
               restaurantName={selectedRestaurant.name}
+              isLoading={isLoadingLead}
             />
           </div>
         )}

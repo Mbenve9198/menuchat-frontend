@@ -7,11 +7,12 @@ import { CustomButton } from "@/components/ui/custom-button"
 import { useToast } from "@/hooks/use-toast"
 
 interface LeadCaptureFormProps {
-  onSubmit: (email: string, phone: string) => void
+  onSubmit: (email: string, phone: string) => Promise<void>
   restaurantName: string
+  isLoading?: boolean
 }
 
-export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormProps) {
+export function LeadCaptureForm({ onSubmit, restaurantName, isLoading = false }: LeadCaptureFormProps) {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -29,8 +30,8 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
     setIsSubmitting(true)
 
     try {
-      // Chiama onSubmit per procedere (passa i dati al parent)
-      onSubmit(email, phone)
+      // Aspetta che onSubmit sia completato (include salvataggio lead + Email #1)
+      await onSubmit(email, phone)
       
     } catch (error) {
       console.error('Errore:', error)
@@ -39,9 +40,9 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
         description: "Si è verificato un errore. Riprova.",
         variant: "destructive"
       })
-    } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false) // Reset solo in caso di errore
     }
+    // NON resettiamo isSubmitting qui - lo fa il parent quando finisce
   }
 
   return (
@@ -129,10 +130,10 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
           {/* Submit Button */}
           <CustomButton
             type="submit"
-            disabled={!isFormValid || isSubmitting}
+            disabled={!isFormValid || isSubmitting || isLoading}
             className="w-full h-12 sm:h-14 text-sm sm:text-base font-extrabold"
           >
-            {isSubmitting ? (
+            {(isSubmitting || isLoading) ? (
               <span className="flex items-center gap-2">
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -140,7 +141,9 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
                 >
                   ⚡
                 </motion.div>
-                Caricamento...
+                <span className="text-xs sm:text-sm">
+                  Generazione report in corso...
+                </span>
               </span>
             ) : (
               <span className="flex items-center gap-2">
@@ -149,6 +152,19 @@ export function LeadCaptureForm({ onSubmit, restaurantName }: LeadCaptureFormPro
               </span>
             )}
           </CustomButton>
+          
+          {/* Loading Message */}
+          {(isSubmitting || isLoading) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl"
+            >
+              <p className="text-xs text-blue-800 text-center leading-relaxed">
+                ⏱️ Stiamo analizzando il tuo ristorante e preparando il report personalizzato. Ci vorranno circa 3-5 secondi...
+              </p>
+            </motion.div>
+          )}
         </form>
 
         {/* Benefici */}
