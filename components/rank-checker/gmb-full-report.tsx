@@ -199,78 +199,7 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
         </motion.div>
       )}
 
-      {/* ROI Estimate */}
-      {roiEstimate && (
-        <motion.div
-          className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-4 sm:p-5 shadow-xl border-2 border-green-300"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="text-center">
-            <div className="text-4xl sm:text-5xl mb-3">💰</div>
-            <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-4">
-              Quanto Stai Perdendo?
-            </h3>
-
-            {/* Comparison Before/After */}
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              {/* ORA */}
-              <div className="bg-red-100 rounded-2xl p-3 sm:p-4 border-2 border-red-300">
-                <p className="text-xs font-bold text-red-600 uppercase mb-2">Ora</p>
-                <p className="text-2xl sm:text-3xl font-black text-red-700 mb-1">
-                  #{roiEstimate.current.rank}
-                </p>
-                <p className="text-xs sm:text-sm text-red-600 font-medium">
-                  ~{roiEstimate.current.estimatedCustomersMonth} clienti/mese
-                </p>
-              </div>
-
-              {/* DOPO 90 GG */}
-              <div className="bg-green-100 rounded-2xl p-3 sm:p-4 border-2 border-green-300">
-                <p className="text-xs font-bold text-green-600 uppercase mb-2">Dopo 90gg</p>
-                <p className="text-2xl sm:text-3xl font-black text-green-700 mb-1">
-                  #{roiEstimate.after90Days.rank}
-                </p>
-                <p className="text-xs sm:text-sm text-green-600 font-medium">
-                  ~{roiEstimate.after90Days.estimatedCustomersMonth} clienti/mese
-                </p>
-              </div>
-            </div>
-
-            {/* Gain */}
-            <div className="bg-white rounded-2xl p-4 border-2 border-green-400">
-              <p className="text-xs font-bold text-gray-600 uppercase mb-3">Guadagno Potenziale</p>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-gray-700">Clienti extra:</span>
-                  <span className="text-sm sm:text-base font-black text-green-700">
-                    {roiEstimate.gain.customers}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-gray-700">Fatturato mensile:</span>
-                  <span className="text-sm sm:text-base font-black text-green-700">
-                    {roiEstimate.gain.revenue}
-                  </span>
-                </div>
-                <div className="h-px bg-gray-300 my-2" />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm sm:text-base font-bold text-gray-900">Fatturato annuo:</span>
-                  <span className="text-lg sm:text-xl font-black text-green-600">
-                    {roiEstimate.gain.yearlyRevenue}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-500 mt-3">
-              * Stime conservative basate su dati di settore
-            </p>
-          </div>
-        </motion.div>
-      )}
+      {/* ROI Estimate - RIMOSSO (ridondante) */}
 
       {/* Action Plan Preview (se disponibile) */}
       {actionPlan && actionPlan.first7Days && actionPlan.first7Days.length > 0 && (
