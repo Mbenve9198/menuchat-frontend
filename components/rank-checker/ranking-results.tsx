@@ -164,19 +164,29 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       return
     }
 
-    // 🔥 TRIGGERA AUDIT SUBITO (async, in background)
-    console.log('🚀 Triggering GMB Audit in background...')
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessToken: token })
-    })
-    .then(res => console.log('✅ Audit started:', res.status))
-    .catch(err => console.error('⚠️ Audit trigger error:', err))
+    // 🔥 TRIGGERA AUDIT e ASPETTA conferma invio (fix mobile!)
+    console.log('🚀 Triggering GMB Audit...')
+    
+    try {
+      // Usa fetch con keepalive per mobile (non cancella al redirect)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: token }),
+        keepalive: true  // 🔥 Importante per mobile!
+      })
+      
+      console.log('✅ Audit request sent:', response.status)
+    } catch (err) {
+      console.error('⚠️ Audit trigger error (non bloccante):', err)
+      // Non bloccare il redirect anche se audit fallisce
+    }
 
-    // REDIRECT IMMEDIATO a qualify (non aspettare l'audit!)
-    const restaurantParam = encodeURIComponent(userRestaurant.name)
-    window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
+    // REDIRECT a qualify dopo 300ms (da tempo alla fetch di partire)
+    setTimeout(() => {
+      const restaurantParam = encodeURIComponent(userRestaurant.name)
+      window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
+    }, 300)
   }
 
   // Verifica se le coordinate sono valide per mostrare la mappa
