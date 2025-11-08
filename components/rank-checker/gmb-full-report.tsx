@@ -45,21 +45,12 @@ interface GMBFullReportProps {
       estimatedRankingImprovement: string
       estimatedRevenue: string
     }
-    roiEstimate: {
-      current: any
-      after90Days: any
-      gain: {
-        customers: string
-        revenue: string
-        yearlyRevenue: string
-      }
-    }
   }
   onBookCall: () => void
 }
 
 export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
-  const { summary, healthScore, competitorComparison, aiInsights, actionPlan, roiEstimate } = audit
+  const { summary, healthScore, competitorComparison, aiInsights, actionPlan } = audit
 
   return (
     <div className="w-full space-y-5 pb-28">
