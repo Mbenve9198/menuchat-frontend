@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles, Calendar, TrendingUp } from "lucide-react"
 import { GMBHealthScore } from "./gmb-health-score"
@@ -51,6 +52,18 @@ interface GMBFullReportProps {
 
 export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
   const { summary, healthScore, competitorComparison, aiInsights, actionPlan } = audit
+  const [showCallPreference, setShowCallPreference] = useState(false)
+
+  const handleCtaClick = () => {
+    // Mostra modal per preferenza orario chiamata
+    setShowCallPreference(true)
+    setTimeout(() => {
+      document.getElementById('call-preference-section')?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+      })
+    }, 100)
+  }
 
   return (
     <div className="w-full space-y-5 pb-28">
@@ -246,25 +259,82 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
         </motion.div>
       )}
 
-      {/* CTA FINALE - Fixato in Basso */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
-        <div className="max-w-md mx-auto">
-          <CustomButton
-            onClick={onBookCall}
-            className="w-full h-14 sm:h-16 text-sm sm:text-base font-black shadow-2xl"
+      {/* Modal Preferenza Chiamata */}
+      {showCallPreference && (
+        <div id="call-preference-section">
+          <motion.div
+            className="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border-2 border-[#1B9AAA]"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
           >
-            <span className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              VOGLIO IMPLEMENTARE TUTTO QUESTO
-              <ArrowRight className="w-5 h-5" />
-            </span>
-          </CustomButton>
-          
-          <p className="text-xs text-center text-gray-500 mt-2">
-            💬 Chiamata strategica gratuita • Zero impegno
-          </p>
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-3">📞</div>
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2">
+                Quando preferisci essere chiamato?
+              </h3>
+              <p className="text-sm text-gray-600">
+                Scegli l'orario migliore per una chiamata di 15 minuti
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => onBookCall('mattina')}
+                className="w-full p-4 border-2 border-gray-200 rounded-2xl hover:border-[#1B9AAA] hover:bg-[#1B9AAA]/5 transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">🌅</div>
+                    <div className="text-left">
+                      <p className="font-bold text-gray-900 text-lg">Mattina</p>
+                      <p className="text-xs text-gray-600">9:00 - 13:00</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#1B9AAA] transition-colors" />
+                </div>
+              </button>
+
+              <button
+                onClick={() => onBookCall('pomeriggio')}
+                className="w-full p-4 border-2 border-gray-200 rounded-2xl hover:border-[#1B9AAA] hover:bg-[#1B9AAA]/5 transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-3xl">🌆</div>
+                    <div className="text-left">
+                      <p className="font-bold text-gray-900 text-lg">Pomeriggio</p>
+                      <p className="text-xs text-gray-600">14:00 - 18:00</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#1B9AAA] transition-colors" />
+                </div>
+              </button>
+            </div>
+          </motion.div>
         </div>
-      </div>
+      )}
+
+      {/* CTA FINALE - Fixato in Basso (nascosto se c'è modal preferenza) */}
+      {!showCallPreference && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
+          <div className="max-w-md mx-auto">
+            <CustomButton
+              onClick={handleCtaClick}
+              className="w-full h-14 sm:h-16 text-sm sm:text-base font-black shadow-2xl"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                VOGLIO IMPLEMENTARE TUTTO QUESTO
+                <ArrowRight className="w-5 h-5" />
+              </span>
+            </CustomButton>
+            
+            <p className="text-xs text-center text-gray-500 mt-2">
+              💬 Chiamata strategica gratuita • Zero impegno
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

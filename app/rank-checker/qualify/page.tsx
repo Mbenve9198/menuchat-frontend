@@ -169,9 +169,52 @@ function QualifyContent() {
     setTimeout(checkAuditStatus, 1000)
   }
 
-  // 🆕 Handler per booking call dal report GMB
-  const handleBookCall = () => {
-    window.location.href = 'https://calendly.com/menuchat/consulenza-gratuita'
+  // 🆕 Handler per booking call con preferenza orario
+  const handleBookCall = async (preference: 'mattina' | 'pomeriggio') => {
+    const token = localStorage.getItem('rank_checker_token')
+    
+    if (!token) {
+      console.error('⚠️ Nessun token disponibile')
+      return
+    }
+
+    try {
+      console.log(`📞 Richiesta chiamata: ${preference}`)
+      
+      // Salva preferenza + invia email team
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads/${token}/request-call`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callPreference: preference,
+            gmbAuditData: gmbAuditData // Invia anche il report per email team
+          })
+        }
+      )
+
+      if (response.ok) {
+        console.log('✅ Richiesta chiamata inviata')
+        
+        toast({
+          title: "Richiesta Ricevuta! 🎉",
+          description: `Ti chiameremo ${preference === 'mattina' ? 'domattina' : 'nel pomeriggio'}`,
+        })
+
+        // Redirect a thank you page dopo 2 sec
+        setTimeout(() => {
+          router.push('/rank-checker/thank-you')
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('❌ Errore richiesta chiamata:', error)
+      toast({
+        title: "Errore",
+        description: "Riprova o contattaci direttamente",
+        variant: "destructive"
+      })
+    }
   }
 
   const monthlyReviews = calculateMonthlyReviews()
