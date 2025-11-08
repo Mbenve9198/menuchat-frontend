@@ -41,7 +41,53 @@ function QualifyContent() {
     // Cerca di recuperare il nome del ristorante
     const storedName = searchParams.get('restaurant') || 'il tuo ristorante'
     setRestaurantName(storedName)
+
+    // 🆕 Se showReport=true (da email), carica report direttamente
+    const showReport = searchParams.get('showReport')
+    if (showReport === 'true') {
+      console.log('📧 Caricamento report GMB da email link...')
+      // Salta le domande e carica il report direttamente
+      loadGMBReportDirectly(token)
+    }
   }, [])
+
+  // 🆕 Carica report GMB direttamente (da email link)
+  const loadGMBReportDirectly = async (token: string) => {
+    setIsLoadingAudit(true)
+    setCurrentStep('has-menu') // Nasconde domande
+    
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit/${token}`
+      )
+      
+      const data = await response.json()
+      
+      if (data.success && data.status === 'completed' && data.audit) {
+        console.log('✅ Report GMB caricato da email!')
+        setGmbAuditData(data.audit)
+        setIsLoadingAudit(false)
+        
+        setTimeout(() => {
+          document.getElementById('gmb-report-section')?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }, 500)
+      } else {
+        console.error('❌ Report non disponibile')
+        setIsLoadingAudit(false)
+        toast({
+          title: "Report non disponibile",
+          description: "Riprova l'analisi",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('❌ Errore caricamento report:', error)
+      setIsLoadingAudit(false)
+    }
+  }
 
   // Calcola recensioni mensili
   const calculateMonthlyReviews = (): number => {

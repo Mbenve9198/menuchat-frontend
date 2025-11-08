@@ -93,9 +93,10 @@ export default function RankCheckerPage() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get('token')
+      const showReport = urlParams.get('showReport')
       
       if (token) {
-        recoverResultsFromToken(token)
+        recoverResultsFromToken(token, showReport === 'true')
       }
     }
   }, [])
@@ -244,7 +245,7 @@ export default function RankCheckerPage() {
   }, [rankingData, isLoading, showLeadForm])
 
   // Recupera risultati usando un token
-  const recoverResultsFromToken = async (token: string) => {
+  const recoverResultsFromToken = async (token: string, shouldShowReport: boolean = false) => {
     setIsLoading(true)
 
     try {
@@ -277,6 +278,24 @@ export default function RankCheckerPage() {
         // MOSTRA DIRETTAMENTE I RISULTATI SALVATI (no rianalisi!)
         setRankingData(leadData.rankingResults)
         setShowLeadForm(false)
+        
+        // 🆕 Se showReport=true, vai direttamente a /qualify con report
+        if (shouldShowReport && leadData.qualificationData?.qualifiedAt) {
+          console.log('🔍 Redirect a /qualify per mostrare report GMB...')
+          // Salva token e redirect
+          localStorage.setItem('rank_checker_token', token)
+          
+          toast({
+            title: "Caricamento Report GMB...",
+            description: "Un momento...",
+          })
+          
+          setTimeout(() => {
+            window.location.href = `/rank-checker/qualify?restaurant=${encodeURIComponent(leadData.restaurantName)}&showReport=true`
+          }, 500)
+          
+          return
+        }
         
         toast({
           title: "Bentornato! 👋",
