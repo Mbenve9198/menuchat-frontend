@@ -13,18 +13,9 @@ interface GMBFullReportProps {
       restaurantName: string
       currentRank: number | string
       keyword: string
-      healthScore: number
-      verdict: string
       mainIssue: string
     }
     healthScore: {
-      totalScore: number
-      verdict: string
-      breakdown: {
-        tier1: { score: number; max: number }
-        tier2: { score: number; max: number }
-        tier3: { score: number; max: number }
-      }
       priorities: any[]
     }
     competitorComparison: {
@@ -55,9 +46,8 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
 
   // Debug log
   console.log('📊 GMB Report data:', {
-    score: healthScore?.totalScore,
-    verdict: healthScore?.verdict,
-    priorities: healthScore?.priorities?.length
+    priorities: healthScore?.priorities?.length,
+    mainIssue: summary?.mainIssue
   })
 
   const handleCtaClick = () => {
