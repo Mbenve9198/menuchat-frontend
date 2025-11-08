@@ -564,27 +564,22 @@ function QualifyContent() {
                 >
                   <CustomButton
                     onClick={handleFinalCTA}
-                    disabled={isSaving}
+                    disabled={isSaving || isLoadingAudit}
                     className="w-full h-16 text-lg font-black"
                   >
-                    {isSaving ? (
+                    {isSaving || isLoadingAudit ? (
                       <span className="flex items-center gap-2">
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         >
-                          ⏳
+                          {isLoadingAudit ? '🔍' : '⏳'}
                         </motion.div>
-                        Salvataggio...
-                      </span>
-                    ) : !hasDigitalMenu && !willingToAdoptMenu ? (
-                      <span className="flex items-center gap-2">
-                        Scopri come recuperarle
-                        <ChevronRight className="w-5 h-5" />
+                        {isLoadingAudit ? 'Analisi in corso...' : 'Salvataggio...'}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        Inizia la Prova Gratuita
+                        🔓 SBLOCCA ANALISI GMB COMPLETA
                         <Sparkles className="w-5 h-5" />
                       </span>
                     )}
