@@ -73,7 +73,8 @@ function QualifyContent() {
 
   const handleCoversSubmit = () => {
     if (parseInt(dailyCovers) > 0) {
-      setCurrentStep('result')
+      // SKIPPA lo step "result" e triggera direttamente l'audit!
+      handleFinalCTA()
     }
   }
 
@@ -420,8 +421,8 @@ function QualifyContent() {
               </motion.div>
             )}
 
-            {/* STEP 4: Risultato */}
-            {currentStep === 'result' && (
+            {/* STEP 4: Risultato - RIMOSSO, va diretto al loading */}
+            {false && currentStep === 'result' && (
               <motion.div
                 key="result"
                 initial={{ opacity: 0, scale: 0.9 }}
