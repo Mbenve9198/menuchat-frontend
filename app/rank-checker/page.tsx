@@ -93,8 +93,10 @@ export default function RankCheckerPage() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const token = urlParams.get('token')
+      const showAudit = urlParams.get('showAudit')
+      
       if (token) {
-        recoverResultsFromToken(token)
+        recoverResultsFromToken(token, showAudit === 'true')
       }
     }
   }, [])
@@ -243,7 +245,7 @@ export default function RankCheckerPage() {
   }, [rankingData, isLoading, showLeadForm])
 
   // Recupera risultati usando un token
-  const recoverResultsFromToken = async (token: string) => {
+  const recoverResultsFromToken = async (token: string, shouldShowAudit: boolean = false) => {
     setIsLoading(true)
 
     try {
@@ -277,14 +279,38 @@ export default function RankCheckerPage() {
         setRankingData(leadData.rankingResults)
         setShowLeadForm(false)
         
+        // 🆕 Se showAudit=true, recupera anche l'audit GMB
+        if (shouldShowAudit) {
+          console.log('🔍 Recupero GMB Audit...')
+          
+          try {
+            const auditResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit/${token}`
+            )
+            const auditData = await auditResponse.json()
+            
+            if (auditData.success && auditData.status === 'completed' && auditData.audit) {
+              console.log('✅ GMB Audit recuperato!')
+              // Passa i dati audit a RankingResults (lo faremo tramite prop)
+              // Per ora salviamo in localStorage
+              localStorage.setItem('gmb_audit_data', JSON.stringify(auditData.audit))
+            }
+          } catch (auditError) {
+            console.error('⚠️ Errore recupero audit:', auditError)
+          }
+        }
+        
         toast({
-          title: "Bentornato! 👋",
-          description: `Ecco i risultati di ${leadData.restaurantName}`,
+          title: shouldShowAudit ? "Analisi GMB Completata! 🎉" : "Bentornato! 👋",
+          description: shouldShowAudit 
+            ? `Ecco la tua Analisi GMB completa` 
+            : `Ecco i risultati di ${leadData.restaurantName}`,
         })
         
         // Scroll ai risultati dopo un attimo
         setTimeout(() => {
-          document.getElementById('results-section')?.scrollIntoView({ 
+          const targetId = shouldShowAudit ? 'gmb-report-section' : 'results-section'
+          document.getElementById(targetId)?.scrollIntoView({ 
             behavior: 'smooth',
             block: 'start'
           })

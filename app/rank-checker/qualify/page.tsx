@@ -7,7 +7,6 @@ import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLe
 import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
 import { useToast } from "@/hooks/use-toast"
-import { GMBFullReport } from "@/components/rank-checker/gmb-full-report"
 
 type Step = 'has-menu' | 'willing-menu' | 'covers' | 'result'
 
@@ -22,7 +21,6 @@ function QualifyContent() {
   const [dailyCovers, setDailyCovers] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [restaurantName, setRestaurantName] = useState('')
-  const [gmbAuditData, setGmbAuditData] = useState<any>(null) // 🆕 Risultati GMB Audit
   const [isLoadingAudit, setIsLoadingAudit] = useState(false) // 🆕 Loading audit
 
   // Recupera info dal localStorage e URL
@@ -141,20 +139,16 @@ function QualifyContent() {
 
       if (auditData.success) {
         console.log('✅ GMB Audit completato!')
-        setGmbAuditData(auditData.audit)
         
         toast({
           title: "Analisi Completata! 🎉",
-          description: "Ecco la tua Analisi GMB completa",
+          description: "Torniamo ai risultati per mostrarti tutto",
         })
 
-        // Scroll al report dopo un momento
+        // 🔥 REDIRECT alla pagina rank-checker con flag per mostrare audit
         setTimeout(() => {
-          document.getElementById('gmb-report-section')?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          })
-        }, 500)
+          window.location.href = `/rank-checker?token=${token}&showAudit=true`
+        }, 1000)
 
       } else {
         console.error('❌ Errore GMB Audit:', auditData.error)
@@ -186,11 +180,6 @@ function QualifyContent() {
     }
   }
 
-  // 🆕 Handler per booking call dal report GMB
-  const handleBookCall = () => {
-    window.location.href = 'https://calendly.com/menuchat/consulenza-gratuita'
-  }
-
   const monthlyReviews = calculateMonthlyReviews()
 
   return (
@@ -200,8 +189,8 @@ function QualifyContent() {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
         <div className="w-full max-w-md">
           
-          {/* Back button - nascosto se c'è il report GMB */}
-          {!gmbAuditData && (
+          {/* Back button */}
+          {!isLoadingAudit && (
             <button
               onClick={() => router.back()}
               className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-900 transition-colors"
@@ -212,7 +201,7 @@ function QualifyContent() {
           )}
 
           {/* 🆕 LOADING AUDIT - Mostra durante elaborazione */}
-          {isLoadingAudit && !gmbAuditData && (
+          {isLoadingAudit && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -243,18 +232,8 @@ function QualifyContent() {
             </motion.div>
           )}
 
-          {/* 🆕 GMB REPORT - Mostra dopo audit completato */}
-          {gmbAuditData && (
-            <div id="gmb-report-section">
-              <GMBFullReport
-                audit={gmbAuditData}
-                onBookCall={handleBookCall}
-              />
-            </div>
-          )}
-
-          {/* STEPS ORIGINALI - Nascosti se c'è loading o report */}
-          {!isLoadingAudit && !gmbAuditData && (
+          {/* STEPS ORIGINALI - Nascosti se c'è loading */}
+          {!isLoadingAudit && (
             <AnimatePresence mode="wait">
             {/* STEP 1: Ha già un menu digitale? */}
             {currentStep === 'has-menu' && (

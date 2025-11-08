@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { 
   TrendingDown, 
@@ -76,6 +76,31 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
   
   // Stato per il tab selezionato
   const [selectedLocationId, setSelectedLocationId] = useState('main')
+
+  // 🆕 Recupera audit da localStorage se disponibile (dopo redirect da qualify)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAudit = localStorage.getItem('gmb_audit_data')
+      if (savedAudit) {
+        try {
+          const auditData = JSON.parse(savedAudit)
+          setGmbAuditData(auditData)
+          // Pulisci localStorage
+          localStorage.removeItem('gmb_audit_data')
+          
+          // Scroll al report dopo un momento
+          setTimeout(() => {
+            document.getElementById('gmb-report-section')?.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            })
+          }, 1000)
+        } catch (error) {
+          console.error('⚠️ Errore parsing audit:', error)
+        }
+      }
+    }
+  }, []) // Run solo al mount
   
   // Costruisci la lista dei tabs
   const allTabs = [
