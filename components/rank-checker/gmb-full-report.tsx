@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles, Calendar, TrendingUp } from "lucide-react"
-import { GMBHealthScore } from "./gmb-health-score"
 import { GMBPriorityCard } from "./gmb-priority-card"
 import { GMBCompetitorComparison } from "./gmb-competitor-comparison"
 import { CustomButton } from "@/components/ui/custom-button"
@@ -89,12 +88,7 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
         </p>
       </motion.div>
 
-      {/* Health Score Card */}
-      <GMBHealthScore
-        score={healthScore.totalScore}
-        verdict={healthScore.verdict}
-        breakdown={healthScore.breakdown}
-      />
+      {/* Health Score RIMOSSO - non funziona */}
 
       {/* 🆕 TABELLA CONFRONTO - SUBITO all'inizio! */}
       <GMBCompetitorComparison
