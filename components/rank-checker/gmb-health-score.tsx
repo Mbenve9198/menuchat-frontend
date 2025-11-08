@@ -132,75 +132,7 @@ export function GMBHealthScore({ score, verdict, breakdown }: GMBHealthScoreProp
         </div>
       </div>
 
-      {/* Breakdown per Tier */}
-      <div className="space-y-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide text-center mb-3">
-          Breakdown Dettagliato
-        </p>
-        
-        {/* Tier 1: Fondamenta */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">🔴</span>
-              <span className="text-xs sm:text-sm font-bold text-gray-700">Fondamenta</span>
-            </div>
-            <span className="text-xs font-bold text-gray-900">
-              {breakdown.tier1.score}/{breakdown.tier1.max}
-            </span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className={`h-full ${tier1Percentage >= 70 ? 'bg-green-500' : 'bg-red-500'}`}
-              initial={{ width: 0 }}
-              animate={{ width: `${tier1Percentage}%` }}
-              transition={{ duration: 1, delay: 0.2 }}
-            />
-          </div>
-        </div>
-
-        {/* Tier 2: Competitività */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">🟡</span>
-              <span className="text-xs sm:text-sm font-bold text-gray-700">Competitività</span>
-            </div>
-            <span className="text-xs font-bold text-gray-900">
-              {breakdown.tier2.score}/{breakdown.tier2.max}
-            </span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className={`h-full ${tier2Percentage >= 70 ? 'bg-green-500' : 'bg-yellow-500'}`}
-              initial={{ width: 0 }}
-              animate={{ width: `${tier2Percentage}%` }}
-              transition={{ duration: 1, delay: 0.4 }}
-            />
-          </div>
-        </div>
-
-        {/* Tier 3: Ottimizzazioni */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">🟢</span>
-              <span className="text-xs sm:text-sm font-bold text-gray-700">Ottimizzazioni</span>
-            </div>
-            <span className="text-xs font-bold text-gray-900">
-              {breakdown.tier3.score}/{breakdown.tier3.max}
-            </span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-blue-500"
-              initial={{ width: 0 }}
-              animate={{ width: `${tier3Percentage}%` }}
-              transition={{ duration: 1, delay: 0.6 }}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Breakdown rimosso - solo gauge principale */}
 
       {/* Messaggio Critico */}
       {score < 70 && (
