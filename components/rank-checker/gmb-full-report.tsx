@@ -96,6 +96,12 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
         breakdown={healthScore.breakdown}
       />
 
+      {/* 🆕 TABELLA CONFRONTO - SUBITO all'inizio! */}
+      <GMBCompetitorComparison
+        table={competitorComparison.table}
+        summary={competitorComparison.summary}
+      />
+
       {/* Messaggio Shock */}
       <motion.div
         className="bg-gradient-to-r from-red-500 to-orange-500 rounded-3xl p-4 sm:p-5 shadow-xl text-white"
@@ -138,12 +144,6 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
           />
         ))}
       </div>
-
-      {/* Competitor Comparison */}
-      <GMBCompetitorComparison
-        table={competitorComparison.table}
-        summary={competitorComparison.summary}
-      />
 
       {/* AI Insights */}
       {aiInsights && (
