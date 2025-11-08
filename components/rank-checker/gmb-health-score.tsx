@@ -36,11 +36,6 @@ export function GMBHealthScore({ score, verdict, breakdown }: GMBHealthScoreProp
     return 'text-red-600'
   }
 
-  // Calcola percentuali per i tier
-  const tier1Percentage = (breakdown.tier1.score / breakdown.tier1.max) * 100
-  const tier2Percentage = (breakdown.tier2.score / breakdown.tier2.max) * 100
-  const tier3Percentage = (breakdown.tier3.score / breakdown.tier3.max) * 100
-
   return (
     <motion.div
       className="bg-white rounded-3xl p-4 sm:p-6 shadow-2xl border-2 border-gray-200"
