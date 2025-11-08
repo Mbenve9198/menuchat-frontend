@@ -54,6 +54,13 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
   const { summary, healthScore, competitorComparison, aiInsights, actionPlan } = audit
   const [showCallPreference, setShowCallPreference] = useState(false)
 
+  // Debug log
+  console.log('📊 GMB Report data:', {
+    score: healthScore?.totalScore,
+    verdict: healthScore?.verdict,
+    priorities: healthScore?.priorities?.length
+  })
+
   const handleCtaClick = () => {
     // Mostra modal per preferenza orario chiamata
     setShowCallPreference(true)

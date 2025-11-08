@@ -14,6 +14,12 @@ interface GMBHealthScoreProps {
 }
 
 export function GMBHealthScore({ score, verdict, breakdown }: GMBHealthScoreProps) {
+  // Debug
+  console.log('🎯 Health Score props:', { score, verdict })
+  
+  // Fallback se score è undefined
+  const safeScore = score || 0
+  
   // Colore in base al score
   const getScoreColor = () => {
     if (score >= 85) return 'from-green-400 to-emerald-500'
@@ -87,7 +93,7 @@ export function GMBHealthScore({ score, verdict, breakdown }: GMBHealthScoreProp
             strokeDasharray={`${2 * Math.PI * 40}`}
             initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
             animate={{ 
-              strokeDashoffset: 2 * Math.PI * 40 * (1 - score / 100)
+              strokeDashoffset: 2 * Math.PI * 40 * (1 - safeScore / 100)
             }}
             transition={{ duration: 1.5, ease: "easeOut" }}
           />
@@ -107,7 +113,7 @@ export function GMBHealthScore({ score, verdict, breakdown }: GMBHealthScoreProp
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            {score}
+            {safeScore}
           </motion.p>
           <p className="text-sm sm:text-base font-bold text-gray-500">/100</p>
         </div>
@@ -130,7 +136,7 @@ export function GMBHealthScore({ score, verdict, breakdown }: GMBHealthScoreProp
       {/* Breakdown rimosso - solo gauge principale */}
 
       {/* Messaggio Critico */}
-      {score < 70 && (
+      {safeScore < 70 && (
         <motion.div
           className="mt-5 p-3 sm:p-4 rounded-2xl bg-red-50 border-2 border-red-200"
           initial={{ opacity: 0, y: 10 }}
