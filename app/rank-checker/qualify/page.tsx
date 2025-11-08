@@ -7,6 +7,7 @@ import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLe
 import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
 import { useToast } from "@/hooks/use-toast"
+import { GMBFullReport } from "@/components/rank-checker/gmb-full-report"
 
 type Step = 'has-menu' | 'willing-menu' | 'covers' | 'result'
 
@@ -22,6 +23,7 @@ function QualifyContent() {
   const [isSaving, setIsSaving] = useState(false)
   const [restaurantName, setRestaurantName] = useState('')
   const [isLoadingAudit, setIsLoadingAudit] = useState(false) // 🆕 Loading audit
+  const [gmbAuditData, setGmbAuditData] = useState<any>(null) // 🆕 Dati audit
 
   // Recupera info dal localStorage e URL
   useEffect(() => {
@@ -121,6 +123,8 @@ function QualifyContent() {
 
     try {
       console.log('🔍 Richiesta GMB Audit...')
+      console.log('Token:', token)
+      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
       
       const auditResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`,
@@ -135,49 +139,54 @@ function QualifyContent() {
         }
       )
 
+      console.log('Audit response status:', auditResponse.status)
       const auditData = await auditResponse.json()
+      console.log('Audit data:', auditData)
 
       if (auditData.success) {
         console.log('✅ GMB Audit completato!')
         
+        // 🎉 MOSTRA REPORT nella stessa pagina (no redirect!)
+        setGmbAuditData(auditData.audit)
+        
         toast({
           title: "Analisi Completata! 🎉",
-          description: "Torniamo ai risultati per mostrarti tutto",
+          description: "Ecco la tua Analisi GMB completa",
         })
 
-        // 🔥 REDIRECT alla pagina rank-checker con flag per mostrare audit
+        // Scroll al report dopo un momento
         setTimeout(() => {
-          window.location.href = `/rank-checker?token=${token}&showAudit=true`
-        }, 1000)
+          document.getElementById('gmb-report-section')?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }, 500)
 
       } else {
         console.error('❌ Errore GMB Audit:', auditData.error)
+        
         toast({
           title: "Analisi non disponibile",
-          description: "Procediamo comunque con la tua prova gratuita",
+          description: "Riprova più tardi o contattaci",
           variant: "destructive"
         })
-        
-        // Fallback: vai comunque all'onboarding dopo 2 secondi
-        setTimeout(() => {
-          router.push('/')
-        }, 2000)
       }
     } catch (error) {
       console.error('❌ Errore richiesta audit:', error)
+      
       toast({
         title: "Errore",
-        description: "Si è verificato un errore. Procediamo con la prova.",
+        description: "Si è verificato un errore durante l'analisi",
         variant: "destructive"
       })
-      
-      // Fallback
-      setTimeout(() => {
-        router.push('/')
-      }, 2000)
     } finally {
       setIsLoadingAudit(false)
     }
+  }
+
+  // 🆕 Handler per booking call dal report GMB
+  const handleBookCall = () => {
+    window.location.href = 'https://calendly.com/menuchat/consulenza-gratuita'
   }
 
   const monthlyReviews = calculateMonthlyReviews()
@@ -232,8 +241,18 @@ function QualifyContent() {
             </motion.div>
           )}
 
-          {/* STEPS ORIGINALI - Nascosti se c'è loading */}
-          {!isLoadingAudit && (
+          {/* 🆕 GMB REPORT - Mostra dopo audit completato */}
+          {gmbAuditData && (
+            <div id="gmb-report-section">
+              <GMBFullReport
+                audit={gmbAuditData}
+                onBookCall={handleBookCall}
+              />
+            </div>
+          )}
+
+          {/* STEPS ORIGINALI - Nascosti se c'è loading o report */}
+          {!isLoadingAudit && !gmbAuditData && (
             <AnimatePresence mode="wait">
             {/* STEP 1: Ha già un menu digitale? */}
             {currentStep === 'has-menu' && (

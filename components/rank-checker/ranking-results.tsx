@@ -21,8 +21,6 @@ import { RankingMap } from "./ranking-map"
 import { LocationTabs } from "./location-tabs"
 import { ReviewAnalysisSection } from "./review-analysis-section"
 import { GMBAuditGate } from "./gmb-audit-gate"
-import { GMBFullReport } from "./gmb-full-report"
-import { useToast } from "@/hooks/use-toast"
 
 interface SearchResult {
   searchPointName: string
@@ -67,40 +65,9 @@ interface RankingResultsProps {
 
 export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingResultsProps) {
   const { userRestaurant, competitors, analysis, mainResult, strategicResults = [] } = data
-  const { toast } = useToast()
-  
-  // Stati per GMB Audit
-  const [showGMBGate, setShowGMBGate] = useState(false) // Gate per sbloccare audit
-  const [isLoadingAudit, setIsLoadingAudit] = useState(false) // Loading audit
-  const [gmbAuditData, setGmbAuditData] = useState<any>(null) // Risultati audit
   
   // Stato per il tab selezionato
   const [selectedLocationId, setSelectedLocationId] = useState('main')
-
-  // 🆕 Recupera audit da localStorage se disponibile (dopo redirect da qualify)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedAudit = localStorage.getItem('gmb_audit_data')
-      if (savedAudit) {
-        try {
-          const auditData = JSON.parse(savedAudit)
-          setGmbAuditData(auditData)
-          // Pulisci localStorage
-          localStorage.removeItem('gmb_audit_data')
-          
-          // Scroll al report dopo un momento
-          setTimeout(() => {
-            document.getElementById('gmb-report-section')?.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
-            })
-          }, 1000)
-        } catch (error) {
-          console.error('⚠️ Errore parsing audit:', error)
-        }
-      }
-    }
-  }, []) // Run solo al mount
   
   // Costruisci la lista dei tabs
   const allTabs = [
@@ -186,31 +153,10 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
     return typeof mainRank === 'number' && mainRank <= 3
   }
 
-  // Gestisce il click sul CTA principale
+  // Gestisce il click sul CTA - VA DIRETTO A QUALIFICAZIONE
   const handleCtaClick = () => {
-    // Mostra il GMB Gate invece di andare direttamente alla qualificazione
-    setShowGMBGate(true)
-    
-    // Scroll smooth al gate
-    setTimeout(() => {
-      document.getElementById('gmb-gate-section')?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      })
-    }, 100)
-  }
-
-  // Gestisce lo sblocco dell'analisi GMB (porta alla qualificazione)
-  const handleUnlockGMBAudit = () => {
-    // Va alla pagina di qualificazione
     const restaurantParam = encodeURIComponent(userRestaurant.name)
     window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
-  }
-
-  // Gestisce la richiesta di chiamata finale
-  const handleBookCall = () => {
-    // Porta a Calendly o pagina contatti
-    window.location.href = 'https://calendly.com/menuchat/consulenza-gratuita'
   }
 
   // Verifica se le coordinate sono valide per mostrare la mappa
@@ -511,37 +457,25 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       )}
 
       {/* Analisi Recensioni Approfondita */}
-      {placeId && !showGMBGate && !gmbAuditData && (
+      {placeId && !gmbAuditData && (
         <ReviewAnalysisSection
           placeId={placeId}
           restaurantName={userRestaurant.name}
         />
       )}
 
-      {/* 🆕 GMB AUDIT GATE - Appare quando user clicca CTA principale */}
-      {showGMBGate && !gmbAuditData && (
-        <div id="gmb-gate-section">
-          <GMBAuditGate
-            restaurantName={userRestaurant.name}
-            currentRank={mainResult?.rank || userRestaurant.rank}
-            onUnlock={handleUnlockGMBAudit}
-            isLoading={isLoadingAudit}
-          />
-        </div>
-      )}
+      {/* 🆕 GMB AUDIT GATE - SEMPRE VISIBILE dopo risultati base */}
+      <div id="gmb-gate-section">
+        <GMBAuditGate
+          restaurantName={userRestaurant.name}
+          currentRank={mainResult?.rank || userRestaurant.rank}
+          onUnlock={handleCtaClick}
+          isLoading={false}
+        />
+      </div>
 
-      {/* 🆕 GMB FULL REPORT - Appare dopo la qualificazione (verrà popolato da pagina qualify) */}
-      {gmbAuditData && (
-        <div id="gmb-report-section">
-          <GMBFullReport
-            audit={gmbAuditData}
-            onBookCall={handleBookCall}
-          />
-        </div>
-      )}
-
-      {/* CTA Fixato in Basso - Visibile solo se NON c'è il gate o il report */}
-      {!showGMBGate && !gmbAuditData && (
+      {/* CTA Fixato in Basso - NASCOSTO se c'è il gate o il report (il gate ha già il suo CTA) */}
+      {false && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
           <div className="max-w-md mx-auto">
             {/* Teaser per GMB Audit */}
