@@ -153,8 +153,28 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
     return typeof mainRank === 'number' && mainRank <= 3
   }
 
-  // Gestisce il click sul CTA - VA DIRETTO A QUALIFICAZIONE
-  const handleCtaClick = () => {
+  // Gestisce il click sul CTA - TRIGGERA AUDIT + VA A QUALIFICAZIONE
+  const handleCtaClick = async () => {
+    const token = localStorage.getItem('rank_checker_token')
+    
+    if (!token) {
+      console.error('⚠️ Nessun token, redirect diretto a qualify')
+      const restaurantParam = encodeURIComponent(userRestaurant.name)
+      window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
+      return
+    }
+
+    // 🔥 TRIGGERA AUDIT SUBITO (async, in background)
+    console.log('🚀 Triggering GMB Audit in background...')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken: token })
+    })
+    .then(res => console.log('✅ Audit started:', res.status))
+    .catch(err => console.error('⚠️ Audit trigger error:', err))
+
+    // REDIRECT IMMEDIATO a qualify (non aspettare l'audit!)
     const restaurantParam = encodeURIComponent(userRestaurant.name)
     window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
   }

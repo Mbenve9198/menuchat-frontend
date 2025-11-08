@@ -81,7 +81,7 @@ function QualifyContent() {
     const token = localStorage.getItem('rank_checker_token')
     
     if (!token) {
-      console.error('⚠️ Nessun token disponibile, skip salvataggio qualificazione')
+      console.error('⚠️ Nessun token disponibile')
       router.push('/')
       return
     }
@@ -89,15 +89,13 @@ function QualifyContent() {
     setIsSaving(true)
 
     try {
-      // STEP 1: Salva i dati di qualificazione nel backend
+      // STEP 1: Salva qualificazione
       console.log('📝 Salvataggio qualificazione...')
-      const qualificationResponse = await fetch(
+      await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads/${token}/qualification`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             hasDigitalMenu,
             willingToAdoptMenu,
@@ -106,82 +104,68 @@ function QualifyContent() {
           })
         }
       )
-
-      if (qualificationResponse.ok) {
-        console.log('✅ Qualificazione salvata')
-      } else {
-        console.error('⚠️ Errore salvataggio qualificazione (non bloccante)')
-      }
+      console.log('✅ Qualificazione salvata')
     } catch (error) {
       console.error('⚠️ Errore qualificazione:', error)
     }
 
     setIsSaving(false)
 
-    // STEP 2: 🆕 TRIGGERA GMB AUDIT (Bloccante - mostra loading)
+    // STEP 2: CONTROLLA SE AUDIT È GIÀ PRONTO (partito in background)
     setIsLoadingAudit(true)
-
-    try {
-      console.log('🔍 Richiesta GMB Audit...')
-      console.log('Token:', token)
-      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
-      
-      const auditResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accessToken: token
+    
+    const checkAuditStatus = async () => {
+      try {
+        console.log('🔍 Controllo status audit...')
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit/${token}`
+        )
+        
+        const data = await response.json()
+        console.log('Status audit:', data.status)
+        
+        if (data.status === 'completed' && data.audit) {
+          // ✅ PRONTO! Mostra report
+          console.log('✅ Audit pronto!')
+          setGmbAuditData(data.audit)
+          setIsLoadingAudit(false)
+          
+          toast({
+            title: "Analisi Completata! 🎉",
+            description: "Ecco la tua Analisi GMB completa",
+          })
+          
+          setTimeout(() => {
+            document.getElementById('gmb-report-section')?.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            })
+          }, 500)
+          
+        } else if (data.status === 'processing' || data.status === 'not_started') {
+          // ⏳ Ancora in corso, riprova tra 2 secondi
+          console.log('⏳ Audit in corso, riprovo tra 2 sec...')
+          setTimeout(checkAuditStatus, 2000)
+          
+        } else {
+          // ❌ Errore
+          console.error('❌ Audit error:', data.error)
+          setIsLoadingAudit(false)
+          toast({
+            title: "Analisi non disponibile",
+            description: "Riprova più tardi",
+            variant: "destructive"
           })
         }
-      )
-
-      console.log('Audit response status:', auditResponse.status)
-      const auditData = await auditResponse.json()
-      console.log('Audit data:', auditData)
-
-      if (auditData.success) {
-        console.log('✅ GMB Audit completato!')
-        
-        // 🎉 MOSTRA REPORT nella stessa pagina (no redirect!)
-        setGmbAuditData(auditData.audit)
-        
-        toast({
-          title: "Analisi Completata! 🎉",
-          description: "Ecco la tua Analisi GMB completa",
-        })
-
-        // Scroll al report dopo un momento
-        setTimeout(() => {
-          document.getElementById('gmb-report-section')?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          })
-        }, 500)
-
-      } else {
-        console.error('❌ Errore GMB Audit:', auditData.error)
-        
-        toast({
-          title: "Analisi non disponibile",
-          description: "Riprova più tardi o contattaci",
-          variant: "destructive"
-        })
+      } catch (error) {
+        console.error('❌ Errore check audit:', error)
+        // Riprova comunque
+        setTimeout(checkAuditStatus, 2000)
       }
-    } catch (error) {
-      console.error('❌ Errore richiesta audit:', error)
-      
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante l'analisi",
-        variant: "destructive"
-      })
-    } finally {
-      setIsLoadingAudit(false)
     }
+    
+    // Aspetta 1 secondo poi inizia polling
+    setTimeout(checkAuditStatus, 1000)
   }
 
   // 🆕 Handler per booking call dal report GMB
