@@ -39,58 +39,96 @@ export function GMBCompetitorComparison({ table, summary }: GMBCompetitorCompari
         </h3>
       </div>
 
-      {/* Tabella Responsive */}
+      {/* Tabella Invertita - Righe = Ristoranti, Colonne = Metriche */}
       <div className="overflow-x-auto -mx-1">
         <table className="w-full text-xs sm:text-sm">
           <thead>
             <tr className="border-b-2 border-gray-200">
-              <th className="text-left py-2 px-2 sm:px-3 font-bold text-gray-600 uppercase tracking-wide">
-                Metrica
+              <th className="text-left py-2 px-2 sm:px-3 font-bold text-gray-600 uppercase tracking-wide w-32 sm:w-40">
+                Ristorante
               </th>
-              <th className="text-center py-2 px-1 sm:px-2 font-bold text-[#1B9AAA] uppercase tracking-wide">
-                Tu
-              </th>
-              <th className="text-center py-2 px-1 sm:px-2 font-bold text-gray-600 uppercase tracking-wide">
-                #1
-              </th>
-              <th className="text-center py-2 px-1 sm:px-2 font-bold text-gray-600 uppercase tracking-wide hidden sm:table-cell">
-                #2
-              </th>
-              <th className="text-center py-2 px-1 sm:px-2 font-bold text-gray-600 uppercase tracking-wide hidden sm:table-cell">
-                #3
-              </th>
+              {table.map((metric) => (
+                <th key={metric.metric} className="text-center py-2 px-1 sm:px-2 font-bold text-gray-600 uppercase tracking-wide text-xs">
+                  {metric.metric}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {table.map((row, index) => (
+            {/* TU */}
+            <motion.tr
+              className="border-b border-gray-100 bg-[#1B9AAA]/5"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <td className="py-3 px-2 sm:px-3 font-black text-[#1B9AAA]">
+                Tu
+              </td>
+              {table.map((metric) => (
+                <td key={metric.metric} className={`py-3 px-1 sm:px-2 text-center font-bold ${
+                  metric.userWins ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {metric.userWins ? '✅' : '❌'} {metric.user}
+                </td>
+              ))}
+            </motion.tr>
+
+            {/* COMPETITOR #1 */}
+            {table[0]?.comp1 && (
               <motion.tr
-                key={row.metric}
                 className="border-b border-gray-100"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: 0.1 }}
               >
-                <td className="py-3 px-2 sm:px-3 font-medium text-gray-700">
-                  {row.metric}
+                <td className="py-3 px-2 sm:px-3 font-medium text-gray-700 truncate max-w-[120px]">
+                  <span className="text-xs text-gray-500">#1</span> {summary.whoIsBest !== 'Tu' ? summary.whoIsBest : 'Competitor'}
                 </td>
-                <td className={`py-3 px-1 sm:px-2 text-center font-black ${
-                  row.userWins ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {row.userWins && <span className="mr-1">✅</span>}
-                  {!row.userWins && <span className="mr-1">❌</span>}
-                  {row.user}
-                </td>
-                <td className="py-3 px-1 sm:px-2 text-center font-bold text-gray-900">
-                  {row.comp1}
-                </td>
-                <td className="py-3 px-1 sm:px-2 text-center font-bold text-gray-700 hidden sm:table-cell">
-                  {row.comp2}
-                </td>
-                <td className="py-3 px-1 sm:px-2 text-center font-bold text-gray-700 hidden sm:table-cell">
-                  {row.comp3}
-                </td>
+                {table.map((metric) => (
+                  <td key={metric.metric} className="py-3 px-1 sm:px-2 text-center font-bold text-gray-900">
+                    {metric.comp1}
+                  </td>
+                ))}
               </motion.tr>
-            ))}
+            )}
+
+            {/* COMPETITOR #2 */}
+            {table[0]?.comp2 && (
+              <motion.tr
+                className="border-b border-gray-100"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <td className="py-3 px-2 sm:px-3 font-medium text-gray-700 text-xs">
+                  <span className="text-gray-500">#2</span> Competitor
+                </td>
+                {table.map((metric) => (
+                  <td key={metric.metric} className="py-3 px-1 sm:px-2 text-center font-medium text-gray-700">
+                    {metric.comp2}
+                  </td>
+                ))}
+              </motion.tr>
+            )}
+
+            {/* COMPETITOR #3 - solo desktop */}
+            {table[0]?.comp3 && (
+              <motion.tr
+                className="border-b border-gray-100 hidden sm:table-row"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <td className="py-3 px-2 sm:px-3 font-medium text-gray-700 text-xs">
+                  <span className="text-gray-500">#3</span> Competitor
+                </td>
+                {table.map((metric) => (
+                  <td key={metric.metric} className="py-3 px-1 sm:px-2 text-center font-medium text-gray-600">
+                    {metric.comp3}
+                  </td>
+                ))}
+              </motion.tr>
+            )}
           </tbody>
         </table>
       </div>
