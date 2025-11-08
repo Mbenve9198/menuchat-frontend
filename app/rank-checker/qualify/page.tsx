@@ -3,11 +3,11 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLeft } from "lucide-react"
+import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLeft, Loader2 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
 import { useToast } from "@/hooks/use-toast"
-import { MetaEvents } from "@/components/meta-pixel"
+import { GMBFullReport } from "@/components/rank-checker/gmb-full-report"
 
 type Step = 'has-menu' | 'willing-menu' | 'covers' | 'result'
 
@@ -22,6 +22,8 @@ function QualifyContent() {
   const [dailyCovers, setDailyCovers] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [restaurantName, setRestaurantName] = useState('')
+  const [gmbAuditData, setGmbAuditData] = useState<any>(null) // 🆕 Risultati GMB Audit
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false) // 🆕 Loading audit
 
   // Recupera info dal localStorage e URL
   useEffect(() => {
@@ -87,8 +89,9 @@ function QualifyContent() {
     setIsSaving(true)
 
     try {
-      // Salva i dati di qualificazione nel backend
-      const response = await fetch(
+      // STEP 1: Salva i dati di qualificazione nel backend
+      console.log('📝 Salvataggio qualificazione...')
+      const qualificationResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads/${token}/qualification`,
         {
           method: 'PUT',
@@ -104,31 +107,88 @@ function QualifyContent() {
         }
       )
 
-      if (response.ok) {
-        console.log('✅ Dati di qualificazione salvati con successo')
-        
-        // Track Meta Pixel: Qualificazione completata!
-        MetaEvents.completeQualification(
-          hasDigitalMenu || false,
-          parseInt(dailyCovers),
-          calculateMonthlyReviews()
-        )
-        
-        toast({
-          title: "Perfetto! 🎉",
-          description: "Iniziamo la tua prova gratuita",
-        })
+      if (qualificationResponse.ok) {
+        console.log('✅ Qualificazione salvata')
       } else {
         console.error('⚠️ Errore salvataggio qualificazione (non bloccante)')
       }
     } catch (error) {
-      console.error('⚠️ Errore salvataggio qualificazione:', error)
-      // Non bloccare il flusso
-    } finally {
-      setIsSaving(false)
-      // Redirect all'onboarding
-      router.push('/')
+      console.error('⚠️ Errore qualificazione:', error)
     }
+
+    setIsSaving(false)
+
+    // STEP 2: 🆕 TRIGGERA GMB AUDIT (Bloccante - mostra loading)
+    setIsLoadingAudit(true)
+
+    try {
+      console.log('🔍 Richiesta GMB Audit...')
+      
+      const auditResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accessToken: token
+          })
+        }
+      )
+
+      const auditData = await auditResponse.json()
+
+      if (auditData.success) {
+        console.log('✅ GMB Audit completato!')
+        setGmbAuditData(auditData.audit)
+        
+        toast({
+          title: "Analisi Completata! 🎉",
+          description: "Ecco la tua Analisi GMB completa",
+        })
+
+        // Scroll al report dopo un momento
+        setTimeout(() => {
+          document.getElementById('gmb-report-section')?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }, 500)
+
+      } else {
+        console.error('❌ Errore GMB Audit:', auditData.error)
+        toast({
+          title: "Analisi non disponibile",
+          description: "Procediamo comunque con la tua prova gratuita",
+          variant: "destructive"
+        })
+        
+        // Fallback: vai comunque all'onboarding dopo 2 secondi
+        setTimeout(() => {
+          router.push('/')
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('❌ Errore richiesta audit:', error)
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore. Procediamo con la prova.",
+        variant: "destructive"
+      })
+      
+      // Fallback
+      setTimeout(() => {
+        router.push('/')
+      }, 2000)
+    } finally {
+      setIsLoadingAudit(false)
+    }
+  }
+
+  // 🆕 Handler per booking call dal report GMB
+  const handleBookCall = () => {
+    window.location.href = 'https://calendly.com/menuchat/consulenza-gratuita'
   }
 
   const monthlyReviews = calculateMonthlyReviews()
@@ -140,16 +200,62 @@ function QualifyContent() {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-8">
         <div className="w-full max-w-md">
           
-          {/* Back button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Torna ai risultati</span>
-          </button>
+          {/* Back button - nascosto se c'è il report GMB */}
+          {!gmbAuditData && (
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">Torna ai risultati</span>
+            </button>
+          )}
 
-          <AnimatePresence mode="wait">
+          {/* 🆕 LOADING AUDIT - Mostra durante elaborazione */}
+          {isLoadingAudit && !gmbAuditData && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl text-center"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="text-6xl mb-4"
+              >
+                🔍
+              </motion.div>
+              
+              <h2 className="text-2xl font-black text-gray-900 mb-3">
+                Analisi GMB in Corso...
+              </h2>
+              
+              <div className="space-y-3 mb-6">
+                <LoadingStep text="Analizzando il tuo profilo Google Maps..." />
+                <LoadingStep text="Confrontando con TOP 3 competitor..." delay={2} />
+                <LoadingStep text="Identificando gap critici con AI..." delay={4} />
+                <LoadingStep text="Generando piano d'azione personalizzato..." delay={6} />
+              </div>
+
+              <p className="text-sm text-gray-600">
+                ⏱️ Ci vorranno circa 10-15 secondi...
+              </p>
+            </motion.div>
+          )}
+
+          {/* 🆕 GMB REPORT - Mostra dopo audit completato */}
+          {gmbAuditData && (
+            <div id="gmb-report-section">
+              <GMBFullReport
+                audit={gmbAuditData}
+                onBookCall={handleBookCall}
+              />
+            </div>
+          )}
+
+          {/* STEPS ORIGINALI - Nascosti se c'è loading o report */}
+          {!isLoadingAudit && !gmbAuditData && (
+            <AnimatePresence mode="wait">
             {/* STEP 1: Ha già un menu digitale? */}
             {currentStep === 'has-menu' && (
               <motion.div
@@ -493,9 +599,35 @@ function QualifyContent() {
               </motion.div>
             )}
           </AnimatePresence>
+          )}
         </div>
       </div>
     </main>
+  )
+}
+
+// 🆕 Componente LoadingStep per animazione
+function LoadingStep({ text, delay = 0 }: { text: string; delay?: number }) {
+  const [isVisible, setIsVisible] = useState(delay === 0)
+
+  useEffect(() => {
+    if (delay > 0) {
+      const timer = setTimeout(() => setIsVisible(true), delay * 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [delay])
+
+  if (!isVisible) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="flex items-center gap-2 bg-gradient-to-r from-[#1B9AAA]/5 to-[#06D6A0]/5 rounded-xl p-3 border border-[#1B9AAA]/20"
+    >
+      <Loader2 className="w-4 h-4 text-[#1B9AAA] animate-spin flex-shrink-0" />
+      <p className="text-sm text-gray-700">{text}</p>
+    </motion.div>
   )
 }
 

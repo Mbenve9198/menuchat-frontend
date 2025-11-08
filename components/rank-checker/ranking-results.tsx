@@ -13,12 +13,16 @@ import {
   Zap,
   Target,
   Trophy,
-  Sparkles
+  Sparkles,
+  Lock
 } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import { RankingMap } from "./ranking-map"
 import { LocationTabs } from "./location-tabs"
 import { ReviewAnalysisSection } from "./review-analysis-section"
+import { GMBAuditGate } from "./gmb-audit-gate"
+import { GMBFullReport } from "./gmb-full-report"
+import { useToast } from "@/hooks/use-toast"
 
 interface SearchResult {
   searchPointName: string
@@ -63,6 +67,12 @@ interface RankingResultsProps {
 
 export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingResultsProps) {
   const { userRestaurant, competitors, analysis, mainResult, strategicResults = [] } = data
+  const { toast } = useToast()
+  
+  // Stati per GMB Audit
+  const [showGMBGate, setShowGMBGate] = useState(false) // Gate per sbloccare audit
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false) // Loading audit
+  const [gmbAuditData, setGmbAuditData] = useState<any>(null) // Risultati audit
   
   // Stato per il tab selezionato
   const [selectedLocationId, setSelectedLocationId] = useState('main')
@@ -151,11 +161,31 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
     return typeof mainRank === 'number' && mainRank <= 3
   }
 
-  // Gestisce il click sul CTA
+  // Gestisce il click sul CTA principale
   const handleCtaClick = () => {
-    // TUTTI vanno alla pagina di qualificazione (sia TOP 3 che gli altri)
+    // Mostra il GMB Gate invece di andare direttamente alla qualificazione
+    setShowGMBGate(true)
+    
+    // Scroll smooth al gate
+    setTimeout(() => {
+      document.getElementById('gmb-gate-section')?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, 100)
+  }
+
+  // Gestisce lo sblocco dell'analisi GMB (porta alla qualificazione)
+  const handleUnlockGMBAudit = () => {
+    // Va alla pagina di qualificazione
     const restaurantParam = encodeURIComponent(userRestaurant.name)
     window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
+  }
+
+  // Gestisce la richiesta di chiamata finale
+  const handleBookCall = () => {
+    // Porta a Calendly o pagina contatti
+    window.location.href = 'https://calendly.com/menuchat/consulenza-gratuita'
   }
 
   // Verifica se le coordinate sono valide per mostrare la mappa
@@ -456,31 +486,65 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       )}
 
       {/* Analisi Recensioni Approfondita */}
-      {placeId && (
+      {placeId && !showGMBGate && !gmbAuditData && (
         <ReviewAnalysisSection
           placeId={placeId}
           restaurantName={userRestaurant.name}
         />
       )}
 
-      {/* CTA Fixato in Basso - Sempre Visibile */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
-        <div className="max-w-md mx-auto">
-          <CustomButton
-            onClick={handleCtaClick}
-            className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              {getCtaText()}
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </span>
-          </CustomButton>
-          <p className="text-xs text-center text-gray-500 mt-2">
-            Prova gratuita • Nessuna carta richiesta
-          </p>
+      {/* 🆕 GMB AUDIT GATE - Appare quando user clicca CTA principale */}
+      {showGMBGate && !gmbAuditData && (
+        <div id="gmb-gate-section">
+          <GMBAuditGate
+            restaurantName={userRestaurant.name}
+            currentRank={mainResult?.rank || userRestaurant.rank}
+            onUnlock={handleUnlockGMBAudit}
+            isLoading={isLoadingAudit}
+          />
         </div>
-      </div>
+      )}
+
+      {/* 🆕 GMB FULL REPORT - Appare dopo la qualificazione (verrà popolato da pagina qualify) */}
+      {gmbAuditData && (
+        <div id="gmb-report-section">
+          <GMBFullReport
+            audit={gmbAuditData}
+            onBookCall={handleBookCall}
+          />
+        </div>
+      )}
+
+      {/* CTA Fixato in Basso - Visibile solo se NON c'è il gate o il report */}
+      {!showGMBGate && !gmbAuditData && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
+          <div className="max-w-md mx-auto">
+            {/* Teaser per GMB Audit */}
+            <div className="mb-3 p-2.5 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200 text-center">
+              <p className="text-xs font-bold text-orange-900 mb-1">
+                ⚠️ Questa è solo l'ANALISI BASE
+              </p>
+              <p className="text-xs text-orange-700">
+                Vuoi scoprire PERCHÉ sei in posizione {typeof (mainResult?.rank || userRestaurant.rank) === 'number' ? `#${mainResult?.rank || userRestaurant.rank}` : mainResult?.rank || userRestaurant.rank}?
+              </p>
+            </div>
+
+            <CustomButton
+              onClick={handleCtaClick}
+              className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
+            >
+              <span className="flex items-center justify-center gap-2">
+                <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
+                SBLOCCA ANALISI GMB COMPLETA
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              </span>
+            </CustomButton>
+            <p className="text-xs text-center text-gray-500 mt-2">
+              3 domande veloci • Google Maps Health Score • Piano d'azione AI
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
