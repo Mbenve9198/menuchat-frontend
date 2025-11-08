@@ -154,7 +154,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
   }
 
   // Gestisce il click sul CTA - TRIGGERA AUDIT + VA A QUALIFICAZIONE
-  const handleCtaClick = async () => {
+  const handleCtaClick = () => {
     const token = localStorage.getItem('rank_checker_token')
     
     if (!token) {
@@ -164,29 +164,21 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       return
     }
 
-    // 🔥 TRIGGERA AUDIT e ASPETTA conferma invio (fix mobile!)
-    console.log('🚀 Triggering GMB Audit...')
+    // 🔥 TRIGGERA AUDIT (fire-and-forget con keepalive per mobile)
+    console.log('🚀 Triggering GMB Audit in background...')
     
-    try {
-      // Usa fetch con keepalive per mobile (non cancella al redirect)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: token }),
-        keepalive: true  // 🔥 Importante per mobile!
-      })
-      
-      console.log('✅ Audit request sent:', response.status)
-    } catch (err) {
-      console.error('⚠️ Audit trigger error (non bloccante):', err)
-      // Non bloccare il redirect anche se audit fallisce
-    }
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken: token }),
+      keepalive: true  // 🔥 Persiste anche dopo redirect (mobile fix)
+    })
+    .then(res => console.log('✅ Audit triggered:', res.status))
+    .catch(err => console.error('⚠️ Audit error:', err))
 
-    // REDIRECT a qualify dopo 300ms (da tempo alla fetch di partire)
-    setTimeout(() => {
-      const restaurantParam = encodeURIComponent(userRestaurant.name)
-      window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
-    }, 300)
+    // REDIRECT IMMEDIATO a qualify
+    const restaurantParam = encodeURIComponent(userRestaurant.name)
+    window.location.href = `/rank-checker/qualify?restaurant=${restaurantParam}`
   }
 
   // Verifica se le coordinate sono valide per mostrare la mappa
