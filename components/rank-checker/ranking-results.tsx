@@ -457,7 +457,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
       )}
 
       {/* Analisi Recensioni Approfondita */}
-      {placeId && !gmbAuditData && (
+      {placeId && (
         <ReviewAnalysisSection
           placeId={placeId}
           restaurantName={userRestaurant.name}
