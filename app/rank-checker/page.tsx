@@ -87,6 +87,19 @@ export default function RankCheckerPage() {
 
   const isFormValid = selectedRestaurant && keyword.trim().length > 0
 
+  // 🆕 Cattura lead source da URL (per tracking INBOUND vs OUTBOUND)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const source = urlParams.get('source') || 'organic'
+      
+      // Salva in localStorage per usare dopo
+      localStorage.setItem('lead_source', source)
+      
+      console.log('📊 Lead source:', source)
+    }
+  }, [])
+
   // Recupera risultati automaticamente se c'è un token nell'URL (solo client-side)
   useEffect(() => {
     // Usa window.location solo sul client
@@ -187,6 +200,10 @@ export default function RankCheckerPage() {
       if (pendingRankingData && selectedRestaurant) {
         console.log('📧 Salvataggio lead e generazione Email #1...')
         
+        // 🆕 Recupera lead source
+        const leadSource = localStorage.getItem('lead_source') || 'organic'
+        console.log('📊 Sending lead with source:', leadSource)
+        
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker-leads`, {
           method: 'POST',
           headers: {
@@ -198,7 +215,8 @@ export default function RankCheckerPage() {
             restaurantName: selectedRestaurant.name,
             placeId: selectedRestaurant.id,
             keyword,
-            rankingResults: pendingRankingData  // Salva TUTTI i dati!
+            rankingResults: pendingRankingData,  // Salva TUTTI i dati!
+            leadSource  // 🆕 Invia source per tracking
           })
         })
 
