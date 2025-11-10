@@ -527,27 +527,3 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
     </div>
   )
 }
-
-      {/* CTA Fixato in Basso - Sempre Visibile */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
-        <div className="max-w-md mx-auto">
-          <CustomButton
-            onClick={() => {
-              window.location.href = '/auth/login'
-            }}
-            className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              {getCtaText()}
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </span>
-          </CustomButton>
-          <p className="text-xs text-center text-gray-500 mt-2">
-            Prova gratuita • Nessuna carta richiesta
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
