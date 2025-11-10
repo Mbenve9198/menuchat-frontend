@@ -535,7 +535,6 @@ function QualifyContent() {
               </motion.div>
             )}
           </AnimatePresence>
-          )}
         </div>
       </div>
     </main>
