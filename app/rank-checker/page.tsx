@@ -297,9 +297,9 @@ export default function RankCheckerPage() {
         setRankingData(leadData.rankingResults)
         setShowLeadForm(false)
         
-        // 🆕 Se showReport=true, vai direttamente a /qualify con report
+        // 🆕 Se showReport=true, vai direttamente alla pagina report GMB
         if (shouldShowReport && leadData.qualificationData?.qualifiedAt) {
-          console.log('🔍 Redirect a /qualify per mostrare report GMB...')
+          console.log('🔍 Redirect a /report per mostrare report GMB...')
           // Salva token e redirect
           localStorage.setItem('rank_checker_token', token)
           
@@ -309,7 +309,7 @@ export default function RankCheckerPage() {
           })
           
           setTimeout(() => {
-            window.location.href = `/rank-checker/qualify?restaurant=${encodeURIComponent(leadData.restaurantName)}&showReport=true`
+            window.location.href = `/rank-checker/report?token=${token}`
           }, 500)
           
           return

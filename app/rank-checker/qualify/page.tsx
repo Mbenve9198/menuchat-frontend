@@ -3,11 +3,10 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLeft, Loader2 } from "lucide-react"
+import { ChevronRight, TrendingUp, CheckCircle, AlertTriangle, Sparkles, ArrowLeft } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 import BubbleBackground from "@/components/bubble-background"
 import { useToast } from "@/hooks/use-toast"
-import { GMBFullReport } from "@/components/rank-checker/gmb-full-report"
 
 type Step = 'has-menu' | 'willing-menu' | 'covers' | 'result'
 
@@ -22,8 +21,6 @@ function QualifyContent() {
   const [dailyCovers, setDailyCovers] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [restaurantName, setRestaurantName] = useState('')
-  const [isLoadingAudit, setIsLoadingAudit] = useState(false) // 🆕 Loading audit
-  const [gmbAuditData, setGmbAuditData] = useState<any>(null) // 🆕 Dati audit
 
   // Recupera info dal localStorage e URL
   useEffect(() => {
@@ -41,53 +38,8 @@ function QualifyContent() {
     // Cerca di recuperare il nome del ristorante
     const storedName = searchParams.get('restaurant') || 'il tuo ristorante'
     setRestaurantName(storedName)
-
-    // 🆕 Se showReport=true (da email), carica report direttamente
-    const showReport = searchParams.get('showReport')
-    if (showReport === 'true') {
-      console.log('📧 Caricamento report GMB da email link...')
-      // Salta le domande e carica il report direttamente
-      loadGMBReportDirectly(token)
-    }
   }, [])
 
-  // 🆕 Carica report GMB direttamente (da email link)
-  const loadGMBReportDirectly = async (token: string) => {
-    setIsLoadingAudit(true)
-    setCurrentStep('has-menu') // Nasconde domande
-    
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit/${token}`
-      )
-      
-      const data = await response.json()
-      
-      if (data.success && data.status === 'completed' && data.audit) {
-        console.log('✅ Report GMB caricato da email!')
-        setGmbAuditData(data.audit)
-        setIsLoadingAudit(false)
-        
-        setTimeout(() => {
-          document.getElementById('gmb-report-section')?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          })
-        }, 500)
-      } else {
-        console.error('❌ Report non disponibile')
-        setIsLoadingAudit(false)
-        toast({
-          title: "Report non disponibile",
-          description: "Riprova l'analisi",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('❌ Errore caricamento report:', error)
-      setIsLoadingAudit(false)
-    }
-  }
 
   // Calcola recensioni mensili
   const calculateMonthlyReviews = (): number => {
@@ -158,61 +110,15 @@ function QualifyContent() {
 
     setIsSaving(false)
 
-    // STEP 2: CONTROLLA SE AUDIT È GIÀ PRONTO (partito in background)
-    setIsLoadingAudit(true)
+    // ✅ QUALIFICAZIONE COMPLETATA → Redirect alla pagina del report GMB
+    toast({
+      title: "Perfetto! 🎉",
+      description: "Stai per vedere la tua Analisi GMB Completa...",
+    })
     
-    const checkAuditStatus = async () => {
-      try {
-        console.log('🔍 Controllo status audit...')
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rank-checker/gmb-audit/${token}`
-        )
-        
-        const data = await response.json()
-        console.log('Status audit:', data.status)
-        
-        if (data.status === 'completed' && data.audit) {
-          // ✅ PRONTO! Mostra report
-          console.log('✅ Audit pronto!')
-          setGmbAuditData(data.audit)
-          setIsLoadingAudit(false)
-          
-          toast({
-            title: "Analisi Completata! 🎉",
-            description: "Ecco la tua Analisi GMB completa",
-          })
-          
-          setTimeout(() => {
-            document.getElementById('gmb-report-section')?.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
-            })
-          }, 500)
-          
-        } else if (data.status === 'processing' || data.status === 'not_started') {
-          // ⏳ Ancora in corso, riprova tra 2 secondi
-          console.log('⏳ Audit in corso, riprovo tra 2 sec...')
-          setTimeout(checkAuditStatus, 2000)
-          
-        } else {
-          // ❌ Errore
-          console.error('❌ Audit error:', data.error)
-          setIsLoadingAudit(false)
-          toast({
-            title: "Analisi non disponibile",
-            description: "Riprova più tardi",
-            variant: "destructive"
-          })
-        }
-      } catch (error) {
-        console.error('❌ Errore check audit:', error)
-        // Riprova comunque
-        setTimeout(checkAuditStatus, 2000)
-      }
-    }
-    
-    // Aspetta 1 secondo poi inizia polling
-    setTimeout(checkAuditStatus, 1000)
+    setTimeout(() => {
+      router.push('/rank-checker/report')
+    }, 1500)
   }
 
   // 🆕 Handler per booking call con preferenza orario
@@ -234,8 +140,7 @@ function QualifyContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            callPreference: preference,
-            gmbAuditData: gmbAuditData // Invia anche il report per email team
+            callPreference: preference
           })
         }
       )
@@ -273,61 +178,16 @@ function QualifyContent() {
         <div className="w-full max-w-md">
           
           {/* Back button */}
-          {!isLoadingAudit && (
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Torna ai risultati</span>
-            </button>
-          )}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Torna ai risultati</span>
+          </button>
 
-          {/* 🆕 LOADING AUDIT - Mostra durante elaborazione */}
-          {isLoadingAudit && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl text-center"
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                className="text-6xl mb-4"
-              >
-                🔍
-              </motion.div>
-              
-              <h2 className="text-2xl font-black text-gray-900 mb-3">
-                Analisi GMB in Corso...
-              </h2>
-              
-              <div className="space-y-3 mb-6">
-                <LoadingStep text="Analizzando il tuo profilo Google Maps..." />
-                <LoadingStep text="Confrontando con TOP 3 competitor..." delay={2} />
-                <LoadingStep text="Identificando gap critici con AI..." delay={4} />
-                <LoadingStep text="Generando piano d'azione personalizzato..." delay={6} />
-              </div>
-
-              <p className="text-sm text-gray-600">
-                ⏱️ Ci vorranno circa 10-15 secondi...
-              </p>
-            </motion.div>
-          )}
-
-          {/* 🆕 GMB REPORT - Mostra dopo audit completato */}
-          {gmbAuditData && (
-            <div id="gmb-report-section">
-              <GMBFullReport
-                audit={gmbAuditData}
-                onBookCall={handleBookCall}
-              />
-            </div>
-          )}
-
-          {/* STEPS ORIGINALI - Nascosti se c'è loading o report */}
-          {!isLoadingAudit && !gmbAuditData && (
-            <AnimatePresence mode="wait">
+          {/* STEPS QUALIFICAZIONE */}
+          <AnimatePresence mode="wait">
             {/* STEP 1: Ha già un menu digitale? */}
             {currentStep === 'has-menu' && (
               <motion.div
@@ -673,31 +533,6 @@ function QualifyContent() {
   )
 }
 
-// 🆕 Componente LoadingStep per animazione
-function LoadingStep({ text, delay = 0 }: { text: string; delay?: number }) {
-  const [isVisible, setIsVisible] = useState(delay === 0)
-
-  useEffect(() => {
-    if (delay > 0) {
-      const timer = setTimeout(() => setIsVisible(true), delay * 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [delay])
-
-  if (!isVisible) return null
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex items-center gap-2 bg-gradient-to-r from-[#1B9AAA]/5 to-[#06D6A0]/5 rounded-xl p-3 border border-[#1B9AAA]/20"
-    >
-      <Loader2 className="w-4 h-4 text-[#1B9AAA] animate-spin flex-shrink-0" />
-      <p className="text-sm text-gray-700">{text}</p>
-    </motion.div>
-  )
-}
-
 export default function QualifyPage() {
   return (
     <Suspense fallback={
@@ -715,3 +550,12 @@ export default function QualifyPage() {
     </Suspense>
   )
 }
+
+
+
+
+
+
+
+
+
