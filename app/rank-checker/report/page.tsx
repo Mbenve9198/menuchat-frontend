@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { GMBFullReport } from '@/components/rank-checker/gmb-full-report'
@@ -229,7 +229,19 @@ function ReportContent() {
 
 export default function GMBReportPage() {
   return (
-    <ReportContent />
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-[#FEF7F0] via-white to-[#F0F9FF] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl text-center">
+          <div className="text-6xl mb-4 animate-bounce">🔍</div>
+          <h2 className="text-2xl font-black text-gray-900 mb-3">
+            Caricamento Report...
+          </h2>
+          <p className="text-gray-600">Un momento...</p>
+        </div>
+      </div>
+    }>
+      <ReportContent />
+    </Suspense>
   )
 }
 

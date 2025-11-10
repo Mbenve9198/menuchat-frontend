@@ -24,15 +24,24 @@ function QualifyContent() {
 
   // Recupera info dal localStorage e URL
   useEffect(() => {
-    const token = localStorage.getItem('rank_checker_token')
+    // Prova a prendere token da URL o localStorage
+    const tokenFromUrl = searchParams.get('token')
+    const tokenFromStorage = localStorage.getItem('rank_checker_token')
+    const token = tokenFromUrl || tokenFromStorage
+    
     if (!token) {
       toast({
-        title: "Errore",
+        title: "Accesso Negato",
         description: "Devi prima completare l'analisi del ranking",
         variant: "destructive"
       })
       router.push('/rank-checker')
       return
+    }
+
+    // Salva token nel localStorage se arriva dall'URL (per condivisione link)
+    if (tokenFromUrl && !tokenFromStorage) {
+      localStorage.setItem('rank_checker_token', tokenFromUrl)
     }
 
     // Cerca di recuperare il nome del ristorante
@@ -550,6 +559,7 @@ export default function QualifyPage() {
     </Suspense>
   )
 }
+
 
 
 

@@ -176,3 +176,11 @@ export function GMBCompetitorComparison({ table, summary }: GMBCompetitorCompari
   )
 }
 
+
+
+
+
+
+
+
+
