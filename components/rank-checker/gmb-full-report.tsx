@@ -314,14 +314,14 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
               className="w-full h-14 sm:h-16 text-sm sm:text-base font-black shadow-2xl"
             >
               <span className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                VOGLIO IMPLEMENTARE TUTTO QUESTO
+                <Calendar className="w-5 h-5" />
+                PARLIAMO DI COME MIGLIORARE IL TUO RANKING
                 <ArrowRight className="w-5 h-5" />
               </span>
             </CustomButton>
             
             <p className="text-xs text-center text-gray-500 mt-2">
-              💬 Chiamata strategica gratuita • Zero impegno
+              📞 Chiamata conoscitiva 15 min • Nessun impegno
             </p>
           </div>
         </div>
@@ -329,6 +329,7 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
     </div>
   )
 }
+
 
 
 
