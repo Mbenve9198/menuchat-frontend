@@ -197,7 +197,7 @@ export function RankingResults({ data, keyword, onNewSearch, placeId }: RankingR
   })
 
   return (
-    <div className="w-full space-y-6 pb-24">
+    <div className="w-full space-y-6 pb-32">
       {/* Hero dei Risultati - Centrato e Impattante */}
       <motion.div 
         className="text-center mb-6"
