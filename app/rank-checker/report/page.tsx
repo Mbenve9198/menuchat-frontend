@@ -151,9 +151,66 @@ function ReportContent() {
     }
   }
 
-  const handleBookCall = async () => {
-    // Redirect alla sezione di booking chiamata nella pagina qualify
-    router.push('/rank-checker/qualify?scrollTo=call-preference')
+  const handleBookCall = async (preference: 'mattina' | 'pomeriggio') => {
+    const tokenFromUrl = searchParams.get('token')
+    const tokenFromStorage = localStorage.getItem('rank_checker_token')
+    const token = tokenFromUrl || tokenFromStorage
+    
+    if (!token) {
+      console.error('⚠️ Nessun token disponibile')
+      return
+    }
+
+    try {
+      console.log(`📞 Richiesta chiamata: ${preference}`)
+      
+      // Salva preferenza + invia email team
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'https://backend.menuchat.it'}/api/rank-checker-leads/${token}/request-call`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callPreference: preference
+          })
+        }
+      )
+
+      if (response.ok) {
+        console.log('✅ Richiesta chiamata inviata')
+        
+        // 🎯 Meta Pixel - Track Call Request (Custom Event)
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+          (window as any).fbq('trackCustom', 'CallRequested', {
+            content_name: restaurantName,
+            call_preference: preference,
+            content_category: 'rank_checker_call_from_report',
+            value: 497,
+            currency: 'EUR'
+          })
+          console.log('📊 Meta Pixel: CallRequested custom event tracked (from report)')
+        }
+        
+        toast({
+          title: "Richiesta Ricevuta! 🎉",
+          description: `Ti chiameremo ${preference === 'mattina' ? 'domattina' : 'nel pomeriggio'}`,
+        })
+
+        // Redirect a thank you page dopo 2 sec
+        setTimeout(() => {
+          router.push('/rank-checker/thank-you')
+        }, 2000)
+      } else {
+        throw new Error('Errore richiesta chiamata')
+      }
+    } catch (error) {
+      console.error('⚠️ Errore richiesta chiamata:', error)
+      toast({
+        title: "Errore",
+        description: "Non siamo riusciti a inviare la richiesta. Riprova.",
+        variant: "destructive"
+      })
+    }
   }
 
   if (error) {
