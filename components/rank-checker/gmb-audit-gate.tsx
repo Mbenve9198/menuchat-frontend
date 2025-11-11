@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Lock, Sparkles, ArrowRight, Target, Trophy, Zap, Gift } from "lucide-react"
+import { motion } from "framer-motion"
+import { Lock, ArrowRight, Target, Trophy, Zap, Gift } from "lucide-react"
 import { CustomButton } from "@/components/ui/custom-button"
 
 interface GMBAuditGateProps {
@@ -13,23 +12,6 @@ interface GMBAuditGateProps {
 }
 
 export function GMBAuditGate({ restaurantName, currentRank, onUnlock, isLoading }: GMBAuditGateProps) {
-  const [showFixedCta, setShowFixedCta] = useState(false)
-
-  // Mostra CTA fixata quando si scrolla oltre la card principale
-  useEffect(() => {
-    const handleScroll = () => {
-      const gateElement = document.getElementById('gmb-gate-section')
-      if (gateElement) {
-        const rect = gateElement.getBoundingClientRect()
-        // Mostra CTA fixata quando la card è scrollata oltre la metà dello schermo
-        setShowFixedCta(rect.bottom < window.innerHeight / 2)
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
   return (
     <>
       <motion.div
@@ -138,53 +120,48 @@ export function GMBAuditGate({ restaurantName, currentRank, onUnlock, isLoading 
         </p>
       </motion.div>
 
-      {/* CTA Fixata in Basso - Stile Mobile UX */}
-      <AnimatePresence>
-        {showFixedCta && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-orange-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4"
-          >
-            <div className="max-w-md mx-auto">
-              {/* Badge Prezzo Compatto */}
-              <div className="flex justify-center mb-2">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-black">
-                  <Gift className="w-3.5 h-3.5" />
-                  <span>GRATIS OGGI</span>
-                  <span className="opacity-75">•</span>
-                  <span className="line-through opacity-75">€497</span>
-                </div>
-              </div>
-
-              {/* Teaser Veloce */}
-              <div className="mb-3 text-center">
-                <p className="text-xs font-bold text-gray-900">
-                  Scopri PERCHÉ sei #{typeof currentRank === 'number' ? currentRank : '20+'} e come salire
-                </p>
-              </div>
-
-              <CustomButton
-                onClick={onUnlock}
-                disabled={isLoading}
-                className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
-                  SBLOCCA ANALISI COMPLETA
-                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                </span>
-              </CustomButton>
-              
-              <p className="text-xs text-center text-gray-500 mt-2">
-                Piano d'azione AI • Quick Wins • Confronto competitor
-              </p>
+      {/* CTA Fixata in Basso - Sempre Visibile */}
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300, delay: 0.5 }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-orange-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4"
+      >
+        <div className="max-w-md mx-auto">
+          {/* Badge Prezzo Compatto */}
+          <div className="flex justify-center mb-2">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-black">
+              <Gift className="w-3.5 h-3.5" />
+              <span>GRATIS OGGI</span>
+              <span className="opacity-75">•</span>
+              <span className="line-through opacity-75">€497</span>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+          {/* Teaser Veloce */}
+          <div className="mb-3 text-center">
+            <p className="text-xs font-bold text-gray-900">
+              Scopri PERCHÉ sei #{typeof currentRank === 'number' ? currentRank : '20+'} e come salire
+            </p>
+          </div>
+
+          <CustomButton
+            onClick={onUnlock}
+            disabled={isLoading}
+            className="w-full h-12 sm:h-14 text-xs sm:text-sm font-black shadow-xl"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
+              SBLOCCA ANALISI COMPLETA
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </span>
+          </CustomButton>
+          
+          <p className="text-xs text-center text-gray-500 mt-2">
+            Piano d'azione AI • Quick Wins • Confronto competitor
+          </p>
+        </div>
+      </motion.div>
     </>
   )
 }
