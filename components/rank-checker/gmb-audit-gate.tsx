@@ -125,7 +125,7 @@ export function GMBAuditGate({ restaurantName, currentRank, onUnlock, isLoading 
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 25, stiffness: 300, delay: 0.5 }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white/75 backdrop-blur-xl border-t-2 border-orange-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white/75 backdrop-blur-xl shadow-2xl px-3 sm:px-4 py-3 sm:py-4"
       >
         <div className="max-w-md mx-auto">
           {/* Badge Prezzo Compatto */}

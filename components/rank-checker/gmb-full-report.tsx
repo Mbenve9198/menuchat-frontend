@@ -307,7 +307,7 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
 
       {/* CTA FINALE - Fixato in Basso (nascosto se c'è modal preferenza) */}
       {!showCallPreference && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/75 backdrop-blur-xl border-t-2 border-gray-200 shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/75 backdrop-blur-xl shadow-2xl px-3 sm:px-4 py-3 sm:py-4">
           <div className="max-w-md mx-auto">
             <CustomButton
               onClick={handleCtaClick}
