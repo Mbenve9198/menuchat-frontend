@@ -227,6 +227,17 @@ export default function RankCheckerPage() {
             localStorage.setItem('rank_checker_token', data.accessToken)
             localStorage.setItem('rank_checker_last_email', email)
             console.log('✅ Lead salvato e Email #1 inviata, token:', data.accessToken)
+            
+            // 🎯 Meta Pixel - Track Lead Acquisition
+            if (typeof window !== 'undefined' && (window as any).fbq) {
+              (window as any).fbq('track', 'Lead', {
+                content_name: selectedRestaurant.name,
+                content_category: 'rank_checker',
+                value: 497,
+                currency: 'EUR'
+              })
+              console.log('📊 Meta Pixel: Lead event tracked')
+            }
           }
         }
       }

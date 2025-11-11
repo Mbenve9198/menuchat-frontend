@@ -123,6 +123,18 @@ function ReportContent() {
         setRestaurantName(result.audit.summary?.restaurantName || 'il tuo ristorante')
         setIsLoading(false)
         console.log('✅ Report GMB caricato')
+        
+        // 🎯 Meta Pixel - Track GMB Report View
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+          (window as any).fbq('track', 'ViewContent', {
+            content_name: result.audit.summary?.restaurantName || 'GMB Report',
+            content_category: 'gmb_full_report',
+            content_type: 'report',
+            value: 497,
+            currency: 'EUR'
+          })
+          console.log('📊 Meta Pixel: ViewContent event tracked (GMB Report)')
+        }
       } else {
         throw new Error('Report non disponibile')
       }

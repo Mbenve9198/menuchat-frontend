@@ -113,6 +113,17 @@ function QualifyContent() {
         }
       )
       console.log('✅ Qualificazione salvata')
+      
+      // 🎯 Meta Pixel - Track Qualification Completion
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'CompleteRegistration', {
+          content_name: restaurantName,
+          content_category: 'rank_checker_qualification',
+          value: 497,
+          currency: 'EUR'
+        })
+        console.log('📊 Meta Pixel: CompleteRegistration event tracked')
+      }
     } catch (error) {
       console.error('⚠️ Errore qualificazione:', error)
     }
@@ -156,6 +167,18 @@ function QualifyContent() {
 
       if (response.ok) {
         console.log('✅ Richiesta chiamata inviata')
+        
+        // 🎯 Meta Pixel - Track Call Request (Custom Event)
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+          (window as any).fbq('trackCustom', 'CallRequested', {
+            content_name: restaurantName,
+            call_preference: preference,
+            content_category: 'rank_checker_call',
+            value: 497,
+            currency: 'EUR'
+          })
+          console.log('📊 Meta Pixel: CallRequested custom event tracked')
+        }
         
         toast({
           title: "Richiesta Ricevuta! 🎉",
