@@ -313,11 +313,7 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
               onClick={handleCtaClick}
               className="w-full h-14 sm:h-16 text-sm sm:text-base font-black shadow-2xl"
             >
-              <span className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                MIGLIORA IL TUO RANKING (SENZA IMPEGNO)
-                <ArrowRight className="w-5 h-5" />
-              </span>
+              MIGLIORA IL TUO RANKING (SENZA IMPEGNO)
             </CustomButton>
             
             <p className="text-xs text-center text-gray-500 mt-2">
