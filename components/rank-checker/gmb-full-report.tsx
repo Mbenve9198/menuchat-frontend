@@ -315,7 +315,7 @@ export function GMBFullReport({ audit, onBookCall }: GMBFullReportProps) {
             >
               <span className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                PARLIAMO DI COME MIGLIORARE IL TUO RANKING
+                MIGLIORA IL TUO RANKING (SENZA IMPEGNO)
                 <ArrowRight className="w-5 h-5" />
               </span>
             </CustomButton>
