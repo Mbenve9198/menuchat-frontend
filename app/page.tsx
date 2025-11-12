@@ -39,6 +39,38 @@ export default function Home() {
           >
             <FloatingElements />
 
+            {/* Logo MenuChat */}
+            <motion.div
+              className="absolute top-6 left-1/2 -translate-x-1/2"
+              initial={{ y: -30, opacity: 0, scale: 0.8 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={{ 
+                type: "spring",
+                bounce: 0.4,
+                duration: 0.8
+              }}
+            >
+              <motion.div
+                animate={{
+                  y: [0, -4, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <Image
+                  src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
+                  alt="MenuChat Logo"
+                  width={160}
+                  height={50}
+                  className="drop-shadow-lg"
+                  priority
+                />
+              </motion.div>
+            </motion.div>
+
             <motion.div
               className="absolute top-4 right-4"
               initial={{ y: -20, opacity: 0 }}
@@ -54,7 +86,7 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              className="mb-8 relative w-40 h-40 mx-auto"
+              className="mb-8 relative w-40 h-40 mx-auto mt-20"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ 
                 scale: 1, 
