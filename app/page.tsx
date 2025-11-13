@@ -204,9 +204,27 @@ export default function Home() {
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
                 il tuo ristorante è un secchio bucato
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-8">
                 Il 90% dei tuoi clienti mangia una volta e scompare per sempre. Paghi per acquisirli e poi li lasci uscire dalla porta senza avere un modo per ricontattarli
               </p>
+              
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="text-center"
+              >
+                <p className="text-base sm:text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
+                  Crea il tuo menu bot WhatsApp in pochi minuti e trasforma ogni cliente in una recensione a 5 stelle.
+                </p>
+                <CustomButton 
+                  size="lg" 
+                  className="py-4 px-8 text-base font-bold shadow-xl hover:shadow-2xl transition-all font-cooper" 
+                  onClick={handleStartSetup}
+                >
+                  Prova Gratis <ChevronRight className="ml-2 w-4 h-4" />
+                </CustomButton>
+              </motion.div>
             </motion.div>
           </motion.div>
         ) : (
