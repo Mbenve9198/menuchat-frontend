@@ -240,6 +240,43 @@ export default function Home() {
                 />
               </motion.div>
             </motion.div>
+
+            {/* Sezione 3 - Soluzione */}
+            <motion.div
+              className="w-full max-w-5xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
+                non sperare. inizia ad automatizzare
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
+                MenuChat non è un altro menu digitale. È una macchina da marketing automatico travestita da menu. Il tuo cliente scannerizza il QR per vedere il menù e il sistema cattura automaticamente il contatto WhatsApp. Tutto GDPR compliant.
+              </p>
+
+              {/* Video dimostrativo */}
+              <motion.div
+                className="w-full max-w-4xl mx-auto"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.85, type: "spring", damping: 20 }}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                  <video
+                    className="w-full h-auto"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    controls
+                  >
+                    <source src="https://ik.imagekit.io/menuchat/app/funzionamento_menuchat.mp4?updatedAt=1763050860986" type="video/mp4" />
+                    Il tuo browser non supporta il tag video.
+                  </video>
+                </div>
+              </motion.div>
+            </motion.div>
           </motion.div>
         ) : (
           <SetupWizard
