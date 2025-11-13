@@ -251,16 +251,31 @@ export default function Home() {
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
                 non sperare. inizia ad automatizzare
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
                 MenuChat non è un altro menu digitale. È una macchina da marketing automatico travestita da menu. Il tuo cliente scannerizza il QR per vedere il menù e il sistema cattura automaticamente il contatto WhatsApp. Tutto GDPR compliant.
               </p>
+            </motion.div>
 
-              {/* Video dimostrativo */}
+            {/* Sezione 4 - Recensioni */}
+            <motion.div
+              className="w-full max-w-5xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.85 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
+                raccogli più di 100 recensioni vere al mese
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
+                Il nostro sistema invia automaticamente una richiesta di recensione a 5 stelle via WhatsApp a ogni cliente. Non devi alzare un dito. Guarda il tuo profilo Google schiacciare la concorrenza e diventare la scelta ovvia nella tua zona.
+              </p>
+
+              {/* Video funzionamento */}
               <motion.div
                 className="w-full max-w-4xl mx-auto"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.85, type: "spring", damping: 20 }}
+                transition={{ delay: 0.9, type: "spring", damping: 20 }}
               >
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                   <video
@@ -272,6 +287,43 @@ export default function Home() {
                     controls
                   >
                     <source src="https://ik.imagekit.io/menuchat/app/funzionamento_menuchat.mp4?updatedAt=1763050860986" type="video/mp4" />
+                    Il tuo browser non supporta il tag video.
+                  </video>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Sezione 5 - Lista d'Oro */}
+            <motion.div
+              className="w-full max-w-5xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.95 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
+                costruisci la tua lista d'oro
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
+                Hai un martedì sera vuoto? Invii una campagna. Risultato: tavoli pieni a costo zero. Hai smesso di perdere clienti. Hai iniziato a clonarli.
+              </p>
+
+              {/* Video campagne */}
+              <motion.div
+                className="w-full max-w-4xl mx-auto"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 1, type: "spring", damping: 20 }}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                  <video
+                    className="w-full h-auto"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    controls
+                  >
+                    <source src="https://ik.imagekit.io/menuchat/app/campagne.mp4?updatedAt=1763051483456" type="video/mp4" />
                     Il tuo browser non supporta il tag video.
                   </video>
                 </div>
