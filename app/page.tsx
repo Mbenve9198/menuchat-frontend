@@ -201,9 +201,12 @@ export default function Home() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.6 }}
             >
-              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
                 il tuo ristorante è un secchio bucato
               </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
+                Il 90% dei tuoi clienti mangia una volta e scompare per sempre. Paghi per acquisirli e poi li lasci uscire dalla porta senza avere un modo per ricontattarli
+              </p>
             </motion.div>
           </motion.div>
         ) : (
