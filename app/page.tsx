@@ -28,29 +28,22 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden">
       <BubbleBackground />
 
-      {/* Barra fissa in alto con logo */}
+      {/* Barra fissa in alto con logo centrale */}
       <motion.div
         className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex items-center justify-between px-6 py-3 max-w-6xl mx-auto">
+        <div className="flex items-center justify-center px-6 py-6 max-w-6xl mx-auto">
           <Image
             src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
             alt="MenuChat Logo"
-            width={140}
-            height={43}
-            className="w-auto h-10"
+            width={420}
+            height={130}
+            className="w-auto h-32"
             priority
           />
-          
-          <Link href="/auth/login">
-            <CustomButton variant="outline" size="sm" className="flex items-center gap-1.5 text-sm">
-              <LogIn className="w-3.5 h-3.5" />
-              Login
-            </CustomButton>
-          </Link>
         </div>
       </motion.div>
 
@@ -58,7 +51,7 @@ export default function Home() {
       <AnimatePresence mode="wait">
         {!showSetup ? (
           <motion.div
-            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-24 pb-32 text-center"
+            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-40 pb-32 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
@@ -184,7 +177,7 @@ export default function Home() {
             </motion.div>
 
             <motion.h1
-              className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#EF476F] mb-6 px-4 leading-tight max-w-4xl"
+              className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 mb-6 px-4 leading-tight max-w-4xl font-cooper"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
@@ -219,7 +212,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Pulsante fisso in basso - solo quando non è aperto il setup wizard */}
+      {/* Pulsanti fissi in basso - solo quando non è aperto il setup wizard */}
       {!showSetup && (
         <motion.div 
           className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-2xl"
@@ -228,13 +221,26 @@ export default function Home() {
           transition={{ delay: 0.8, type: "spring", damping: 20 }}
         >
           <div className="max-w-4xl mx-auto px-6 py-4">
-            <CustomButton 
-              size="lg" 
-              className="w-full py-6 text-lg font-bold shadow-xl hover:shadow-2xl transition-all" 
-              onClick={handleStartSetup}
-            >
-              Prova Gratis <ChevronRight className="ml-2 w-5 h-5" />
-            </CustomButton>
+            <div className="flex gap-3 items-center">
+              <Link href="/auth/login" className="flex-shrink-0">
+                <CustomButton 
+                  variant="outline" 
+                  size="lg"
+                  className="bg-white text-gray-700 border-gray-300 py-6 px-6 text-base font-medium hover:bg-gray-50 transition-all"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login
+                </CustomButton>
+              </Link>
+              
+              <CustomButton 
+                size="lg" 
+                className="flex-1 py-6 text-lg font-bold shadow-xl hover:shadow-2xl transition-all" 
+                onClick={handleStartSetup}
+              >
+                Prova Gratis <ChevronRight className="ml-2 w-5 h-5" />
+              </CustomButton>
+            </div>
             <p className="text-center text-xs text-gray-500 mt-2">
               Nessuna carta di credito richiesta • Setup in 3 minuti
             </p>
