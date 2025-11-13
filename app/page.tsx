@@ -357,7 +357,9 @@ export default function Home() {
                       Esempio reale: <span className="text-gray-900 font-bold">Mr. Jerry Ristopub</span>
                     </p>
                   </div>
-                  <div className="relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ height: '600px' }}>
+                  
+                  {/* Desktop: iframe normale */}
+                  <div className="hidden md:block relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ height: '600px' }}>
                     <iframe
                       src="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
                       className="w-full h-full border-0"
@@ -365,6 +367,25 @@ export default function Home() {
                       loading="lazy"
                     />
                   </div>
+                  
+                  {/* Mobile: iframe scalato */}
+                  <div className="md:hidden relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ height: '500px' }}>
+                    <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                      <iframe
+                        src="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
+                        className="border-0"
+                        style={{
+                          width: '375px',
+                          height: '812px',
+                          transform: 'scale(0.62)',
+                          transformOrigin: 'top center'
+                        }}
+                        title="Menu Mr. Jerry Ristopub Mobile"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="mt-3 text-center">
                     <a
                       href="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
