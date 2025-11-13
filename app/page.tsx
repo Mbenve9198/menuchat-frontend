@@ -329,6 +329,55 @@ export default function Home() {
                 </div>
               </motion.div>
             </motion.div>
+
+            {/* Sezione 6 - Menu AI */}
+            <motion.div
+              className="w-full max-w-5xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1.05 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
+                menu potenziato dall'IA
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
+                Basta PDF brutti. Creiamo un menu digitale stupendo. La nostra IA scrive descrizioni appetitose, trasforma le foto dei tuoi piatti in professionali. In tutte le lingue.
+              </p>
+
+              {/* Esempio menu Mr. Jerry */}
+              <motion.div
+                className="w-full max-w-4xl mx-auto"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 1.1, type: "spring", damping: 20 }}
+              >
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 shadow-2xl">
+                  <div className="mb-3 text-center">
+                    <p className="text-sm font-medium text-gray-600">
+                      Esempio reale: <span className="text-gray-900 font-bold">Mr. Jerry Ristopub</span>
+                    </p>
+                  </div>
+                  <div className="relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ height: '600px' }}>
+                    <iframe
+                      src="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
+                      className="w-full h-full border-0"
+                      title="Menu Mr. Jerry Ristopub"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="mt-3 text-center">
+                    <a
+                      href="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#1B9AAA] hover:text-[#EF476F] font-medium transition-colors"
+                    >
+                      Apri il menu completo →
+                    </a>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
           </motion.div>
         ) : (
           <SetupWizard
