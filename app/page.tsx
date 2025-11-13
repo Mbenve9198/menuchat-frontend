@@ -251,9 +251,25 @@ export default function Home() {
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
                 non sperare. inizia ad automatizzare
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
                 MenuChat non è un altro menu digitale. È una macchina da marketing automatico travestita da menu. Il tuo cliente scannerizza il QR per vedere il menù e il sistema cattura automaticamente il contatto WhatsApp. Tutto GDPR compliant.
               </p>
+
+              {/* Immagine calamita */}
+              <motion.div
+                className="flex justify-center"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.85, type: "spring", damping: 15 }}
+              >
+                <Image
+                  src="https://ik.imagekit.io/menuchat/app/calamita.png?updatedAt=1763053089771"
+                  alt="Calamita - Attrai clienti"
+                  width={400}
+                  height={400}
+                  className="w-auto h-64 object-contain"
+                />
+              </motion.div>
             </motion.div>
 
             {/* Sezione 4 - Recensioni */}
