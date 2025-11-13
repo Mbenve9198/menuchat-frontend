@@ -39,9 +39,9 @@ export default function Home() {
           <Image
             src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
             alt="MenuChat Logo"
-            width={420}
-            height={130}
-            className="w-auto h-32"
+            width={210}
+            height={65}
+            className="w-auto h-16"
             priority
           />
         </div>
@@ -51,7 +51,7 @@ export default function Home() {
       <AnimatePresence mode="wait">
         {!showSetup ? (
           <motion.div
-            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-40 pb-32 text-center"
+            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-28 pb-32 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
@@ -220,23 +220,23 @@ export default function Home() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.8, type: "spring", damping: 20 }}
         >
-          <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="max-w-4xl mx-auto px-6 py-3">
             <div className="flex gap-3 items-center">
               <CustomButton 
                 size="lg" 
-                className="flex-1 py-6 text-lg font-bold shadow-xl hover:shadow-2xl transition-all" 
+                className="flex-1 py-4 text-base font-bold shadow-xl hover:shadow-2xl transition-all font-cooper" 
                 onClick={handleStartSetup}
               >
-                Prova Gratis <ChevronRight className="ml-2 w-5 h-5" />
+                Prova Gratis <ChevronRight className="ml-2 w-4 h-4" />
               </CustomButton>
               
               <Link href="/auth/login" className="flex-shrink-0">
                 <CustomButton 
                   variant="outline" 
                   size="lg"
-                  className="bg-white text-gray-700 border-gray-300 py-6 px-6 text-base font-medium hover:bg-gray-50 transition-all"
+                  className="bg-white text-gray-700 border-gray-300 py-4 px-5 text-sm font-medium hover:bg-gray-50 transition-all font-cooper"
                 >
-                  <LogIn className="w-4 h-4 mr-2" />
+                  <LogIn className="w-3.5 h-3.5 mr-2" />
                   Login
                 </CustomButton>
               </Link>
