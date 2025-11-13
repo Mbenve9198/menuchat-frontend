@@ -28,74 +28,46 @@ export default function Home() {
     <main className="relative min-h-screen overflow-hidden">
       <BubbleBackground />
 
+      {/* Barra fissa in alto con logo */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex items-center justify-between px-6 py-3 max-w-6xl mx-auto">
+          <Image
+            src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
+            alt="MenuChat Logo"
+            width={140}
+            height={43}
+            className="w-auto h-10"
+            priority
+          />
+          
+          <Link href="/auth/login">
+            <CustomButton variant="outline" size="sm" className="flex items-center gap-1.5 text-sm">
+              <LogIn className="w-3.5 h-3.5" />
+              Login
+            </CustomButton>
+          </Link>
+        </div>
+      </motion.div>
+
       {/* Landing Page */}
       <AnimatePresence mode="wait">
         {!showSetup ? (
           <motion.div
-            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-8 text-center"
+            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-24 pb-32 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
           >
             <FloatingElements />
 
-            {/* Pulsante Login - più discreto */}
+            {/* Stellina volante */}
             <motion.div
-              className="absolute top-6 right-6 z-20"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-            >
-              <Link href="/auth/login">
-                <CustomButton variant="outline" size="sm" className="flex items-center gap-1.5 text-sm">
-                  <LogIn className="w-3.5 h-3.5" />
-                  Login
-                </CustomButton>
-              </Link>
-            </motion.div>
-
-            {/* Logo MenuChat - HERO */}
-            <motion.div
-              className="w-full max-w-[280px] mx-auto mb-6"
-              initial={{ y: -40, opacity: 0, scale: 0.7 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              transition={{ 
-                type: "spring",
-                bounce: 0.5,
-                duration: 1,
-                delay: 0.1
-              }}
-            >
-              <motion.div
-                animate={{
-                  y: [0, -6, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                whileHover={{
-                  scale: 1.05,
-                  transition: { duration: 0.2 }
-                }}
-              >
-                <Image
-                  src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
-                  alt="MenuChat Logo"
-                  width={280}
-                  height={87}
-                  className="drop-shadow-2xl w-full h-auto"
-                  priority
-                />
-                
-                {/* Glow effect sotto il logo */}
-                <div className="absolute inset-0 -z-10 blur-2xl opacity-30 bg-gradient-to-r from-[#EF476F] via-[#FFD166] to-[#06D6A0]" />
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              className="mb-8 relative w-48 h-48 mx-auto"
+              className="mb-10 relative w-48 h-48 mx-auto"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ 
                 scale: 1, 
@@ -212,37 +184,22 @@ export default function Home() {
             </motion.div>
 
             <motion.h1
-              className="text-3xl sm:text-4xl font-extrabold text-[#EF476F] mb-4 px-4 leading-tight"
+              className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-[#EF476F] mb-6 px-4 leading-tight max-w-4xl"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              Menu → Reviews → Success! 🎉
+              L'unico menu digitale al mondo che ti permette di raccogliere 100 recensioni al mese.
             </motion.h1>
 
             <motion.p
-              className="text-base sm:text-lg text-gray-700 mb-10 max-w-md px-4 leading-relaxed"
+              className="text-base sm:text-xl text-gray-600 mb-20 max-w-2xl px-4 leading-relaxed"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              Create a WhatsApp menu bot for your restaurant and boost your reviews in minutes!
+              Crea il tuo menu bot WhatsApp in pochi minuti e trasforma ogni cliente in una recensione a 5 stelle.
             </motion.p>
-
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
-              transition={{ delay: 0.6 }}
-              className="px-4"
-            >
-              <CustomButton 
-                size="lg" 
-                className="px-10 py-7 text-lg font-bold shadow-2xl hover:shadow-3xl transition-all" 
-                onClick={handleStartSetup}
-              >
-                Get Started Now! <ChevronRight className="ml-2 w-5 h-5" />
-              </CustomButton>
-            </motion.div>
           </motion.div>
         ) : (
           <SetupWizard
@@ -261,6 +218,29 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
+      {/* Pulsante fisso in basso - solo quando non è aperto il setup wizard */}
+      {!showSetup && (
+        <motion.div 
+          className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-2xl"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.8, type: "spring", damping: 20 }}
+        >
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <CustomButton 
+              size="lg" 
+              className="w-full py-6 text-lg font-bold shadow-xl hover:shadow-2xl transition-all" 
+              onClick={handleStartSetup}
+            >
+              Prova Gratis <ChevronRight className="ml-2 w-5 h-5" />
+            </CustomButton>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Nessuna carta di credito richiesta • Setup in 3 minuti
+            </p>
+          </div>
+        </motion.div>
+      )}
     </main>
   )
 }
