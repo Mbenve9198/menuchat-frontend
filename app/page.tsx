@@ -193,6 +193,18 @@ export default function Home() {
             >
               Crea il tuo menu bot WhatsApp in pochi minuti e trasforma ogni cliente in una recensione a 5 stelle.
             </motion.p>
+
+            {/* Sezione 2 - Problema */}
+            <motion.div
+              className="w-full max-w-5xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase">
+                il tuo ristorante è un secchio bucato
+              </h2>
+            </motion.div>
           </motion.div>
         ) : (
           <SetupWizard
