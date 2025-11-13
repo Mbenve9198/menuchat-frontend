@@ -35,7 +35,7 @@ export default function Home() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex items-center justify-center px-6 py-2 max-w-6xl mx-auto">
+        <div className="flex items-center justify-center px-6 py-1 max-w-6xl mx-auto">
           <Image
             src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
             alt="MenuChat Logo"
@@ -222,6 +222,14 @@ export default function Home() {
         >
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex gap-3 items-center">
+              <CustomButton 
+                size="lg" 
+                className="flex-1 py-6 text-lg font-bold shadow-xl hover:shadow-2xl transition-all" 
+                onClick={handleStartSetup}
+              >
+                Prova Gratis <ChevronRight className="ml-2 w-5 h-5" />
+              </CustomButton>
+              
               <Link href="/auth/login" className="flex-shrink-0">
                 <CustomButton 
                   variant="outline" 
@@ -232,14 +240,6 @@ export default function Home() {
                   Login
                 </CustomButton>
               </Link>
-              
-              <CustomButton 
-                size="lg" 
-                className="flex-1 py-6 text-lg font-bold shadow-xl hover:shadow-2xl transition-all" 
-                onClick={handleStartSetup}
-              >
-                Prova Gratis <ChevronRight className="ml-2 w-5 h-5" />
-              </CustomButton>
             </div>
             <p className="text-center text-xs text-gray-500 mt-2">
               Nessuna carta di credito richiesta • Setup in 3 minuti
