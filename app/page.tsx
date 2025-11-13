@@ -186,7 +186,7 @@ export default function Home() {
             </motion.h1>
 
             <motion.p
-              className="text-base sm:text-xl text-gray-600 mb-20 max-w-2xl px-4 leading-relaxed"
+              className="text-base sm:text-xl text-gray-600 mb-8 max-w-2xl px-4 leading-relaxed"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
@@ -194,36 +194,50 @@ export default function Home() {
               Crea il tuo menu bot WhatsApp in pochi minuti e trasforma ogni cliente in una recensione a 5 stelle.
             </motion.p>
 
+            {/* CTA Hero */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mb-20"
+            >
+              <CustomButton 
+                size="lg" 
+                className="py-4 px-8 text-base font-bold shadow-xl hover:shadow-2xl transition-all font-cooper" 
+                onClick={handleStartSetup}
+              >
+                Prova Gratis <ChevronRight className="ml-2 w-4 h-4" />
+              </CustomButton>
+            </motion.div>
+
             {/* Sezione 2 - Problema */}
             <motion.div
               className="w-full max-w-5xl px-4 mb-20"
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.7 }}
             >
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
                 il tuo ristorante è un secchio bucato
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-8">
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
                 Il 90% dei tuoi clienti mangia una volta e scompare per sempre. Paghi per acquisirli e poi li lasci uscire dalla porta senza avere un modo per ricontattarli
               </p>
               
+              {/* Immagine secchio bucato */}
               <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                className="text-center"
+                className="flex justify-center"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.75, type: "spring", damping: 15 }}
               >
-                <p className="text-base sm:text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-                  Crea il tuo menu bot WhatsApp in pochi minuti e trasforma ogni cliente in una recensione a 5 stelle.
-                </p>
-                <CustomButton 
-                  size="lg" 
-                  className="py-4 px-8 text-base font-bold shadow-xl hover:shadow-2xl transition-all font-cooper" 
-                  onClick={handleStartSetup}
-                >
-                  Prova Gratis <ChevronRight className="ml-2 w-4 h-4" />
-                </CustomButton>
+                <Image
+                  src="https://ik.imagekit.io/menuchat/app/secchio.png?updatedAt=1763049360929"
+                  alt="Secchio bucato"
+                  width={400}
+                  height={400}
+                  className="w-auto h-64 object-contain"
+                />
               </motion.div>
             </motion.div>
           </motion.div>
