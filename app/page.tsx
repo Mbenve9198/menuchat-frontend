@@ -35,7 +35,7 @@ export default function Home() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex items-center justify-center px-6 py-6 max-w-6xl mx-auto">
+        <div className="flex items-center justify-center px-6 py-2 max-w-6xl mx-auto">
           <Image
             src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
             alt="MenuChat Logo"
