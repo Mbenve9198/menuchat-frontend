@@ -39,9 +39,9 @@ export default function Home() {
           <Image
             src="https://ik.imagekit.io/menuchat/app/menuchat_logo_black.png?updatedAt=1762960725443"
             alt="MenuChat Logo"
-            width={210}
-            height={65}
-            className="w-auto h-16"
+            width={420}
+            height={130}
+            className="w-auto h-32"
             priority
           />
         </div>
@@ -51,7 +51,7 @@ export default function Home() {
       <AnimatePresence mode="wait">
         {!showSetup ? (
           <motion.div
-            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-28 pb-32 text-center"
+            className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 pt-40 pb-32 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
