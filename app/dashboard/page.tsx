@@ -464,14 +464,19 @@ export default function Dashboard() {
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
       <BubbleBackground />
 
-      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 py-6 pb-24">
-        {/* Header Section */}
-        <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-4">
+      {/* Barra fissa in alto */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="w-full max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h1 className="text-2xl font-extrabold text-[#1B9AAA] mb-1">{restaurantName}</h1>
-              <p className="text-lg text-gray-700">
-                {greeting}, {restaurantName}! 🌞
+              <h1 className="text-xl font-extrabold text-[#1B9AAA] mb-0.5">{restaurantName}</h1>
+              <p className="text-sm text-gray-700">
+                {greeting}! 🌞
               </p>
             </div>
 
@@ -486,7 +491,7 @@ export default function Dashboard() {
                   duration: 0.8,
                   ease: "easeOut"
                 }}
-                className="relative w-32 h-32"
+                className="relative w-24 h-24"
               >
                 {/* Effetti rock animati dietro */}
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -645,14 +650,19 @@ export default function Dashboard() {
                 <Image
                   src="/mascottes/mascotte_rock.png"
                   alt="Rock Star Mascot"
-                  width={120}
-                  height={120}
+                  width={96}
+                  height={96}
                   className="relative z-10 drop-shadow-2xl object-contain"
                 />
               </motion.div>
             </div>
           </div>
+        </div>
+      </motion.div>
 
+      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 pt-24 pb-24">
+        {/* Info aggiuntive sotto la barra */}
+        <div className="w-full max-w-md mb-6">
           <div className="flex items-center justify-between">
             <motion.div
               className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
