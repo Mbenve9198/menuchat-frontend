@@ -238,27 +238,47 @@ export default function RankCheckerPage() {
               })
               console.log('📊 Meta Pixel: Lead event tracked')
             }
+
+            // ✅ Trasferisci i dati pending ai risultati finali SOLO se il token è stato salvato
+            setRankingData(pendingRankingData)
+            setShowLeadForm(false)
+            
+            // Scroll ai risultati
+            setTimeout(() => {
+              document.getElementById('results-section')?.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+              })
+            }, 100)
+          } else {
+            // Token mancante - mostra errore
+            console.error('❌ Backend non ha restituito accessToken')
+            toast({
+              title: "Errore",
+              description: "Si è verificato un errore nel salvataggio. Riprova.",
+              variant: "destructive"
+            })
           }
+        } else {
+          // Response non OK - mostra errore
+          console.error('❌ Errore salvataggio lead, status:', response.status)
+          toast({
+            title: "Errore",
+            description: "Si è verificato un errore nel salvataggio. Riprova.",
+            variant: "destructive"
+          })
         }
       }
     } catch (error) {
-      console.error('⚠️ Errore salvataggio lead (non bloccante):', error)
-      // Non bloccare il flusso anche se il salvataggio fallisce
+      console.error('⚠️ Errore salvataggio lead:', error)
+      toast({
+        title: "Errore di connessione",
+        description: "Impossibile contattare il server. Verifica la tua connessione e riprova.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoadingLead(false) // Fine loading
     }
-    
-    // Trasferisci i dati pending ai risultati finali
-    setRankingData(pendingRankingData)
-    setShowLeadForm(false)
-    
-    // Scroll ai risultati
-    setTimeout(() => {
-      document.getElementById('results-section')?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
-      })
-    }, 100)
   }
 
   // Animazione automatica delle card benefici
@@ -287,6 +307,11 @@ export default function RankCheckerPage() {
       if (data.success && data.data) {
         const leadData = data.data
         
+        // ✅ SALVA SEMPRE IL TOKEN in localStorage (così "Sblocca Analisi" funziona)
+        localStorage.setItem('rank_checker_token', token)
+        localStorage.setItem('rank_checker_last_email', leadData.email)
+        console.log('✅ Token recuperato e salvato:', token)
+        
         // Crea un oggetto restaurant dal placeId salvato
         const restaurant: Restaurant = {
           id: leadData.placeId,
@@ -311,8 +336,6 @@ export default function RankCheckerPage() {
         // 🆕 Se showReport=true, vai direttamente alla pagina report GMB
         if (shouldShowReport && leadData.qualificationData?.qualifiedAt) {
           console.log('🔍 Redirect a /report per mostrare report GMB...')
-          // Salva token e redirect
-          localStorage.setItem('rank_checker_token', token)
           
           toast({
             title: "Caricamento Report GMB...",
