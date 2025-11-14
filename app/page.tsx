@@ -11,6 +11,7 @@ import BubbleBackground from "@/components/bubble-background"
 import FloatingElements from "@/components/floating-elements"
 import { CustomButton } from "@/components/ui/custom-button"
 import LiveResultsFeed from "@/components/live-results-feed"
+import VideoTestimonials from "@/components/video-testimonials"
 
 export default function Home() {
   const { toast } = useToast()
@@ -436,6 +437,24 @@ export default function Home() {
                 refreshInterval={30000}
                 maxResults={5}
               />
+            </motion.div>
+
+            {/* Sezione 8 - Video Testimonianze */}
+            <motion.div
+              className="w-full max-w-6xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-4 text-center">
+                i numeri non mentono
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-12 text-center">
+                Ristoranti reali. Risultati reali. Dati aggiornati in tempo reale dal database.
+              </p>
+
+              <VideoTestimonials />
             </motion.div>
           </motion.div>
         ) : (
