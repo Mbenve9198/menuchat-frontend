@@ -601,7 +601,7 @@ export default function PublicMenuPage() {
 
   return (
     <div 
-      className={`min-h-screen bg-gray-50 ${getFontClass(designSettings.fontFamily || 'Inter')} ${
+      className={`min-h-screen bg-gray-50 flex justify-center ${getFontClass(designSettings.fontFamily || 'Inter')} ${
         designSettings.categoryBannerPosition === 'fixed-top' ? 'pt-32' : ''
       }`}
       style={{ 
@@ -609,6 +609,7 @@ export default function PublicMenuPage() {
         color: designSettings.textColor 
       }}
     >
+      <div className="w-full max-w-md">
       {/* Cover Image */}
       {designSettings.coverImageUrl && (
         <div ref={coverRef} className="relative h-48 w-full">
@@ -1275,6 +1276,7 @@ export default function PublicMenuPage() {
           </motion.div>
         </div>
       )}
+      </div>
     </div>
   )
 } 
