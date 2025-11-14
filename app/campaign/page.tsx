@@ -497,7 +497,7 @@ export default function CampaignsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden font-cooper">
       <BubbleBackground />
       
       {/* Barra fissa in alto */}
@@ -878,30 +878,34 @@ export default function CampaignsPage() {
 
         {/* Fixed Action Buttons */}
         {!isLoading && !error && (
-          <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center gap-3 px-4">
-            <CustomButton
-              variant="outline"
-              size="sm"
-              className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50 py-3 px-3 shadow-lg"
-              onClick={() => router.push("/dashboard")}
-            >
-              ← Indietro
-            </CustomButton>
-            
-            <CustomButton
-              className="py-3 px-4 shadow-lg flex items-center justify-center"
-              onClick={() => router.push("/contacts")}
-              variant="outline"
-            >
-              <Users className="w-5 h-5 mr-2" /> Rubrica
-            </CustomButton>
-            
-            <CustomButton
-              className="py-3 px-6 shadow-lg flex items-center justify-center flex-1 max-w-xs"
-              onClick={() => router.push("/campaign/create")}
-            >
-              <Plus className="w-5 h-5 mr-2" /> {t("campaigns.createNewCampaign")}
-            </CustomButton>
+          <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-transparent backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-30">
+            <div className="flex gap-2 items-center">
+              {/* Pulsante indietro tondo piccolo */}
+              <CustomButton
+                variant="outline"
+                className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50 w-12 h-12 p-0 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg"
+                onClick={() => router.push("/dashboard")}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </CustomButton>
+              
+              {/* Rubrica */}
+              <CustomButton
+                className="flex-1 py-3 px-3 shadow-lg flex items-center justify-center text-sm"
+                onClick={() => router.push("/contacts")}
+                variant="outline"
+              >
+                <Users className="w-4 h-4 mr-1.5" /> Rubrica
+              </CustomButton>
+              
+              {/* Crea campagna */}
+              <CustomButton
+                className="flex-1 py-3 px-3 shadow-lg flex items-center justify-center text-sm"
+                onClick={() => router.push("/campaign/create")}
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> Crea
+              </CustomButton>
+            </div>
           </div>
         )}
         </div>

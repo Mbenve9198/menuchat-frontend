@@ -461,7 +461,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200">
+    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200 font-cooper">
       <BubbleBackground />
 
       {/* Barra fissa in alto */}
