@@ -10,6 +10,7 @@ import SetupWizard from "@/components/setup-wizard"
 import BubbleBackground from "@/components/bubble-background"
 import FloatingElements from "@/components/floating-elements"
 import { CustomButton } from "@/components/ui/custom-button"
+import LiveResultsFeed from "@/components/live-results-feed"
 
 export default function Home() {
   const { toast } = useToast()
@@ -414,6 +415,27 @@ export default function Home() {
                   </div>
                 </div>
               </motion.div>
+            </motion.div>
+
+            {/* Sezione 7 - Live Results Feed */}
+            <motion.div
+              className="w-full max-w-6xl px-4 mb-20"
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1.15 }}
+            >
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-4 text-center">
+                i risultati parlano chiaro
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10 text-center">
+                Questi sono ristoranti veri che stanno usando MenuChat in questo momento. Dati aggiornati in tempo reale.
+              </p>
+
+              <LiveResultsFeed 
+                period="7days"
+                autoRefresh={true}
+                refreshInterval={30000}
+              />
             </motion.div>
           </motion.div>
         ) : (
