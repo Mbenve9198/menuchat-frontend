@@ -319,10 +319,13 @@ export default function Home() {
               transition={{ delay: 0.95 }}
             >
               <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight font-cooper lowercase mb-6">
-                costruisci la tua lista d'oro
+                riempi il tuo ristorante quando vuoi
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10">
-                Hai un martedì sera vuoto? Invii una campagna. Risultato: tavoli pieni a costo zero. Hai smesso di perdere clienti. Hai iniziato a clonarli.
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-6">
+                Ogni cliente che scannerizza il QR menu entra automaticamente nel tuo database WhatsApp. Hai un martedì sera vuoto? Invii una campagna WhatsApp. Risultato: tavoli pieni a costo zero.
+              </p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-10 font-semibold">
+                Hai smesso di perdere clienti. Hai iniziato a clonarli. 📲
               </p>
 
               {/* Video campagne */}
