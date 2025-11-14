@@ -3938,17 +3938,15 @@ export default function MenuAdminPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-      <div className="bg-gray-50 min-h-screen font-sans font-cooper">
-      
-      {/* Barra fissa in alto */}
+      <div className="bg-gray-50 min-h-screen font-cooper">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md">
         <div className="w-full max-w-md mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h1 className="text-xl font-extrabold text-[#1B9AAA] font-cooper">Il Tuo Menù Digitale</h1>
-              <p className="text-sm text-gray-700 font-cooper">Gestisci il tuo menu digitale</p>
+              <h1 className="text-xl font-extrabold text-[#1B9AAA]">Il Tuo Menù Digitale</h1>
+              <p className="text-sm text-gray-700">Gestisci il tuo menu digitale</p>
             </div>
-
+            
             <div className="flex items-center gap-2">
               {/* Language Selector */}
               {supportedLanguages.length > 1 && (
@@ -3957,7 +3955,7 @@ export default function MenuAdminPage() {
                     value={currentLanguage}
                     onChange={(e) => handleLanguageChange(e.target.value)}
                     disabled={isLoadingLanguage}
-                    className="relative bg-white backdrop-blur-sm rounded-xl border-2 border-gray-300 h-10 px-3 pr-8 shadow-md font-medium text-sm transition-all hover:border-[#1B9AAA] appearance-none focus:outline-none focus:ring-2 focus:ring-[#1B9AAA]"
+                    className="bg-white rounded-xl border-2 border-gray-300 h-10 px-3 pr-8 shadow-md font-medium text-sm transition-all hover:border-[#1B9AAA] focus:outline-none focus:ring-2 focus:ring-[#1B9AAA]"
                   >
                     {supportedLanguages.map((lang) => (
                       <option key={lang.code} value={lang.code}>
@@ -3975,10 +3973,8 @@ export default function MenuAdminPage() {
               
               {/* Eye Button */}
               <button 
-                className="bg-white backdrop-blur-sm rounded-xl border-2 border-gray-300 h-10 w-10 shadow-md transition-all hover:border-[#1B9AAA] hover:bg-gray-50 flex items-center justify-center"
-                onClick={() => {
-                  window.open(`/menu/${restaurantId}`, '_blank')
-                }}
+                className="bg-white rounded-xl border-2 border-gray-300 h-10 w-10 shadow-md transition-all hover:border-[#1B9AAA] hover:bg-gray-50 flex items-center justify-center"
+                onClick={() => window.open(`/menu/${restaurantId}`, '_blank')}
               >
                 <Eye className="h-5 w-5 text-gray-700" />
               </button>
@@ -3987,8 +3983,8 @@ export default function MenuAdminPage() {
         </div>
       </header>
       
+      
       <main className="pt-24 pb-32 max-w-md mx-auto px-4">
-        <div className="mb-6">
 
         {bulkMode && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
