@@ -24,35 +24,45 @@ interface LiveResultsFeedProps {
   period?: '7days' | '30days' | 'alltime'
   autoRefresh?: boolean
   refreshInterval?: number
+  maxResults?: number
 }
 
 export default function LiveResultsFeed({ 
   period = '7days',
   autoRefresh = true,
-  refreshInterval = 30000 
+  refreshInterval = 30000,
+  maxResults = 12
 }: LiveResultsFeedProps) {
   const [results, setResults] = useState<LiveResult[]>([])
+  const [allResults, setAllResults] = useState<LiveResult[]>([]) // Lista completa per shuffle
   const [loading, setLoading] = useState(true)
+  const [isShuffling, setIsShuffling] = useState(false)
   const [selectedPeriod, setSelectedPeriod] = useState(period)
   const [newIds, setNewIds] = useState<Set<string>>(new Set())
 
   const loadData = async () => {
     try {
-      const response = await fetch(`/api/public-stats/live-feed?period=${selectedPeriod}&limit=12`)
+      // Carica più risultati di quelli che mostriamo per permettere lo shuffle
+      const response = await fetch(`/api/public-stats/live-feed?period=${selectedPeriod}&limit=30`)
       const data = await response.json()
       
       if (data.success && data.data) {
+        // Salva tutti i risultati
+        setAllResults(data.data)
+        
+        // Mostra solo i primi maxResults
+        const limitedData = data.data.slice(0, maxResults)
+        
         // Identifica nuove card per l'animazione pulse
         const currentIds = new Set(results.map(r => r.id))
-        const incomingIds = new Set(data.data.map((r: LiveResult) => r.id))
         const newCardIds = new Set(
-          data.data
+          limitedData
             .filter((r: LiveResult) => !currentIds.has(r.id))
             .map((r: LiveResult) => r.id)
         )
         
         setNewIds(newCardIds)
-        setResults(data.data)
+        setResults(limitedData)
         
         // Rimuovi l'highlight dopo 3 secondi
         setTimeout(() => setNewIds(new Set()), 3000)
@@ -62,6 +72,39 @@ export default function LiveResultsFeed({
     } finally {
       setLoading(false)
     }
+  }
+
+  const shuffleResults = () => {
+    if (allResults.length <= maxResults) {
+      // Se non ci sono abbastanza risultati per shufflare, ricarica
+      loadData()
+      return
+    }
+    
+    setIsShuffling(true)
+    
+    // Ottieni ID già mostrati
+    const currentIds = new Set(results.map(r => r.id))
+    
+    // Filtra risultati non ancora mostrati
+    const availableResults = allResults.filter(r => !currentIds.has(r.id))
+    
+    // Se ci sono abbastanza risultati nuovi, prendili
+    if (availableResults.length >= maxResults) {
+      const newResults = availableResults.slice(0, maxResults)
+      setResults(newResults)
+      setNewIds(new Set(newResults.map(r => r.id)))
+    } else {
+      // Altrimenti shuffla tutta la lista
+      const shuffled = [...allResults].sort(() => Math.random() - 0.5)
+      setResults(shuffled.slice(0, maxResults))
+      setNewIds(new Set(shuffled.slice(0, maxResults).map(r => r.id)))
+    }
+    
+    setTimeout(() => {
+      setNewIds(new Set())
+      setIsShuffling(false)
+    }, 3000)
   }
 
   useEffect(() => {
@@ -107,41 +150,43 @@ export default function LiveResultsFeed({
 
   return (
     <div className="w-full">
-      {/* Header con filtri */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg blur opacity-25 animate-pulse"></div>
-            <div className="relative bg-white px-3 py-1.5 rounded-lg border-2 border-green-500 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-bold text-green-700">LIVE</span>
+      {/* Header con filtri - STICKY */}
+      <div className="sticky top-0 z-30 bg-gradient-to-b from-white via-white to-transparent pb-4 mb-2">
+        <div className="flex items-center justify-between flex-wrap gap-4 bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg blur opacity-25 animate-pulse"></div>
+              <div className="relative bg-white px-3 py-1.5 rounded-lg border-2 border-green-500 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-bold text-green-700">LIVE</span>
+              </div>
             </div>
+            <span className="text-sm text-gray-600">Risultati in tempo reale</span>
           </div>
-          <span className="text-sm text-gray-600">Risultati in tempo reale</span>
-        </div>
 
-        {/* Filtro periodo */}
-        <div className="flex items-center gap-2 bg-white rounded-xl p-1 shadow-md">
-          {(['7days', '30days', 'alltime'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setSelectedPeriod(p)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                selectedPeriod === p
-                  ? 'bg-gradient-to-r from-[#1B9AAA] to-[#06D6A0] text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {getPeriodLabel(p)}
-            </button>
-          ))}
+          {/* Filtro periodo */}
+          <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1 shadow-inner">
+            {(['7days', '30days', 'alltime'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setSelectedPeriod(p)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedPeriod === p
+                    ? 'bg-gradient-to-r from-[#1B9AAA] to-[#06D6A0] text-white shadow-md'
+                    : 'text-gray-600 hover:bg-white hover:shadow-sm'
+                }`}
+              >
+                {getPeriodLabel(p)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Grid di risultati */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {Array.from({ length: maxResults }).map((_, i) => (
             <div key={i} className="bg-white rounded-xl p-4 border-2 border-gray-100 animate-pulse">
               <div className="h-6 bg-gray-200 rounded mb-3"></div>
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -252,6 +297,35 @@ export default function LiveResultsFeed({
         <div className="text-center py-12">
           <p className="text-gray-500">Nessun risultato disponibile per questo periodo</p>
         </div>
+      )}
+
+      {/* Bottone Shuffle - solo se ci sono risultati */}
+      {!loading && results.length > 0 && allResults.length > maxResults && (
+        <motion.div 
+          className="mt-8 text-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <button
+            onClick={shuffleResults}
+            disabled={isShuffling}
+            className="group relative px-8 py-4 bg-gradient-to-r from-[#1B9AAA] to-[#06D6A0] text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="flex items-center gap-2">
+              <motion.span
+                animate={isShuffling ? { rotate: 360 } : {}}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+              >
+                🔄
+              </motion.span>
+              {isShuffling ? 'Caricamento...' : 'Mostra Altri Ristoranti'}
+            </span>
+          </button>
+          <p className="text-xs text-gray-500 mt-2">
+            Scopri altri ristoranti che stanno ottenendo risultati con MenuChat
+          </p>
+        </motion.div>
       )}
 
       {/* Info auto-refresh */}

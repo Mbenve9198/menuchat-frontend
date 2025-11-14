@@ -375,7 +375,7 @@ export default function Home() {
                     </p>
                   </div>
                   
-                  {/* Desktop: iframe normale */}
+                  {/* Desktop: iframe */}
                   <div className="hidden md:block relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ height: '600px' }}>
                     <iframe
                       src="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
@@ -385,25 +385,24 @@ export default function Home() {
                     />
                   </div>
                   
-                  {/* Mobile: iframe scalato */}
-                  <div className="md:hidden relative bg-white rounded-xl overflow-hidden shadow-lg" style={{ height: '500px' }}>
-                    <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                      <iframe
-                        src="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
-                        className="border-0"
-                        style={{
-                          width: '375px',
-                          height: '812px',
-                          transform: 'scale(0.62)',
-                          transformOrigin: 'top center'
-                        }}
-                        title="Menu Mr. Jerry Ristopub Mobile"
-                        loading="lazy"
-                      />
-                    </div>
+                  {/* Mobile: solo link diretto */}
+                  <div className="md:hidden text-center py-8">
+                    <a
+                      href="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <CustomButton 
+                        size="lg" 
+                        className="w-full py-4 text-base font-bold shadow-xl hover:shadow-2xl transition-all font-cooper"
+                      >
+                        Vedi Menu di Esempio 🍽️ <ChevronRight className="ml-2 w-4 h-4" />
+                      </CustomButton>
+                    </a>
                   </div>
                   
-                  <div className="mt-3 text-center">
+                  {/* Link sotto per desktop */}
+                  <div className="mt-3 text-center hidden md:block">
                     <a
                       href="https://menuchat-frontend.vercel.app/menu/685d65aad76c058a91158eee"
                       target="_blank"
@@ -435,6 +434,7 @@ export default function Home() {
                 period="7days"
                 autoRefresh={true}
                 refreshInterval={30000}
+                maxResults={5}
               />
             </motion.div>
           </motion.div>
