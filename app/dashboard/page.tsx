@@ -475,9 +475,18 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h1 className="text-xl font-extrabold text-[#1B9AAA] mb-0.5">{restaurantName}</h1>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 mb-2">
                 {greeting}! 🌞
               </p>
+              <motion.div
+                className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <Calendar className="w-3.5 h-3.5 text-[#EF476F]" />
+                <span className="text-xs font-medium text-gray-700">{daysActive} {t("dashboard.daysActive")}</span>
+              </motion.div>
             </div>
 
             <div className="flex items-center">
@@ -663,17 +672,7 @@ export default function Dashboard() {
       <div className="relative z-10 flex flex-col items-center min-h-screen px-4 pt-32 pb-24">
         {/* Info aggiuntive sotto la barra */}
         <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between">
-            <motion.div
-              className="bg-white rounded-full px-3 py-1 inline-flex items-center gap-1 shadow-md"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Calendar className="w-4 h-4 text-[#EF476F]" />
-              <span className="text-xs font-medium text-gray-700">{daysActive} {t("dashboard.daysActive")}</span>
-            </motion.div>
-
+          <div className="flex items-center justify-end">
             <UILanguageSelector variant="compact" />
           </div>
         </div>
