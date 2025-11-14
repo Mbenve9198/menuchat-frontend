@@ -499,18 +499,101 @@ export default function CampaignsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
       <BubbleBackground />
-      <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pt-8">
-        {/* Header */}
+      
+      {/* Barra fissa in alto */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="w-full max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-xl font-extrabold text-[#1B9AAA] font-cooper">{t("campaigns.title")}</h1>
+              <p className="text-sm text-gray-700 font-cooper">Gestisci le tue campagne WhatsApp</p>
+            </div>
+
+            <div className="flex items-center">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ 
+                  scale: 1,
+                  opacity: 1 
+                }}
+                transition={{
+                  duration: 0.8,
+                  ease: "easeOut"
+                }}
+                className="relative w-24 h-24"
+              >
+                {/* Effetti rock animati */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div
+                    className="absolute w-28 h-28 border-2 border-yellow-400 rounded-full opacity-30"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.3, 0.1, 0.3]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </div>
+                
+                {/* Note musicali */}
+                <motion.div
+                  className="absolute -top-3 right-1 text-lg"
+                  animate={{
+                    y: [0, -20, 0],
+                    rotate: [0, 15, 0],
+                    opacity: [1, 0.2, 1]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  🎵
+                </motion.div>
+                <motion.div
+                  className="absolute top-2 -right-4 text-base"
+                  animate={{
+                    y: [0, -18, 0],
+                    rotate: [0, -12, 0],
+                    opacity: [1, 0.3, 1]
+                  }}
+                  transition={{
+                    duration: 1.7,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.5
+                  }}
+                >
+                  🎶
+                </motion.div>
+
+                {/* Mascotte rock */}
+                <Image
+                  src="/mascottes/mascotte_rock.png"
+                  alt="Rock Star Mascot"
+                  width={96}
+                  height={96}
+                  className="relative z-10 drop-shadow-2xl object-contain"
+                />
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+      
+      <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pt-32 pb-24">
+        {/* Info aggiuntive sotto la barra */}
         <div className="w-full max-w-md mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <CustomButton
-              variant="ghost"
-              className="p-2 hover:bg-white/50 rounded-full"
-              onClick={() => router.push("/dashboard")}
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
-            </CustomButton>
-            <h1 className="text-2xl font-bold text-gray-800">{t("campaigns.title")}</h1>
+          <div className="flex items-center justify-end">
             <UILanguageSelector variant="compact" />
           </div>
 
@@ -587,7 +670,7 @@ export default function CampaignsPage() {
             <div className="flex justify-center mb-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1B9AAA]"></div>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.loadingCampaigns")}</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2 font-cooper">{t("campaigns.loadingCampaigns")}</h3>
             <p className="text-gray-500">{t("campaigns.loadingDescription")}</p>
           </div>
         )}
@@ -598,7 +681,7 @@ export default function CampaignsPage() {
             <div className="flex justify-center mb-4">
               <span className="text-6xl">⚠️</span>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.loadingError")}</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2 font-cooper">{t("campaigns.loadingError")}</h3>
             <p className="text-gray-500 mb-4">{error}</p>
             <CustomButton
               className="py-2 px-4 flex items-center justify-center mx-auto"
@@ -626,7 +709,7 @@ export default function CampaignsPage() {
                   <div className="flex items-center gap-2">
                     <div>{getTypeIcon(campaign.type)}</div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
+                      <h3 className="text-lg font-bold text-gray-800 font-cooper">{campaign.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         {getStatusBadge(campaign.status, campaign)}
                         <span className="text-xs text-gray-500">
@@ -776,7 +859,7 @@ export default function CampaignsPage() {
                   className="drop-shadow-lg"
                 />
               </div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2">{t("campaigns.noCampaignsFound")}</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-2 font-cooper">{t("campaigns.noCampaignsFound")}</h3>
               <p className="text-gray-500 mb-4">
                 {searchQuery || statusFilter !== "all" || typeFilter !== "all"
                     ? t("campaigns.noCampaignsDescription")
@@ -796,6 +879,15 @@ export default function CampaignsPage() {
         {/* Fixed Action Buttons */}
         {!isLoading && !error && (
           <div className="fixed bottom-6 left-0 right-0 z-30 flex justify-center gap-3 px-4">
+            <CustomButton
+              variant="outline"
+              size="sm"
+              className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50 py-3 px-3 shadow-lg"
+              onClick={() => router.push("/dashboard")}
+            >
+              ← Indietro
+            </CustomButton>
+            
             <CustomButton
               className="py-3 px-4 shadow-lg flex items-center justify-center"
               onClick={() => router.push("/contacts")}
@@ -818,7 +910,7 @@ export default function CampaignsPage() {
         <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
           <DialogContent className="w-full max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-xl">
+              <DialogTitle className="flex items-center gap-2 text-xl font-cooper">
                 <XCircle className="w-6 h-6 text-red-500" />
                 Cancella Campagna
               </DialogTitle>
