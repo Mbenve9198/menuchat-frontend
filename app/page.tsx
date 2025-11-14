@@ -288,7 +288,7 @@ export default function Home() {
 
               {/* Video funzionamento */}
               <motion.div
-                className="w-full max-w-4xl mx-auto"
+                className="w-full max-w-2xl mx-auto"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.9, type: "spring", damping: 20 }}
@@ -325,7 +325,7 @@ export default function Home() {
 
               {/* Video campagne */}
               <motion.div
-                className="w-full max-w-4xl mx-auto"
+                className="w-full max-w-2xl mx-auto"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 1, type: "spring", damping: 20 }}
@@ -362,7 +362,7 @@ export default function Home() {
 
               {/* Esempio menu Mr. Jerry */}
               <motion.div
-                className="w-full max-w-4xl mx-auto"
+                className="w-full max-w-2xl mx-auto"
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 1.1, type: "spring", damping: 20 }}
