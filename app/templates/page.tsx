@@ -1305,7 +1305,7 @@ export default function TemplatesPage() {
         </DialogContent>
       </Dialog>
       
-      <div className={`relative z-${isEditorOpen ? '5' : '10'} flex flex-col items-center min-h-screen px-2 sm:px-4 pt-28 pb-4`}>
+      <div className={`relative z-${isEditorOpen ? '5' : '10'} flex flex-col items-center min-h-screen px-2 sm:px-4 pt-32 pb-4`}>
         <div className="w-full max-w-md mb-4 sm:mb-6">
 
           {/* Tab principale: Menu vs Review */}
@@ -1852,9 +1852,18 @@ export default function TemplatesPage() {
               </div>
             </>
           ) : (
-            <div className="flex justify-center h-full items-center">
+            <div className="flex gap-3 h-full items-center">
               <CustomButton
-                className="w-full text-center flex items-center justify-center py-2 px-4"
+                variant="outline"
+                size="sm"
+                className="bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                onClick={() => router.push('/dashboard')}
+              >
+                ← Indietro
+              </CustomButton>
+              
+              <CustomButton
+                className="flex-1 text-center flex items-center justify-center py-2 px-4"
                 onClick={() => {
                   if (getFilteredTemplates().length > 0) {
                     handleEdit(getFilteredTemplates()[0])
@@ -1865,7 +1874,7 @@ export default function TemplatesPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Edit Message
+                Modifica Messaggio
               </CustomButton>
             </div>
           )}
