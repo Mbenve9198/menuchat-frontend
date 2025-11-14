@@ -474,8 +474,8 @@ export default function Dashboard() {
         <div className="w-full max-w-md mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h1 className="text-xl font-extrabold text-[#1B9AAA] mb-0.5">{restaurantName}</h1>
-              <p className="text-sm text-gray-700 mb-2">
+              <h1 className="text-xl font-extrabold text-[#1B9AAA] mb-0.5 font-cooper">{restaurantName}</h1>
+              <p className="text-sm text-gray-700 mb-2 font-cooper">
                 {greeting}! 🌞
               </p>
               <motion.div
@@ -764,7 +764,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="text-2xl">🏆</div>
-                  <h3 className="text-lg font-bold text-gray-800">Bacheca Trofei</h3>
+                  <h3 className="text-lg font-bold text-gray-800 font-cooper">Bacheca Trofei</h3>
                 </div>
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1 rounded-full text-xs font-bold">
                   {achievements.length} {achievements.length === 1 ? 'Trofeo' : 'Trofei'}
@@ -830,7 +830,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-800 mb-1">{t("dashboard.restaurantLevel")}</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-1 font-cooper">{t("dashboard.restaurantLevel")}</h3>
                 <div className="flex items-center gap-3 mb-2">
                   <p className={`text-3xl font-extrabold ${
                     levelInfo?.level === "Newbie"
@@ -911,7 +911,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.menusSent")}</h3>
+                <h3 className="text-lg font-bold text-gray-800 font-cooper">{t("dashboard.menusSent")}</h3>
                 <p className="text-3xl font-extrabold text-[#1B9AAA]">{menusSent}</p>
               </div>
               <div className="text-3xl">📋</div>
@@ -933,7 +933,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.reviewRequests")}</h3>
+                <h3 className="text-lg font-bold text-gray-800 font-cooper">{t("dashboard.reviewRequests")}</h3>
                 <p className="text-3xl font-extrabold text-[#EF476F]">{reviewRequests}</p>
               </div>
               <div className="text-3xl">📢</div>
@@ -950,7 +950,7 @@ export default function Dashboard() {
           >
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.reviewsCollected")}</h3>
+                <h3 className="text-lg font-bold text-gray-800 font-cooper">{t("dashboard.reviewsCollected")}</h3>
                 <div className="flex items-center">
                   <p className="text-3xl font-extrabold text-[#06D6A0]">{reviewsCollected || totalReviewsCollected}</p>
                 </div>
@@ -1028,7 +1028,7 @@ export default function Dashboard() {
             whileHover={{ y: -5 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">{t("dashboard.recentActivity")}</h3>
+              <h3 className="text-lg font-bold text-gray-800 font-cooper">{t("dashboard.recentActivity")}</h3>
               <div className="text-2xl">📊</div>
             </div>
 
@@ -1098,7 +1098,7 @@ export default function Dashboard() {
         >
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-800 mb-1">{t("dashboard.whatsappSettings")}</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-1 font-cooper">{t("dashboard.whatsappSettings")}</h3>
               <div className="flex items-center">
                 <Phone className={`w-4 h-4 mr-2 ${isCustomNumber ? "text-green-500" : "text-[#1B9AAA]"}`} />
                 <span className="text-sm text-gray-600">
@@ -1174,7 +1174,7 @@ export default function Dashboard() {
               transition={{ duration: 0.2 }}
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-gray-800">{t("dashboard.whatsappSettings")}</h3>
+                <h3 className="text-lg font-bold text-gray-800 font-cooper">{t("dashboard.whatsappSettings")}</h3>
                 <button 
                   className="text-gray-500 hover:text-gray-700" 
                   onClick={() => setShowWhatsappDialog(false)}
