@@ -209,7 +209,7 @@ export default function LiveResultsFeed({
                   {/* Statistiche */}
                   <div className="space-y-2 mb-3 relative z-10">
                     <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
-                      <span className="text-sm text-gray-600">📋 Menu inviati</span>
+                      <span className="text-sm text-gray-600">👥 Clienti raggiunti</span>
                       <motion.span 
                         className="font-bold text-lg text-[#1B9AAA]"
                         initial={{ scale: 0 }}
@@ -220,7 +220,7 @@ export default function LiveResultsFeed({
                       </motion.span>
                     </div>
                     <div className="flex items-center justify-between bg-white/60 rounded-lg px-3 py-2">
-                      <span className="text-sm text-gray-600">⭐ Recensioni</span>
+                      <span className="text-sm text-gray-600">⭐ Recensioni raccolte</span>
                       <motion.span 
                         className="font-bold text-lg text-[#06D6A0]"
                         initial={{ scale: 0 }}
