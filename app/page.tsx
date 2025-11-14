@@ -454,7 +454,7 @@ export default function Home() {
                 i numeri non mentono
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto mb-12 text-center">
-                Ristoranti reali. Risultati reali. Dati aggiornati in tempo reale dal database.
+                Ristoranti reali. Risultati reali. Dati aggiornati in tempo reale.
               </p>
 
               <VideoTestimonials />

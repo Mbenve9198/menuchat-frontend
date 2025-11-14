@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ArrowUp, Star, TrendingUp } from "lucide-react"
+import { ArrowUp, Star } from "lucide-react"
 
 interface Testimonial {
   id: string
@@ -11,7 +11,6 @@ interface Testimonial {
   initialReviews: number
   currentReviews: number
   growth: number
-  daysUsing: number
   rating: number
 }
 
@@ -91,25 +90,8 @@ export default function VideoTestimonials() {
             transition={{ delay: index * 0.2 }}
           >
             <div className="grid md:grid-cols-2 gap-8 items-center">
-              {/* Video - Alternato sinistra/destra */}
-              <div className={`${index % 2 === 0 ? 'md:order-1' : 'md:order-2'}`}>
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                  <video
-                    className="w-full h-auto"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    controls
-                  >
-                    <source src={video.videoUrl} type="video/mp4" />
-                    Il tuo browser non supporta il tag video.
-                  </video>
-                </div>
-              </div>
-
-              {/* Dati - Alternato sinistra/destra */}
-              <div className={`${index % 2 === 0 ? 'md:order-2' : 'md:order-1'}`}>
+              {/* Dati - Prima su mobile, alternato su desktop */}
+              <div className={`order-1 ${index % 2 === 0 ? 'md:order-1' : 'md:order-2'}`}>
                 <div className="space-y-4">
                   {/* Nome e città */}
                   <div>
@@ -165,28 +147,29 @@ export default function VideoTestimonials() {
                           </span>
                         </div>
                       </div>
-
-                      {/* Tempo di utilizzo */}
-                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-blue-600" />
-                            <span className="text-sm font-medium text-gray-600">Con MenuChat da</span>
-                          </div>
-                          <span className="text-2xl font-bold text-blue-600">
-                            {data.daysUsing} giorni
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Media: {(data.growth / (data.daysUsing || 1)).toFixed(1)} nuove recensioni al giorno
-                        </p>
-                      </div>
                     </>
                   ) : (
                     <div className="text-center py-6 text-gray-500">
                       Dati non disponibili
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Video - Dopo i dati su mobile, alternato su desktop */}
+              <div className={`order-2 ${index % 2 === 0 ? 'md:order-2' : 'md:order-1'}`}>
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl max-h-[600px] flex items-center justify-center bg-black">
+                  <video
+                    className="w-full h-auto max-h-[600px] object-contain"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    controls
+                  >
+                    <source src={video.videoUrl} type="video/mp4" />
+                    Il tuo browser non supporta il tag video.
+                  </video>
                 </div>
               </div>
             </div>
