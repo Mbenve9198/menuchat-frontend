@@ -197,9 +197,9 @@ export default function Home() {
             </motion.p>
 
             {/* CTA Hero */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
               transition={{ delay: 0.6 }}
               className="mb-20"
             >

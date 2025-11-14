@@ -3938,64 +3938,57 @@ export default function MenuAdminPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-      <div className="bg-gray-50 min-h-screen font-sans">
-      <header className="fixed top-4 right-4 z-10">
-        <div className="flex items-center gap-2">
-          {/* Language Selector */}
-          {supportedLanguages.length > 1 && (
-            <div className="relative">
-              <select
-                value={currentLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                disabled={isLoadingLanguage}
-                className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 px-4 pr-8 shadow-lg font-bold text-sm transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {supportedLanguages.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.name}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200 -z-10"></div>
-              {isLoadingLanguage && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+      <div className="bg-gray-50 min-h-screen font-sans font-cooper">
+      
+      {/* Barra fissa in alto */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md">
+        <div className="w-full max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-xl font-extrabold text-[#1B9AAA] font-cooper">Il Tuo Menù Digitale</h1>
+              <p className="text-sm text-gray-700 font-cooper">Gestisci il tuo menu digitale</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Language Selector */}
+              {supportedLanguages.length > 1 && (
+                <div className="relative">
+                  <select
+                    value={currentLanguage}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    disabled={isLoadingLanguage}
+                    className="relative bg-white backdrop-blur-sm rounded-xl border-2 border-gray-300 h-10 px-3 pr-8 shadow-md font-medium text-sm transition-all hover:border-[#1B9AAA] appearance-none focus:outline-none focus:ring-2 focus:ring-[#1B9AAA]"
+                  >
+                    {supportedLanguages.map((lang) => (
+                      <option key={lang.code} value={lang.code}>
+                        {lang.flag} {lang.name}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingLanguage && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80">
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                    </div>
+                  )}
                 </div>
               )}
+              
+              {/* Eye Button */}
+              <button 
+                className="bg-white backdrop-blur-sm rounded-xl border-2 border-gray-300 h-10 w-10 shadow-md transition-all hover:border-[#1B9AAA] hover:bg-gray-50 flex items-center justify-center"
+                onClick={() => {
+                  window.open(`/menu/${restaurantId}`, '_blank')
+                }}
+              >
+                <Eye className="h-5 w-5 text-gray-700" />
+              </button>
             </div>
-          )}
-          
-          {/* Eye Button */}
-          <button className="relative bg-white/80 backdrop-blur-sm rounded-2xl border-b-4 border-gray-900/20 h-12 w-12 shadow-lg font-bold uppercase tracking-wider transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-1 active:border-b-0">
-            <span className="absolute inset-0 -bottom-1 rounded-2xl bg-gray-200"></span>
-            <span className="relative flex h-full w-full items-center justify-center rounded-2xl bg-white/80 transition-transform duration-150">
-              <Eye className="h-6 w-6 text-gray-700" />
-            </span>
-          </button>
+          </div>
         </div>
       </header>
       
-      <main className="pt-8 pb-32 container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-extrabold text-gray-800">Il Tuo Menù Digitale</h1>
-            {supportedLanguages.length > 1 && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
-                <span className="text-sm font-medium text-blue-800">
-                  {supportedLanguages.find(lang => lang.code === currentLanguage)?.flag || '🌍'}
-                </span>
-                <span className="text-sm font-medium text-blue-800">
-                  {supportedLanguages.find(lang => lang.code === currentLanguage)?.name || 'Lingua'}
-                </span>
-                {supportedLanguages.find(lang => lang.code === currentLanguage)?.isDefault && (
-                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                    Default
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      <main className="pt-24 pb-32 max-w-md mx-auto px-4">
+        <div className="mb-6">
 
         {bulkMode && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -5961,7 +5954,7 @@ export default function MenuAdminPage() {
         <div className="w-full max-w-md fixed bottom-0 left-0 right-0 mx-auto bg-transparent backdrop-blur-sm rounded-t-3xl p-4 shadow-xl z-20">
           <div className="grid grid-cols-4 gap-2">
             <CustomButton
-              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight font-cooper"
               onClick={() => setShowBrandDialog(true)}
             >
               <ImageIcon className="w-5 h-5 mb-1 flex-shrink-0" />
@@ -5971,7 +5964,7 @@ export default function MenuAdminPage() {
             </CustomButton>
 
             <CustomButton
-              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight font-cooper"
               onClick={handleBulkPriceUpdate}
             >
               <DollarSign className="w-5 h-5 mb-1 flex-shrink-0" />
@@ -5981,7 +5974,7 @@ export default function MenuAdminPage() {
             </CustomButton>
 
             <CustomButton
-              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight font-cooper"
               onClick={() => setShowTranslationsDialog(true)}
             >
               <span className="text-xl mb-1 flex-shrink-0">🌍</span>
@@ -5991,7 +5984,7 @@ export default function MenuAdminPage() {
             </CustomButton>
 
             <CustomButton
-              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+              className="flex flex-col items-center justify-center h-24 py-2 px-1 text-[10px] leading-tight bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-cooper"
               onClick={() => setShowAIDialog(true)}
             >
               <span className="text-xl mb-1 flex-shrink-0">🤖</span>
