@@ -660,7 +660,7 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 pt-24 pb-24">
+      <div className="relative z-10 flex flex-col items-center min-h-screen px-4 pt-32 pb-24">
         {/* Info aggiuntive sotto la barra */}
         <div className="w-full max-w-md mb-6">
           <div className="flex items-center justify-between">
