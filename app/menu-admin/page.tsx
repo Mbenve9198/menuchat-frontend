@@ -3955,11 +3955,11 @@ export default function MenuAdminPage() {
                     value={currentLanguage}
                     onChange={(e) => handleLanguageChange(e.target.value)}
                     disabled={isLoadingLanguage}
-                    className="bg-white rounded-xl border-2 border-gray-300 h-10 px-3 pr-8 shadow-md font-medium text-sm transition-all hover:border-[#1B9AAA] focus:outline-none focus:ring-2 focus:ring-[#1B9AAA]"
+                    className="bg-white rounded-xl border-2 border-gray-300 h-10 w-16 px-2 shadow-md font-medium text-lg transition-all hover:border-[#1B9AAA] focus:outline-none focus:ring-2 focus:ring-[#1B9AAA] text-center appearance-none"
                   >
                     {supportedLanguages.map((lang) => (
                       <option key={lang.code} value={lang.code}>
-                        {lang.flag} {lang.name}
+                        {lang.flag}
                       </option>
                     ))}
                   </select>
