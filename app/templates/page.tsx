@@ -188,7 +188,7 @@ function WhatsAppMockup({
           )}
           
           {/* Corpo del messaggio con CTA integrate */}
-          <p className="text-sm md:text-base whitespace-pre-wrap">{formatMessageLikeBackend()}</p>
+          <p className="text-sm md:text-base whitespace-pre-wrap break-words">{formatMessageLikeBackend()}</p>
           
           <div className="text-right mt-2">
             <span className="text-[10px] md:text-xs text-gray-500">{new Date().getHours()}:{(new Date().getMinutes() + 1).toString().padStart(2, '0')}</span>
@@ -993,6 +993,154 @@ export default function TemplatesPage() {
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-b from-mint-100 to-mint-200 pb-24">
       <BubbleBackground />
 
+      {/* Barra fissa in alto */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-md"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="w-full max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-xl font-extrabold text-[#1B9AAA] font-cooper">Messaggi</h1>
+              <p className="text-sm text-gray-700 font-cooper">Gestisci i tuoi messaggi automatici</p>
+            </div>
+
+            <div className="flex items-center">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ 
+                  scale: 1,
+                  opacity: 1 
+                }}
+                transition={{
+                  duration: 0.8,
+                  ease: "easeOut"
+                }}
+                className="relative w-24 h-24"
+              >
+                {/* Effetti rock animati dietro */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {/* Onde sonore */}
+                  <motion.div
+                    className="absolute w-28 h-28 border-2 border-yellow-400 rounded-full opacity-30"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.3, 0.1, 0.3]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                  <motion.div
+                    className="absolute w-22 h-22 border-2 border-orange-400 rounded-full opacity-40"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.4, 0.1, 0.4]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.3
+                    }}
+                  />
+                  <motion.div
+                    className="absolute w-16 h-16 border-2 border-red-400 rounded-full opacity-50"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 0.1, 0.5]
+                    }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.6
+                    }}
+                  />
+                </div>
+                
+                {/* Particelle rock */}
+                <motion.div
+                  className="absolute -top-2 -left-2 w-2 h-2 bg-yellow-400 rounded-full"
+                  animate={{
+                    y: [0, -15, 0],
+                    x: [0, -8, 0],
+                    scale: [1, 0.5, 1],
+                    opacity: [1, 0.3, 1]
+                  }}
+                  transition={{
+                    duration: 1.2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+                <motion.div
+                  className="absolute -top-1 -right-3 w-1.5 h-1.5 bg-orange-400 rounded-full"
+                  animate={{
+                    y: [0, -12, 0],
+                    x: [0, 6, 0],
+                    scale: [1, 0.3, 1],
+                    opacity: [1, 0.2, 1]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.4
+                  }}
+                />
+                
+                {/* Note musicali */}
+                <motion.div
+                  className="absolute -top-3 right-1 text-lg"
+                  animate={{
+                    y: [0, -20, 0],
+                    rotate: [0, 15, 0],
+                    opacity: [1, 0.2, 1]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  🎵
+                </motion.div>
+                <motion.div
+                  className="absolute top-2 -right-4 text-base"
+                  animate={{
+                    y: [0, -18, 0],
+                    rotate: [0, -12, 0],
+                    opacity: [1, 0.3, 1]
+                  }}
+                  transition={{
+                    duration: 1.7,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 0.5
+                  }}
+                >
+                  🎶
+                </motion.div>
+
+                {/* Mascotte rock */}
+                <Image
+                  src="/mascottes/mascotte_rock.png"
+                  alt="Rock Star Mascot"
+                  width={96}
+                  height={96}
+                  className="relative z-10 drop-shadow-2xl object-contain"
+                />
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Overlay scuro quando la modifica è attiva */}
       {isEditorOpen && (
         <div 
@@ -1132,7 +1280,7 @@ export default function TemplatesPage() {
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Aggiorna template in tutte le lingue?</DialogTitle>
+            <DialogTitle className="font-cooper">Aggiorna template in tutte le lingue?</DialogTitle>
             <DialogDescription className="pt-2">
               Puoi scegliere di aggiornare solo questo template o tradurre automaticamente il messaggio e aggiornare tutte le lingue.
             </DialogDescription>
@@ -1157,23 +1305,8 @@ export default function TemplatesPage() {
         </DialogContent>
       </Dialog>
       
-      <div className={`relative z-${isEditorOpen ? '5' : '10'} flex flex-col items-center min-h-screen px-2 sm:px-4 py-4 sm:py-6`}>
+      <div className={`relative z-${isEditorOpen ? '5' : '10'} flex flex-col items-center min-h-screen px-2 sm:px-4 pt-28 pb-4`}>
         <div className="w-full max-w-md mb-4 sm:mb-6">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[#1B9AAA]">Messaggi Menu e Recensioni</h1>
-              <p className="text-sm sm:text-base text-gray-700">Gestisci i tuoi messaggi automatici</p>
-            </div>
-            <div className="relative w-8 h-8">
-              <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Progetto%20senza%20titolo%20%2819%29-2tgFAISTDBOqzMlGq1fDdMjCJC6Iqi.png"
-                alt="Mascot"
-                width={32}
-                height={32}
-                className="absolute -top-1 -right-1"
-              />
-            </div>
-          </div>
 
           {/* Tab principale: Menu vs Review */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-3 sm:mb-4">
@@ -1250,7 +1383,7 @@ export default function TemplatesPage() {
                   {/* Pannello impostazioni di recensione */}
                   <div className="bg-white rounded-xl p-3 sm:p-4 shadow-md mb-3 sm:mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm sm:text-base font-medium text-gray-800">Impostazioni recensione</h3>
+                      <h3 className="text-sm sm:text-base font-medium text-gray-800 font-cooper">Impostazioni recensione</h3>
                       <button
                         onClick={() => setIsEditingReviewSettings(!isEditingReviewSettings)}
                         className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
